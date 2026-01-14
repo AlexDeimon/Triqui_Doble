@@ -13,11 +13,11 @@ export class WebsocketService {
     this.socket = io(this.url);
 
     this.socket.on('connect', () => {
-      console.log('✅ Conectado al servidor con ID:', this.socket.id);
+      console.log('Conectado al servidor con ID:', this.socket.id);
     });
 
     this.socket.on('disconnect', () => {
-      console.log('❌ Desconectado del servidor');
+      console.log('Desconectado del servidor');
     });
   }
 
