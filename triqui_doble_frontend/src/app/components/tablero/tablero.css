@@ -1,0 +1,63 @@
+.contenedor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: sans-serif;
+}
+
+.tablero-grande {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+  background-color: #333;
+  border: 5px solid #333;
+  width: 90vmin;
+  height: 90vmin;
+  max-width: 600px;
+  max-height: 600px;
+}
+
+.tablero-pequeno {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  background-color: #999;
+  position: relative;
+}
+
+.tablero-pequeno.activo {
+  background-color: #b0d9fc;
+}
+
+.celda {
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+.celda:hover {
+  background-color: #f1f1f1;
+}
+
+.tablero-ganador {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 5rem;
+  color: red;
+  font-weight: bold;
+  z-index: 10;
+}
+
+.tablero-pequeno.ganado-x .tablero-ganador { color: blue; }
+.tablero-pequeno.ganado-o .tablero-ganador { color: red; }
