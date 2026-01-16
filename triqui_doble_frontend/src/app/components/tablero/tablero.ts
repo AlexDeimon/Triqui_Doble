@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { estadoJuego, tableroPequeño } from '../../models/game';
+import { estadoJuego } from '../../models/game';
+import { WebsocketService } from '../../services/websocket';
 
 @Component({
   selector: 'app-tablero',
@@ -12,32 +13,33 @@ import { estadoJuego, tableroPequeño } from '../../models/game';
 
 export class TableroComponent implements OnInit {
 
-  gameState: estadoJuego = {
-    tableros: [],
-    turnoActual: 'X',
-    tableroActivo: null,
-    ganador: null
-  };
+  gameState = signal<estadoJuego | null>(null);
+  myRole = signal<string>('');
+
+  constructor(private websocketService: WebsocketService, private ngZone: NgZone) { }
 
   ngOnInit() {
-    this.inicializar();
-  }
-
-  inicializar() {
-    this.gameState.tableros = Array.from({ length: 9 }, (_, i) => {
-      return {
-        id: i,
-        ganador: null,
-        habilitado: true,
-        celdas: Array.from({ length: 9 }, (_, j) => ({
-          id: j,
-          valor: null
-        }))
-      } as tableroPequeño;
+    this.websocketService.gameState$.subscribe((state) => {
+      this.ngZone.run(() => {
+        console.log('Estado de juego:', state);
+        this.gameState.set(state);
+      });
+    });
+    
+    this.websocketService.myRole$.subscribe((role) => {
+      this.ngZone.run(() => {
+        this.myRole.set(role);
+      });
     });
   }
 
   movimiento(tableroId: number, celdaId: number) {
-    console.log(`Click en Tablero ${tableroId}, Celda ${celdaId}`);
+    this.websocketService.emitMove(tableroId, celdaId);
+  }
+
+  tableroActivo(tableroId: number): boolean {
+    const state = this.gameState();
+    if (!state) return false;
+    return state.tableroActivo === null || state.tableroActivo === tableroId;
   }
 }

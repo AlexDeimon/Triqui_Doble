@@ -5,21 +5,89 @@ import cors from 'cors';
 
 const app = express();
 app.use(cors());
-
 const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
-const io = new Server(server, {
-  cors: {
-    origin: "*", 
-    methods: ["GET", "POST"]
-  }
-});
+let jugadores = { X: null, O: null };
+
+let estadojuego = {
+  tableros: [],
+  turnoActual: 'X',
+  tableroActivo: null,
+  ganador: null
+};
+
+function reiniciarJuego() {
+  estadojuego.tableros = Array.from({ length: 9 }, (_, i) => ({
+    id: i,
+    ganador: null,
+    habilitado: true,
+    celdas: Array.from({ length: 9 }, (_, j) => ({ id: j, valor: null }))
+  }));
+  estadojuego.turnoActual = 'X';
+  estadojuego.tableroActivo = null;
+  estadojuego.ganador = null;
+  console.log("Juego reiniciado");
+}
+
+reiniciarJuego();
 
 io.on('connection', (socket) => {
-  console.log(`Usuario conectado: ${socket.id}`);
+  console.log(`Jugador conectado: ${socket.id}`);
+
+  let roljugador = null;
+
+  if (!jugadores.X) {
+    jugadores.X = socket.id;
+    roljugador = 'X';
+  } else if (!jugadores.O) {
+    jugadores.O = socket.id;
+    roljugador = 'O';
+  }
+
+  socket.emit('init', { 
+    role: roljugador, 
+    state: estadojuego 
+  });
+
+  socket.on('Movimiento', ({ tableroId, celdaId }) => {
+    if (estadojuego.ganador) return;
+
+    if (estadojuego.turnoActual !== roljugador) return;
+    
+    if (estadojuego.tableroActivo !== null && estadojuego.tableroActivo !== tableroId) {
+      return;
+    }
+
+    const tablero = estadojuego.tableros[tableroId];
+
+    const celda = tablero.celdas[celdaId];
+
+    if (celda.valor !== null) return;
+
+    celda.valor = roljugador;
+    
+    const nextTablero = estadojuego.tableros[celdaId];
+    const isNextFull = nextTablero.celdas.every(c => c.valor !== null);
+
+    if (isNextFull) {
+        estadojuego.tableroActivo = null;
+    } else {
+        estadojuego.tableroActivo = celdaId;
+    }
+
+    estadojuego.turnoActual = estadojuego.turnoActual === 'X' ? 'O' : 'X';
+    io.emit('actualizarJuego', estadojuego);
+  });
 
   socket.on('disconnect', () => {
-    console.log('Usuario desconectado');
+    console.log(`Jugador desconectado: ${socket.id}`);
+    if (jugadores.X === socket.id) jugadores.X = null;
+
+    if (jugadores.O === socket.id) jugadores.O = null;
+    
+    reiniciarJuego();
+    io.emit('actualizarJuego', estadojuego);
   });
 });
 
