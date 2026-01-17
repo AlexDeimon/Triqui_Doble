@@ -25,7 +25,7 @@ export class TableroComponent implements OnInit {
         this.gameState.set(state);
       });
     });
-    
+
     this.websocketService.myRole$.subscribe((role) => {
       this.ngZone.run(() => {
         this.myRole.set(role);
@@ -41,5 +41,9 @@ export class TableroComponent implements OnInit {
     const state = this.gameState();
     if (!state) return false;
     return state.tableroActivo === null || state.tableroActivo === tableroId;
+  }
+
+  reiniciar() {
+    this.websocketService.emitReset();
   }
 }

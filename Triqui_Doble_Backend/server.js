@@ -17,6 +17,23 @@ let estadojuego = {
   ganador: null
 };
 
+const patronesGanadores = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6]
+];
+
+function verificarGanador(elementos, propiedad) {
+  for (const [a, b, c] of patronesGanadores) {
+    if (elementos[a][propiedad] &&
+        elementos[a][propiedad] === elementos[b][propiedad] &&
+        elementos[a][propiedad] === elementos[c][propiedad]) {
+      return elementos[a][propiedad];
+    }
+  }
+  return null;
+}
+
 function reiniciarJuego() {
   estadojuego.tableros = Array.from({ length: 9 }, (_, i) => ({
     id: i,
@@ -66,6 +83,20 @@ io.on('connection', (socket) => {
     if (celda.valor !== null) return;
 
     celda.valor = roljugador;
+
+    if (!tablero.ganador) {
+      const ganadorTablero = verificarGanador(tablero.celdas, 'valor');
+      if (ganadorTablero) {
+        tablero.ganador = ganadorTablero;
+        console.log(`Tablero ${tableroId} ganado por ${ganadorTablero}`);
+      }
+    }
+
+    const ganadorGeneral = verificarGanador(estadojuego.tableros, 'ganador');
+    if (ganadorGeneral) {
+      estadojuego.ganador = ganadorGeneral;
+      console.log(`Juego ganado por ${ganadorGeneral}`);
+    }
     
     const nextTablero = estadojuego.tableros[celdaId];
     const isNextFull = nextTablero.celdas.every(c => c.valor !== null);
@@ -86,6 +117,11 @@ io.on('connection', (socket) => {
 
     if (jugadores.O === socket.id) jugadores.O = null;
     
+    reiniciarJuego();
+    io.emit('actualizarJuego', estadojuego);
+  });
+
+  socket.on('ReiniciarJuego', () => {
     reiniciarJuego();
     io.emit('actualizarJuego', estadojuego);
   });

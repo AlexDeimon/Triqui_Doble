@@ -31,4 +31,8 @@ export class WebsocketService {
   emitMove(tableroId: number, celdaId: number) {
     this.socket.emit('Movimiento', { tableroId, celdaId });
   }
+
+  emitReset() {
+    this.socket.emit('ReiniciarJuego');
+  }
 }
