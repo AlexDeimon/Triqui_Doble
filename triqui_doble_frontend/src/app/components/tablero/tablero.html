@@ -1,12 +1,15 @@
 <div *ngIf="gameState()?.ganador" class="pantalla-victoria">
-  <h1>¡GANADOR: {{ gameState()?.ganador }}</h1>
+  <h1 *ngIf="gameState()?.ganador !== 'E'">
+    GANADOR: {{ gameState()?.ganador }}
+  </h1>
+  <h1 *ngIf="gameState()?.ganador === 'E'">¡EMPATE!</h1>
   <button (click)="reiniciar()">Jugar de nuevo</button>
 </div>
 <div class="contenedor" *ngIf="gameState()">
   <h2>Turno de: {{ gameState()!.turnoActual }}</h2>
   <h2>Eres: {{ myRole() }} </h2>
   <div class="tablero-grande">
-    <div *ngFor="let tablero of gameState()!.tableros" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === 'X'" [class.ganado-o]="tablero.ganador === 'O'" [class.activo]="tableroActivo(tablero.id)">
+    <div *ngFor="let tablero of gameState()!.tableros" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === 'X'" [class.ganado-o]="tablero.ganador === 'O'" [class.empatado]="tablero.ganador === 'E'" [class.activo]="tableroActivo(tablero.id)">
       <div *ngIf="tablero.ganador" class="tablero-ganador">{{ tablero.ganador }}</div>
       <div *ngFor="let celda of tablero.celdas" class="celda" (click)="movimiento(tablero.id, celda.id)">{{ celda.valor }}</div>
     </div>

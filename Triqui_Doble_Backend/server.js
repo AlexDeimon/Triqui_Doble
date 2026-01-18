@@ -89,6 +89,9 @@ io.on('connection', (socket) => {
       if (ganadorTablero) {
         tablero.ganador = ganadorTablero;
         console.log(`Tablero ${tableroId} ganado por ${ganadorTablero}`);
+      } else if (tablero.celdas.every(c => c.valor !== null)) {
+         tablero.ganador = 'E';
+         console.log(`Tablero ${tableroId} terminado en empate`);
       }
     }
 
@@ -96,6 +99,12 @@ io.on('connection', (socket) => {
     if (ganadorGeneral) {
       estadojuego.ganador = ganadorGeneral;
       console.log(`Juego ganado por ${ganadorGeneral}`);
+    } else {
+        const todosTablerosTerminados = estadojuego.tableros.every(t => t.ganador !== null);
+        if (todosTablerosTerminados) {
+            estadojuego.ganador = 'E';
+            console.log("Juego terminado en empate global");
+        }
     }
     
     const nextTablero = estadojuego.tableros[celdaId];
@@ -127,7 +136,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });

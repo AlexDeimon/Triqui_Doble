@@ -1,4 +1,4 @@
-export type Jugador = 'X' | 'O' | null;
+export type Jugador = 'X' | 'O' | 'E' | null;
 
 export interface celda {
   id: number;

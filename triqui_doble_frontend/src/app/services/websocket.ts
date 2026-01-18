@@ -3,13 +3,15 @@ import { io, Socket } from 'socket.io-client';
 import { BehaviorSubject } from 'rxjs';
 import { estadoJuego } from '../models/game';
 
+import { environment } from '../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
 
 export class WebsocketService {
   private socket: Socket;
-  private url = 'http://localhost:3000';
+  private url = environment.apiUrl;
 
   public gameState$ = new BehaviorSubject<estadoJuego | null>(null);
   public myRole$ = new BehaviorSubject<string>('');
