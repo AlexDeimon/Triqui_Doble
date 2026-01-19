@@ -1,7 +1,12 @@
+import 'dotenv/config';
 import express from 'express';
 import http from 'http';
 import { Server } from "socket.io";
 import cors from 'cors';
+import { Partidas } from './models/game.js';
+import { connectDB } from './config/db.js';
+
+connectDB();
 
 const app = express();
 app.use(cors());
@@ -14,7 +19,8 @@ let estadojuego = {
   tableros: [],
   turnoActual: 'X',
   tableroActivo: null,
-  ganador: null
+  ganador: null,
+  cantidadTurnos: 0
 };
 
 const patronesGanadores = [
@@ -67,9 +73,11 @@ io.on('connection', (socket) => {
     state: estadojuego 
   });
 
-  socket.on('Movimiento', ({ tableroId, celdaId }) => {
+  socket.on('Movimiento', async ({ tableroId, celdaId }) => {
     if (estadojuego.ganador) return;
 
+    estadojuego.cantidadTurnos++;
+    
     if (estadojuego.turnoActual !== roljugador) return;
     
     if (estadojuego.tableroActivo !== null && estadojuego.tableroActivo !== tableroId) {
@@ -99,6 +107,16 @@ io.on('connection', (socket) => {
     if (ganadorGeneral) {
       estadojuego.ganador = ganadorGeneral;
       console.log(`Juego ganado por ${ganadorGeneral}`);
+      try {
+        const partida = new Partidas({
+          ganador: ganadorGeneral,
+          cantidadTurnos: estadojuego.cantidadTurnos
+        });
+        await partida.save();
+        console.log('Partida guardada');
+      } catch (error) {
+        console.error('Error al guardar la partida:', error);
+      }
     } else {
         const todosTablerosTerminados = estadojuego.tableros.every(t => t.ganador !== null);
         if (todosTablerosTerminados) {
