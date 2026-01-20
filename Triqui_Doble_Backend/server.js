@@ -4,24 +4,32 @@ import http from 'http';
 import { Server } from "socket.io";
 import cors from 'cors';
 import { Partidas } from './models/game.js';
+import { Usuario } from './models/user.js';
 import { connectDB } from './config/db.js';
 
 connectDB();
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-let jugadores = { X: null, O: null };
+const juegos = new Map();
 
-let estadojuego = {
-  tableros: [],
-  turnoActual: 'X',
-  tableroActivo: null,
-  ganador: null,
-  cantidadTurnos: 0
-};
+const iniciarEstadoJuego = () => {
+  return {
+    tableros: Array.from({ length: 9 }, (_, i) => ({
+      id: i,
+      ganador: null,
+      celdas: Array.from({ length: 9 }, (_, j) => ({ id: j, valor: null }))
+    })),
+    turnoActual: 'X',
+    tableroActivo: null,
+    ganador: null,
+    jugadores: { X: null, O: null }
+  };
+}
 
 const patronesGanadores = [
   [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -40,51 +48,90 @@ function verificarGanador(elementos, propiedad) {
   return null;
 }
 
-function reiniciarJuego() {
-  estadojuego.tableros = Array.from({ length: 9 }, (_, i) => ({
-    id: i,
-    ganador: null,
-    habilitado: true,
-    celdas: Array.from({ length: 9 }, (_, j) => ({ id: j, valor: null }))
-  }));
-  estadojuego.turnoActual = 'X';
-  estadojuego.tableroActivo = null;
-  estadojuego.ganador = null;
-  console.log("Juego reiniciado");
-}
+app.post('/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    let user = await Usuario.findOne({ username });
+    if (user) return res.status(400).json({ msg:'El usuario ya existe'});
 
-reiniciarJuego();
+    user = new Usuario({ username, password });
+    await user.save();
+    res.json({ msg:'Usuario creado', userId: user._id});
+  } catch (error) {
+    res.status(500).send('Error en servidor');
+  }
+});
+
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await Usuario.findOne({ username });
+    if (!user) return res.status(400).json({ msg:'Usuario no encontrado'});
+    
+    if (user.password !== password) {
+      return res.status(400).json({ msg:'Contraseña incorrecta'});
+    }
+
+    res.json({ msg:'Login exitoso', username: user.username});
+  } catch (error) {
+    res.status(500).send('Error');
+  }
+});
 
 io.on('connection', (socket) => {
   console.log(`Jugador conectado: ${socket.id}`);
 
-  let roljugador = null;
-
-  if (!jugadores.X) {
-    jugadores.X = socket.id;
-    roljugador = 'X';
-  } else if (!jugadores.O) {
-    jugadores.O = socket.id;
-    roljugador = 'O';
-  }
-
-  socket.emit('init', { 
-    role: roljugador, 
-    state: estadojuego 
-  });
-
-  socket.on('Movimiento', async ({ tableroId, celdaId }) => {
-    if (estadojuego.ganador) return;
-
-    estadojuego.cantidadTurnos++;
-    
-    if (estadojuego.turnoActual !== roljugador) return;
-    
-    if (estadojuego.tableroActivo !== null && estadojuego.tableroActivo !== tableroId) {
+  socket.on('crearSala', (roomId) => {
+    if (juegos.has(roomId)) {
+      socket.emit('error', 'La sala ya existe');
       return;
     }
 
-    const tablero = estadojuego.tableros[tableroId];
+    const estadojuego = iniciarEstadoJuego();
+    estadojuego.jugadores.X = socket.id;
+    juegos.set(roomId, estadojuego);
+    socket.join(roomId);
+    console.log(`Jugador ${socket.id} se unio a la sala ${roomId}`);
+    socket.emit('salaCreada', {roomId, jugador: 'X'});
+    io.to(roomId).emit('actualizarJuego', estadojuego);
+  })
+
+  socket.on('unirseASala', (roomId) => {
+    const juego = juegos.get(roomId);
+
+    if (!juego) {
+      socket.emit('error', 'La sala no existe');
+      return;
+    }
+
+    if (juego.jugadores.O) {
+      socket.emit('error', 'La sala esta llena');
+      return;
+    }
+
+    juego.jugadores.O = socket.id;
+    socket.join(roomId);
+    console.log(`Jugador ${socket.id} se unio a la sala ${roomId}`);
+    socket.emit('salaUnida', {roomId, jugador: 'O'});
+    io.to(roomId).emit('actualizarJuego', juego);
+  })
+
+  socket.on('Movimiento', async ({ roomId, tableroId, celdaId }) => {
+    const juego = juegos.get(roomId);
+
+    if (!juego) return;
+    if (juego.ganador) return;
+
+    const jugadorX = juego.jugadores.X === socket.id;
+    const roljugador = jugadorX ? 'X' : 'O';
+    
+    if (juego.turnoActual !== roljugador) return;
+    
+    if (juego.tableroActivo !== null && juego.tableroActivo !== tableroId) {
+      return;
+    }
+
+    const tablero = juego.tableros[tableroId];
 
     const celda = tablero.celdas[celdaId];
 
@@ -103,14 +150,14 @@ io.on('connection', (socket) => {
       }
     }
 
-    const ganadorGeneral = verificarGanador(estadojuego.tableros, 'ganador');
+    const ganadorGeneral = verificarGanador(juego.tableros, 'ganador');
     if (ganadorGeneral) {
-      estadojuego.ganador = ganadorGeneral;
+      juego.ganador = ganadorGeneral;
       console.log(`Juego ganado por ${ganadorGeneral}`);
       try {
         const partida = new Partidas({
           ganador: ganadorGeneral,
-          cantidadTurnos: estadojuego.cantidadTurnos
+          cantidadTurnos: juego.cantidadTurnos
         });
         await partida.save();
         console.log('Partida guardada');
@@ -118,39 +165,34 @@ io.on('connection', (socket) => {
         console.error('Error al guardar la partida:', error);
       }
     } else {
-        const todosTablerosTerminados = estadojuego.tableros.every(t => t.ganador !== null);
+        const todosTablerosTerminados = juego.tableros.every(t => t.ganador !== null);
         if (todosTablerosTerminados) {
-            estadojuego.ganador = 'E';
+            juego.ganador = 'E';
             console.log("Juego terminado en empate global");
         }
     }
     
-    const nextTablero = estadojuego.tableros[celdaId];
+    const nextTablero = juego.tableros[celdaId];
     const isNextFull = nextTablero.celdas.every(c => c.valor !== null);
 
-    if (isNextFull) {
-        estadojuego.tableroActivo = null;
+    if (nextTablero.ganador) {
+        juego.tableroActivo = null;
     } else {
-        estadojuego.tableroActivo = celdaId;
+        juego.tableroActivo = celdaId;
     }
 
-    estadojuego.turnoActual = estadojuego.turnoActual === 'X' ? 'O' : 'X';
-    io.emit('actualizarJuego', estadojuego);
+    juego.turnoActual = juego.turnoActual === 'X' ? 'O' : 'X';
+    io.to(roomId).emit('actualizarJuego', estadojuego);
   });
 
   socket.on('disconnect', () => {
     console.log(`Jugador desconectado: ${socket.id}`);
-    if (jugadores.X === socket.id) jugadores.X = null;
-
-    if (jugadores.O === socket.id) jugadores.O = null;
-    
-    reiniciarJuego();
-    io.emit('actualizarJuego', estadojuego);
-  });
-
-  socket.on('ReiniciarJuego', () => {
-    reiniciarJuego();
-    io.emit('actualizarJuego', estadojuego);
+    juegos.forEach((juego, roomId) => {
+      if (juego.jugadores.X === socket.id || juego.jugadores.O === socket.id) {
+        juegos.delete(roomId);
+        console.log(`Sala ${roomId} eliminada`);
+      }
+    });
   });
 });
 
