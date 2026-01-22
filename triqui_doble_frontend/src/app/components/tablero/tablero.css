@@ -22,8 +22,8 @@ h2 {
 
 .tablero-grande {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 15px;
   background-color: var(--glass-bg);
   padding: 15px;
@@ -40,8 +40,8 @@ h2 {
 
 .tablero-pequeno {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 4px;
   background-color: transparent;
   position: relative;
