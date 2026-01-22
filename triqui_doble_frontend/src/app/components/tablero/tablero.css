@@ -1,49 +1,67 @@
+:host {
+  display: block;
+  flex: 1;
+  width: 100%;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  color: var(--text-gray);
+}
+
 .contenedor {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: sans-serif;
+  width: 100%;
 }
 
 .tablero-grande {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 10px;
-  background-color: #333;
-  border: 5px solid #333;
+  gap: 15px;
+  background-color: var(--glass-bg);
+  padding: 15px;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--glass-shadow);
   width: 90vmin;
   height: 90vmin;
   max-width: 600px;
   max-height: 600px;
+  margin-top: 1rem;
 }
 
 .tablero-pequeno {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 2px;
-  background-color: #999;
+  gap: 4px;
+  background-color: transparent;
   position: relative;
-}
-
-.tablero-pequeno.activo {
-  background-color: #b0d9fc;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 2px solid var(--glass-border);
 }
 
 .celda {
-  background-color: white;
+  background-color: rgba(26, 26, 46, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: bold;
   cursor: pointer;
   user-select: none;
-}
-
-.celda:hover {
-  background-color: #f1f1f1;
+  color: var(--text-white);
+  transition: background 0.2s ease;
 }
 
 .tablero-ganador {
@@ -52,51 +70,79 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 5rem;
-  color: red;
-  font-weight: bold;
-  z-index: 10;
+  font-size: 6rem;
+  font-weight: 900;
+  z-index: -10;
   pointer-events: none;
+  background: rgba(26, 26, 46, 0.85);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.3s ease;
 }
 
 .pantalla-victoria {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  padding: 2rem;
-  border: 4px solid gold;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  z-index: 100;
-  text-align: center;
-  font-family: 'Courier New', Courier, monospace;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 52, 96, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-white);
+  animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.blur {
-  filter: blur(5px);
-  pointer-events: none;
+h2:first-of-type {
+  color: var(--primary);
+  font-weight: 800;
+  font-size: 2rem;
+  margin-bottom: 2rem;
 }
 
-button {
-  padding: 10px 20px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 5px;
+.pantalla-victoria h1 {
+  font-size: 4rem;
+  text-transform: uppercase;
+  background: linear-gradient(to right, var(--primary), var(--primary-hover));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 2rem;
+  filter: drop-shadow(0 0 10px rgba(233, 69, 96, 0.5));
+}
+
+.tablero-pequeno.activo {
+  border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(233, 69, 96, 0.3);
+  transform: scale(1.02);
+  z-index: 5;
+}
+
+.celda:hover {
+  background-color: rgba(233, 69, 96, 0.2);
 }
 
 .tablero-pequeno.ganado-x .tablero-ganador {
-  color: blue;
-  opacity: 0.5;
+  color: #4facfe;
+  text-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
 }
+
 .tablero-pequeno.ganado-o .tablero-ganador {
-  color: red;
-  opacity: 0.5;
+  color: var(--primary);
+  text-shadow: 0 0 20px rgba(233, 69, 96, 0.6);
 }
+
 .tablero-pequeno.empatado .tablero-ganador {
-  color: #555;
-  opacity: 0.6;
+  color: #f0f0f0;
+  font-size: 4rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
 }

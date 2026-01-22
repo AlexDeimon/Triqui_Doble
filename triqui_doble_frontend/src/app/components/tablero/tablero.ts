@@ -2,6 +2,7 @@ import { Component, OnInit, NgZone, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { estadoJuego } from '../../models/game';
 import { WebsocketService } from '../../services/websocket';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-tablero',
@@ -16,13 +17,24 @@ export class TableroComponent implements OnInit {
   gameState = signal<estadoJuego | null>(null);
   myRole = signal<string>('');
 
-  constructor(private websocketService: WebsocketService, private ngZone: NgZone) { }
+  constructor(public websocketService: WebsocketService, private ngZone: NgZone) { }
 
   ngOnInit() {
     this.websocketService.gameState$.subscribe((state) => {
       this.ngZone.run(() => {
         console.log('Estado de juego:', state);
         this.gameState.set(state);
+
+        if (state?.ganador) {
+          const isTie = state.ganador === 'E';
+          Swal.fire({
+            title: isTie ? 'El juego ha terminado en empate' : `El jugador ${state.ganador} ha ganado la partida`,
+            icon: isTie ? 'info' : 'success',
+            background: '#16213e',
+            color: '#fff',
+            confirmButtonColor: '#e94560'
+          });
+        }
       });
     });
 
@@ -40,10 +52,16 @@ export class TableroComponent implements OnInit {
   tableroActivo(tableroId: number): boolean {
     const state = this.gameState();
     if (!state) return false;
-    return state.tableroActivo === null || state.tableroActivo === tableroId;
+
+    if (state.tableroActivo === null) {
+      const tablero = state.tableros.find(t => t.id === tableroId);
+      return tablero ? !tablero.celdas.every(c => c.valor !== null) : false;
+    }
+
+    return state.tableroActivo === tableroId;
   }
 
-  reiniciar() {
+  reiniciarJuego() {
     this.websocketService.emitReset();
   }
 }

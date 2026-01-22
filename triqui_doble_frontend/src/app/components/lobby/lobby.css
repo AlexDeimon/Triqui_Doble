@@ -1,0 +1,46 @@
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+}
+
+h1 {
+  font-size: 3rem;
+  margin-bottom: 3rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--primary);
+  text-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+  animation: fadeInDown 0.8s ease-out;
+}
+
+h2 {
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  color: #e0e0e0;
+}
+
+.lobby-container {
+  text-align: center;
+  padding: 2rem;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.lobby-actions {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.card {
+  padding: 3rem 2rem;
+  width: 350px;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+

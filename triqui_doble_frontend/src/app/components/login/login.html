@@ -1,0 +1,7 @@
+<div class="login-container glass-card">
+  <h2>❌⭕</h2>
+  <input type="text" [(ngModel)]="username" placeholder="Usuario" class="custom-input" />
+  <input type="password" [(ngModel)]="password" placeholder="Contraseña" class="custom-input" />
+  <button (click)="onSubmit()" class="btn-primary">{{ usuarioRegistrado ? 'Iniciar Sesión' : 'Registrarse' }}</button>
+  <p (click)="usuarioRegistrado = !usuarioRegistrado">{{ usuarioRegistrado ? '¿Jugador nuevo? Registrate' : '¿Ya has jugado? Inicia sesión' }}</p>
+</div>

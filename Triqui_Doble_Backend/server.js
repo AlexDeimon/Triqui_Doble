@@ -3,9 +3,9 @@ import express from 'express';
 import http from 'http';
 import { Server } from "socket.io";
 import cors from 'cors';
-import { Partidas } from './models/game.js';
-import { Usuario } from './models/user.js';
 import { connectDB } from './config/db.js';
+import * as userController from './controllers/user.js';
+import * as gameController from './controllers/game.js';
 
 connectDB();
 
@@ -17,86 +17,30 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 const juegos = new Map();
 
-const iniciarEstadoJuego = () => {
-  return {
-    tableros: Array.from({ length: 9 }, (_, i) => ({
-      id: i,
-      ganador: null,
-      celdas: Array.from({ length: 9 }, (_, j) => ({ id: j, valor: null }))
-    })),
-    turnoActual: 'X',
-    tableroActivo: null,
-    ganador: null,
-    jugadores: { X: null, O: null }
-  };
-}
+app.post('/registrar', userController.registrar);
+app.post('/login', userController.login);
 
-const patronesGanadores = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8],
-  [0, 3, 6], [1, 4, 7], [2, 5, 8],
-  [0, 4, 8], [2, 4, 6]
-];
-
-function verificarGanador(elementos, propiedad) {
-  for (const [a, b, c] of patronesGanadores) {
-    if (elementos[a][propiedad] &&
-        elementos[a][propiedad] === elementos[b][propiedad] &&
-        elementos[a][propiedad] === elementos[c][propiedad]) {
-      return elementos[a][propiedad];
-    }
-  }
-  return null;
-}
-
-app.post('/register', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    let user = await Usuario.findOne({ username });
-    if (user) return res.status(400).json({ msg:'El usuario ya existe'});
-
-    user = new Usuario({ username, password });
-    await user.save();
-    res.json({ msg:'Usuario creado', userId: user._id});
-  } catch (error) {
-    res.status(500).send('Error en servidor');
-  }
-});
-
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    const user = await Usuario.findOne({ username });
-    if (!user) return res.status(400).json({ msg:'Usuario no encontrado'});
-    
-    if (user.password !== password) {
-      return res.status(400).json({ msg:'Contraseña incorrecta'});
-    }
-
-    res.json({ msg:'Login exitoso', username: user.username});
-  } catch (error) {
-    res.status(500).send('Error');
-  }
-});
 
 io.on('connection', (socket) => {
   console.log(`Jugador conectado: ${socket.id}`);
 
-  socket.on('crearSala', (roomId) => {
+  socket.on('crearSala', ({ roomId, username }) => {
     if (juegos.has(roomId)) {
       socket.emit('error', 'La sala ya existe');
       return;
     }
 
-    const estadojuego = iniciarEstadoJuego();
+    const estadojuego = gameController.iniciarEstadoJuego();
     estadojuego.jugadores.X = socket.id;
+    estadojuego.usernames.X = username;
     juegos.set(roomId, estadojuego);
     socket.join(roomId);
-    console.log(`Jugador ${socket.id} se unio a la sala ${roomId}`);
+    console.log(`Jugador ${username} creó la sala ${roomId}`);
     socket.emit('salaCreada', {roomId, jugador: 'X'});
     io.to(roomId).emit('actualizarJuego', estadojuego);
   })
 
-  socket.on('unirseASala', (roomId) => {
+  socket.on('unirseASala', ({ roomId, username }) => {
     const juego = juegos.get(roomId);
 
     if (!juego) {
@@ -110,8 +54,9 @@ io.on('connection', (socket) => {
     }
 
     juego.jugadores.O = socket.id;
+    juego.usernames.O = username;
     socket.join(roomId);
-    console.log(`Jugador ${socket.id} se unio a la sala ${roomId}`);
+    console.log(`Jugador ${username} se unio a la sala ${roomId}`);
     socket.emit('salaUnida', {roomId, jugador: 'O'});
     io.to(roomId).emit('actualizarJuego', juego);
   })
@@ -138,9 +83,10 @@ io.on('connection', (socket) => {
     if (celda.valor !== null) return;
 
     celda.valor = roljugador;
+    juego.cantidadTurnos++;
 
     if (!tablero.ganador) {
-      const ganadorTablero = verificarGanador(tablero.celdas, 'valor');
+      const ganadorTablero = gameController.verificarGanador(tablero.celdas, 'valor');
       if (ganadorTablero) {
         tablero.ganador = ganadorTablero;
         console.log(`Tablero ${tableroId} ganado por ${ganadorTablero}`);
@@ -150,45 +96,53 @@ io.on('connection', (socket) => {
       }
     }
 
-    const ganadorGeneral = verificarGanador(juego.tableros, 'ganador');
+    const ganadorGeneral = gameController.verificarGanador(juego.tableros, 'ganador');
     if (ganadorGeneral) {
       juego.ganador = ganadorGeneral;
       console.log(`Juego ganado por ${ganadorGeneral}`);
-      try {
-        const partida = new Partidas({
-          ganador: ganadorGeneral,
-          cantidadTurnos: juego.cantidadTurnos
-        });
-        await partida.save();
-        console.log('Partida guardada');
-      } catch (error) {
-        console.error('Error al guardar la partida:', error);
-      }
+      gameController.guardarPartida(roomId, juego);
     } else {
         const todosTablerosTerminados = juego.tableros.every(t => t.ganador !== null);
         if (todosTablerosTerminados) {
             juego.ganador = 'E';
-            console.log("Juego terminado en empate global");
+            console.log("Juego terminado en empate");
+            gameController.guardarPartida(roomId, juego);
         }
     }
     
     const nextTablero = juego.tableros[celdaId];
     const isNextFull = nextTablero.celdas.every(c => c.valor !== null);
 
-    if (nextTablero.ganador) {
+    if (isNextFull) {
         juego.tableroActivo = null;
     } else {
         juego.tableroActivo = celdaId;
     }
 
     juego.turnoActual = juego.turnoActual === 'X' ? 'O' : 'X';
-    io.to(roomId).emit('actualizarJuego', estadojuego);
+    io.to(roomId).emit('actualizarJuego', juego);
+  });
+
+  socket.on('reiniciarJuego', (roomId) => {
+    const juego = juegos.get(roomId);
+    if (!juego) return;
+    
+    const jugadoresRef = { ...juego.jugadores };
+    const usernamesRef = { ...juego.usernames };
+    
+    const nuevoJuego = gameController.iniciarEstadoJuego();
+    nuevoJuego.jugadores = jugadoresRef;
+    nuevoJuego.usernames = usernamesRef;
+    
+    juegos.set(roomId, nuevoJuego);
+    io.to(roomId).emit('actualizarJuego', nuevoJuego);
   });
 
   socket.on('disconnect', () => {
     console.log(`Jugador desconectado: ${socket.id}`);
     juegos.forEach((juego, roomId) => {
       if (juego.jugadores.X === socket.id || juego.jugadores.O === socket.id) {
+        io.to(roomId).emit('jugadorDesconectado', 'El oponente se ha desconectado. El juego ha terminado');
         juegos.delete(roomId);
         console.log(`Sala ${roomId} eliminada`);
       }
