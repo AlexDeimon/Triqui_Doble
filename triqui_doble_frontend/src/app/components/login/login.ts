@@ -15,7 +15,7 @@ import Swal from 'sweetalert2';
 export class LoginComponent {
   username: string = '';
   password: string = '';
-  usuarioRegistrado: boolean = false;
+  usuarioRegistrado: boolean = true;
 
   constructor(private router: Router, private websocketService: WebsocketService) { }
 
