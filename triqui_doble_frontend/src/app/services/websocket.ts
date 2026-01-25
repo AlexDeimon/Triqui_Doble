@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -20,9 +20,30 @@ export class WebsocketService {
 
   public gameState$ = new BehaviorSubject<estadoJuego | null>(null);
   public myRole$ = new BehaviorSubject<string>('');
+  public loading = signal<boolean>(true);
 
   constructor(private http: HttpClient, private router: Router, private ngZone: NgZone) {
     this.socket = io(this.url);
+
+    this.socket.on('connect', () => {
+      this.ngZone.run(() => {
+        console.log('Conectado al servidor');
+        this.loading.set(false);
+      });
+    });
+
+    this.socket.on('disconnect', () => {
+      this.ngZone.run(() => {
+        console.log('Desconectado del servidor');
+        this.loading.set(true);
+      });
+    });
+
+    this.socket.on('connect_error', () => {
+      this.ngZone.run(() => {
+        this.loading.set(true);
+      });
+    });
 
     this.socket.on('actualizarJuego', (state: estadoJuego) => {
       this.ngZone.run(() => {
