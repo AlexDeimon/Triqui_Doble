@@ -29,6 +29,11 @@ export class WebsocketService {
       this.ngZone.run(() => {
         console.log('Conectado al servidor');
         this.loading.set(false);
+
+        if (this.roomId && this.username) {
+            console.log('Intentando reconectar a sala:', this.roomId);
+            this.socket.emit('reconectar', { roomId: this.roomId, username: this.username });
+        }
       });
     });
 

@@ -13,9 +13,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { 
+  cors: { origin: "*" },
+  pingTimeout: 60000,
+  pingInterval: 25000 
+});
 
 const juegos = new Map();
+const timeoutsEliminacion = new Map();
 
 app.post('/registrar', userController.registrar);
 app.post('/login', userController.login);
@@ -60,6 +65,34 @@ io.on('connection', (socket) => {
     socket.emit('salaUnida', {roomId, jugador: 'O'});
     io.to(roomId).emit('actualizarJuego', juego);
   })
+
+  socket.on('reconectar', ({ roomId, username }) => {
+    const juego = juegos.get(roomId);
+    if (!juego) {
+        socket.emit('error', 'La partida ya no existe');
+        return;
+    }
+
+    let rol = null;
+    if (juego.usernames.X === username) rol = 'X';
+    else if (juego.usernames.O === username) rol = 'O';
+
+    if (rol) {
+        console.log(`Jugador ${username} (${rol}) reconectado a sala ${roomId}`);
+        
+        if (timeoutsEliminacion.has(roomId)) {
+            clearTimeout(timeoutsEliminacion.get(roomId));
+            timeoutsEliminacion.delete(roomId);
+            console.log(`Cancelada destrucción de sala ${roomId}`);
+        }
+
+        juego.jugadores[rol] = socket.id;
+        socket.join(roomId);
+        
+        socket.emit('salaUnida', {roomId, jugador: rol}); 
+        io.to(roomId).emit('actualizarJuego', juego);
+    }
+  });
 
   socket.on('Movimiento', async ({ roomId, tableroId, celdaId }) => {
     const juego = juegos.get(roomId);
@@ -140,11 +173,25 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`Jugador desconectado: ${socket.id}`);
+    
     juegos.forEach((juego, roomId) => {
       if (juego.jugadores.X === socket.id || juego.jugadores.O === socket.id) {
-        io.to(roomId).emit('jugadorDesconectado', 'El oponente se ha desconectado. El juego ha terminado');
-        juegos.delete(roomId);
-        console.log(`Sala ${roomId} eliminada`);
+        console.log(`Jugador de sala ${roomId} desconectado. Esperando reconexión...`);
+        
+        if (timeoutsEliminacion.has(roomId)) clearTimeout(timeoutsEliminacion.get(roomId));
+        
+        if (timeoutsEliminacion.has(roomId)) clearTimeout(timeoutsEliminacion.get(roomId));
+
+        const timer = setTimeout(() => {
+            if (juegos.has(roomId)) {
+                io.to(roomId).emit('jugadorDesconectado', 'El oponente se ha desconectado. El juego ha terminado');
+                juegos.delete(roomId);
+                timeoutsEliminacion.delete(roomId);
+                console.log(`Sala ${roomId} eliminada por inactividad/desconexión`);
+            }
+        }, 30000); 
+
+        timeoutsEliminacion.set(roomId, timer);
       }
     });
   });
