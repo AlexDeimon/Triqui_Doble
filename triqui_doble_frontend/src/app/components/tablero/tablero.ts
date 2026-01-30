@@ -2,6 +2,7 @@ import { Component, OnInit, NgZone, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { estadoJuego } from '../../models/game';
 import { WebsocketService } from '../../services/websocket';
+import { AudioService } from '../../services/audio';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -17,11 +18,27 @@ export class TableroComponent implements OnInit {
   gameState = signal<estadoJuego | null>(null);
   myRole = signal<string>('');
 
-  constructor(public websocketService: WebsocketService, private ngZone: NgZone) { }
+  constructor(
+    public websocketService: WebsocketService,
+    private ngZone: NgZone,
+    private audioService: AudioService
+  ) { }
 
   ngOnInit() {
     this.websocketService.gameState$.subscribe((state) => {
       this.ngZone.run(() => {
+        const previousState = this.gameState();
+
+        const getOccupiedCount = (s: estadoJuego | null) =>
+          s ? s.tableros.reduce((acc, t) => acc + t.celdas.filter(c => c.valor !== null).length, 0) : 0;
+
+        const prevCount = getOccupiedCount(previousState);
+        const newCount = getOccupiedCount(state);
+
+        if (state && prevCount < newCount) {
+           this.audioService.playMoveSound();
+        }
+
         console.log('Estado de juego:', state);
         this.gameState.set(state);
 
@@ -46,6 +63,26 @@ export class TableroComponent implements OnInit {
   }
 
   movimiento(tableroId: number, celdaId: number) {
+    const state = this.gameState();
+    const role = this.myRole();
+
+    if (!state || !role) return;
+
+    const tablero = state.tableros.find(t => t.id === tableroId);
+    const celda = tablero?.celdas.find(c => c.id === celdaId);
+
+    if (!tablero || !celda) return;
+
+    const isGameWon = !!state.ganador;
+    const isWrongTurn = state.turnoActual !== role;
+    const isOccupied = celda.valor !== null;
+    const isInactiveBoard = !this.tableroActivo(tableroId);
+
+    if (isGameWon || isWrongTurn || isOccupied || isInactiveBoard) {
+       this.audioService.playErrorSound();
+       return;
+    }
+
     this.websocketService.emitMove(tableroId, celdaId);
   }
 
