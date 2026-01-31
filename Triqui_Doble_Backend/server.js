@@ -53,7 +53,11 @@ io.on('connection', (socket) => {
       return;
     }
 
-    if (juego.jugadores.O) {
+    // Permitir reconexión si el usuario coincide
+    if (juego.usernames.O === username) {
+        // Si el nombre coincide, es una reconexión, saltamos validación de sala llena
+        // porque el socket.id anterior será reemplazado
+    } else if (juego.jugadores.O) {
       socket.emit('error', 'La sala esta llena');
       return;
     }

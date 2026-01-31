@@ -25,6 +25,13 @@ export class WebsocketService {
   constructor(private http: HttpClient, private router: Router, private ngZone: NgZone) {
     this.socket = io(this.url);
 
+    const savedRoom = localStorage.getItem('triqui_roomId');
+    const savedUser = localStorage.getItem('triqui_username');
+    if (savedRoom && savedUser) {
+        this.roomId = savedRoom;
+        this.username = savedUser;
+    }
+
     this.socket.on('connect', () => {
       this.ngZone.run(() => {
         console.log('Conectado al servidor');
@@ -56,19 +63,26 @@ export class WebsocketService {
       });
     });
 
-    this.socket.on('salaUnida', (data: { roomId: string, jugador: string }) => {
+    this.socket.on('salaCreada', (data: { roomId: string, jugador: string }) => {
       this.ngZone.run(() => {
-        console.log('Sala unida:', data);
+        console.log('Sala creada:', data);
         this.roomId = data.roomId;
+        this.username = this.username;
+        localStorage.setItem('triqui_roomId', this.roomId);
+        localStorage.setItem('triqui_username', this.username);
+
         this.myRole$.next(data.jugador);
         this.router.navigate(['/tablero']);
       });
     });
 
-    this.socket.on('salaCreada', (data: { roomId: string, jugador: string }) => {
+    this.socket.on('salaUnida', (data: { roomId: string, jugador: string }) => {
       this.ngZone.run(() => {
-        console.log('Sala creada:', data);
+        console.log('Sala unida:', data);
         this.roomId = data.roomId;
+        localStorage.setItem('triqui_roomId', this.roomId);
+        if (this.username) localStorage.setItem('triqui_username', this.username);
+
         this.myRole$.next(data.jugador);
         this.router.navigate(['/tablero']);
       });
@@ -85,6 +99,8 @@ export class WebsocketService {
           confirmButtonColor: '#e94560'
         });
         this.roomId = '';
+        localStorage.removeItem('triqui_roomId');
+        localStorage.removeItem('triqui_username');
         this.gameState$.next(null);
         this.router.navigate(['/lobby']);
       });
