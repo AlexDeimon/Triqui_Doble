@@ -137,6 +137,10 @@ export class WebsocketService {
     this.socket.emit('unirseASala', { roomId, username: this.username });
   }
 
+  obtenerRanking(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.url}/ranking`);
+  }
+
   emitMove(tableroId: number, celdaId: number) {
     this.socket.emit('Movimiento', {
       roomId: this.roomId,

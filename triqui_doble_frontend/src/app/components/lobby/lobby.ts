@@ -12,6 +12,8 @@ import { WebsocketService } from '../../services/websocket';
 })
 export class LobbyComponent {
   codigoSala: string = '';
+  ranking: any[] = [];
+  mostrarRanking: boolean = false;
 
   constructor(public websocketService: WebsocketService) { }
 
@@ -24,6 +26,17 @@ export class LobbyComponent {
     if (this.codigoSala) {
       this.websocketService.unirseSala(this.codigoSala);
     }
+  }
+
+  verRanking() {
+    this.websocketService.obtenerRanking().subscribe((ranking) => {
+      this.ranking = ranking;
+      this.mostrarRanking = true;
+    });
+  }
+
+  cerrarRanking() {
+    this.mostrarRanking = false;
   }
 
 }

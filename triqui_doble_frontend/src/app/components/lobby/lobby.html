@@ -2,11 +2,45 @@
   <h1>Bienvenido {{ websocketService.username }}</h1>
   <div class="lobby-actions">
     <div class="card glass-card">
+      <button (click)="verRanking()" class="btn-primary">Ver Ranking</button>
+    </div>
+    <div class="card glass-card">
       <button (click)="crearSala()" class="btn-primary">Crear Sala</button>
     </div>
     <div class="card glass-card">
       <input type="text" [(ngModel)]="codigoSala" placeholder="Codigo de sala" class="custom-input" />
       <button (click)="unirseSala()" class="btn-primary">Unirse a Sala</button>
+    </div>
+  </div>
+</div>
+<div *ngIf="mostrarRanking" class="ranking-modal-container">
+  <div class="ranking-content">
+    <button (click)="cerrarRanking()" class="btn-close"><span aria-hidden="true">&times;</span></button>
+    <h2>Ranking de Jugadores</h2>
+    <div class="table-wrapper">
+      <table class="ranking-table">
+        <thead>
+          <tr>
+            <th>Posición</th>
+            <th>Usuario</th>
+            <th>Victorias</th>
+            <th>Derrotas</th>
+            <th>Empates</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of ranking; let i = index">
+            <td *ngIf="i === 0">🥇</td>
+            <td *ngIf="i === 1">🥈</td>
+            <td *ngIf="i === 2">🥉</td>
+            <td *ngIf="i > 2">{{ i + 1 }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.estadisticas.partidasGanadas }}</td>
+            <td>{{ user.estadisticas.partidasPerdidas }}</td>
+            <td>{{ user.estadisticas.partidasEmpatadas }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

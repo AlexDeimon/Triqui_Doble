@@ -45,3 +45,12 @@ export const actualizarEstadisticas = async (username, resultado) => {
     console.error(`Error actualizando estadísticas de ${username}:`, error);
   }
 };
+
+export const ranking = async (req, res) => {
+  try {
+    const users = await Usuario.find().sort({ 'estadisticas.partidasGanadas': -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).send('Error');
+  }
+};

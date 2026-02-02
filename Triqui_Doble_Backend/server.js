@@ -24,6 +24,7 @@ const timeoutsEliminacion = new Map();
 
 app.post('/registrar', userController.registrar);
 app.post('/login', userController.login);
+app.get('/ranking', userController.ranking);
 
 
 io.on('connection', (socket) => {
