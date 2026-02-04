@@ -14,6 +14,7 @@ export class LobbyComponent {
   codigoSala: string = '';
   ranking: any[] = [];
   mostrarRanking: boolean = false;
+  mostrarTutorial: boolean = false;
 
   constructor(public websocketService: WebsocketService) { }
 
@@ -37,6 +38,14 @@ export class LobbyComponent {
 
   cerrarRanking() {
     this.mostrarRanking = false;
+  }
+
+  verTutorial() {
+    this.mostrarTutorial = true;
+  }
+
+  cerrarTutorial() {
+    this.mostrarTutorial = false;
   }
 
 }

@@ -5,6 +5,9 @@
       <button (click)="verRanking()" class="btn-primary">Ver Ranking</button>
     </div>
     <div class="card glass-card">
+      <button (click)="verTutorial()" class="btn-primary">Cómo Jugar</button>
+    </div>
+    <div class="card glass-card">
       <button (click)="crearSala()" class="btn-primary">Crear Sala</button>
     </div>
     <div class="card glass-card">
@@ -41,6 +44,65 @@
           </tr>
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+<div *ngIf="mostrarTutorial" class="ranking-modal-container">
+  <div class="ranking-content">
+    <button (click)="cerrarTutorial()" class="btn-close"><span aria-hidden="true">&times;</span></button>
+    <h2>¿Cómo Jugar Triqui Doble?</h2>
+    <div class="tutorial-body">
+      <div class="tutorial-step">
+        <h3>1. El Tablero</h3>
+        <p>El juego consta de un <strong>Tablero Principal</strong> de 3x3, donde cada casilla contiene un <strong>Mini-Tablero</strong> también de 3x3.</p>
+      </div>
+      <div class="tutorial-step">
+        <h3>2. El Objetivo</h3>
+        <p>Para ganar el juego, debes ganar 3 <strong>Mini-Tableros</strong> en línea (horizontal, vertical o diagonal), tal como en el triqui clásico.</p>
+      </div>
+      <div class="tutorial-step highlight-step">
+        <h3>3. La Regla de Oro</h3>
+        <p>Tu movimiento determina en qué Mini-Tablero debe jugar tu oponente.</p>
+        <div class="visual-rule">
+          <div class="rule-part">
+            <span>Si marcas la casilla <br/><strong>Superior Derecha</strong>...</span>
+            <div class="demo-board mini">
+              <div class="d-cell"></div>
+              <div class="d-cell"></div>
+              <div class="d-cell active">X</div>
+              <div class="d-cell"></div>
+              <div class="d-cell"></div>
+              <div class="d-cell"></div>
+              <div class="d-cell"></div>
+              <div class="d-cell"></div>
+              <div class="d-cell"></div>
+            </div>
+          </div>
+          <div class="rule-arrow">➜</div>
+          <div class="rule-part">
+            <span>Tu oponente va al <br/><strong>Mini-Tablero Superior Derecho</strong></span>
+            <div class="demo-board macro">
+              <div class="d-region"></div>
+              <div class="d-region"></div>
+              <div class="d-region highlight"></div>
+              <div class="d-region"></div>
+              <div class="d-region"></div>
+              <div class="d-region"></div>
+              <div class="d-region"></div>
+              <div class="d-region"></div>
+              <div class="d-region"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tutorial-step">
+        <h3>4. Libertad de Movimiento</h3>
+        <p>Si te envían a un Mini-Tablero que ya está <strong>lleno</strong>, puedes jugar en cualquier parte del tablero.</p>
+      </div>
+      <div class="tutorial-step">
+        <h3>5. Iniciar Partida</h3>
+        <p>Al crear la sala, el jugador empieza con la ficha <strong>X</strong>. Se genera un código de sala que se muestra en la pantalla, este se comparte con el otro jugador el cual tendrá la ficha <strong>O</strong>.</p>
+      </div>
     </div>
   </div>
 </div>
