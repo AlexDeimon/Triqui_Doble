@@ -21,6 +21,7 @@ export class WebsocketService {
   public gameState$ = new BehaviorSubject<estadoJuego | null>(null);
   public myRole$ = new BehaviorSubject<string>('');
   public loading = signal<boolean>(true);
+  public isReconnecting: boolean = false;
 
   constructor(private http: HttpClient, private router: Router, private ngZone: NgZone) {
     this.socket = io(this.url);
@@ -39,6 +40,7 @@ export class WebsocketService {
 
         if (this.roomId && this.username) {
             console.log('Intentando reconectar a sala:', this.roomId);
+            this.isReconnecting = true;
             this.socket.emit('reconectar', { roomId: this.roomId, username: this.username });
         }
       });
@@ -66,6 +68,7 @@ export class WebsocketService {
     this.socket.on('salaCreada', (data: { roomId: string, jugador: string }) => {
       this.ngZone.run(() => {
         console.log('Sala creada:', data);
+        this.isReconnecting = false;
         this.roomId = data.roomId;
         this.username = this.username;
         localStorage.setItem('triqui_roomId', this.roomId);
@@ -79,6 +82,7 @@ export class WebsocketService {
     this.socket.on('salaUnida', (data: { roomId: string, jugador: string }) => {
       this.ngZone.run(() => {
         console.log('Sala unida:', data);
+        this.isReconnecting = false;
         this.roomId = data.roomId;
         localStorage.setItem('triqui_roomId', this.roomId);
         if (this.username) localStorage.setItem('triqui_username', this.username);
@@ -108,6 +112,16 @@ export class WebsocketService {
 
     this.socket.on('error', (msg: string) => {
       this.ngZone.run(() => {
+        if (this.isReconnecting && (msg === 'La partida ya no existe' || msg === 'La sala no existe')) {
+            console.log('Reconexión fallida (sala no existe). Limpiando sesión.');
+            this.roomId = '';
+            localStorage.removeItem('triqui_roomId');
+            localStorage.removeItem('triqui_username');
+            this.isReconnecting = false;
+            return;
+        }
+
+        this.isReconnecting = false;
         Swal.fire({
           title: 'Error',
           text: msg,

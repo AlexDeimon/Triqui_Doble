@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from '../../services/websocket';
@@ -16,7 +16,7 @@ export class LobbyComponent {
   mostrarRanking: boolean = false;
   mostrarTutorial: boolean = false;
 
-  constructor(public websocketService: WebsocketService) { }
+  constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
   crearSala() {
     const codigoRandom = Math.random().toString(36).substring(7).toUpperCase();
@@ -30,9 +30,15 @@ export class LobbyComponent {
   }
 
   verRanking() {
-    this.websocketService.obtenerRanking().subscribe((ranking) => {
-      this.ranking = ranking;
-      this.mostrarRanking = true;
+    this.websocketService.obtenerRanking().subscribe({
+      next: (ranking) => {
+        this.ranking = ranking;
+        this.mostrarRanking = true;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error obteniendo ranking:', err);
+      }
     });
   }
 
