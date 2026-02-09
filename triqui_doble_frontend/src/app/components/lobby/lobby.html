@@ -1,15 +1,9 @@
 <div class="lobby-container">
   <h1>Bienvenido {{ websocketService.username }}</h1>
   <div class="lobby-actions">
-    <div class="card glass-card">
-      <button (click)="verRanking()" class="btn-primary">Ver Ranking</button>
-    </div>
-    <div class="card glass-card">
-      <button (click)="verTutorial()" class="btn-primary">Cómo Jugar</button>
-    </div>
-    <div class="card glass-card">
-      <button (click)="crearSala()" class="btn-primary">Crear Sala</button>
-    </div>
+    <button (click)="verRanking()" class="btn-primary">Ver Ranking</button>
+    <button (click)="verTutorial()" class="btn-primary">Cómo Jugar</button>
+    <button (click)="crearSala()" class="btn-primary">Crear Sala</button>
     <div class="card glass-card">
       <input type="text" [(ngModel)]="codigoSala" placeholder="Codigo de sala" class="custom-input" />
       <button (click)="unirseSala()" class="btn-primary">Unirse a Sala</button>

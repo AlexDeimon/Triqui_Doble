@@ -1,5 +1,6 @@
 <div *ngIf="gameState()?.ganador" class="pantalla-victoria">
   <button (click)="reiniciarJuego()" class="btn-primary">Reiniciar Juego</button>
+  <button (click)="volverAlMenu()" class="btn-primary">Volver al Menu</button>
 </div>
 <div class="contenedor" *ngIf="gameState()">
   <h2>Sala: {{ websocketService.roomId }}</h2>
@@ -11,4 +12,5 @@
       <div *ngFor="let celda of tablero.celdas" class="celda" (click)="movimiento(tablero.id, celda.id)">{{ celda.valor }}</div>
     </div>
   </div>
+  <button (click)="rendirse()" class="btn-primary" *ngIf="gameState()!.tableroActivo !== null">Rendirse</button>
 </div>

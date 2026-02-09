@@ -36,7 +36,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const estadojuego = gameController.iniciarEstadoJuego();
+    const estadojuego = gameController.iniciarEstadoJuego(roomId);
     estadojuego.jugadores.X = socket.id;
     estadojuego.usernames.X = username;
     juegos.set(roomId, estadojuego);
@@ -54,10 +54,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Permitir reconexión si el usuario coincide
     if (juego.usernames.O === username) {
-        // Si el nombre coincide, es una reconexión, saltamos validación de sala llena
-        // porque el socket.id anterior será reemplazado
     } else if (juego.jugadores.O) {
       socket.emit('error', 'La sala esta llena');
       return;
@@ -74,8 +71,8 @@ io.on('connection', (socket) => {
   socket.on('reconectar', ({ roomId, username }) => {
     const juego = juegos.get(roomId);
     if (!juego) {
-        socket.emit('error', 'La partida ya no existe');
-        return;
+      socket.emit('error', 'La partida ya no existe');
+      return;
     }
 
     let rol = null;
@@ -83,19 +80,19 @@ io.on('connection', (socket) => {
     else if (juego.usernames.O === username) rol = 'O';
 
     if (rol) {
-        console.log(`Jugador ${username} (${rol}) reconectado a sala ${roomId}`);
+      console.log(`Jugador ${username} (${rol}) reconectado a sala ${roomId}`);
         
-        if (timeoutsEliminacion.has(roomId)) {
-            clearTimeout(timeoutsEliminacion.get(roomId));
-            timeoutsEliminacion.delete(roomId);
-            console.log(`Cancelada destrucción de sala ${roomId}`);
-        }
+      if (timeoutsEliminacion.has(roomId)) {
+        clearTimeout(timeoutsEliminacion.get(roomId));
+        timeoutsEliminacion.delete(roomId);
+        console.log(`Cancelada destrucción de sala ${roomId}`);
+      }
 
-        juego.jugadores[rol] = socket.id;
-        socket.join(roomId);
-        
-        socket.emit('salaUnida', {roomId, jugador: rol}); 
-        io.to(roomId).emit('actualizarJuego', juego);
+      juego.jugadores[rol] = socket.id;
+      socket.join(roomId);
+      
+      socket.emit('salaUnida', {roomId, jugador: rol}); 
+      io.to(roomId).emit('actualizarJuego', juego);
     }
   });
 
@@ -105,60 +102,9 @@ io.on('connection', (socket) => {
     if (!juego) return;
     if (juego.ganador) return;
 
-    const jugadorX = juego.jugadores.X === socket.id;
-    const roljugador = jugadorX ? 'X' : 'O';
-    
-    if (juego.turnoActual !== roljugador) return;
-    
-    if (juego.tableroActivo !== null && juego.tableroActivo !== tableroId) {
-      return;
-    }
+    const movimientoJuego = gameController.movimiento(juego, socket.id, tableroId, celdaId);
 
-    const tablero = juego.tableros[tableroId];
-
-    const celda = tablero.celdas[celdaId];
-
-    if (celda.valor !== null) return;
-
-    celda.valor = roljugador;
-    juego.cantidadTurnos++;
-
-    if (!tablero.ganador) {
-      const ganadorTablero = gameController.verificarGanador(tablero.celdas, 'valor');
-      if (ganadorTablero) {
-        tablero.ganador = ganadorTablero;
-        console.log(`Tablero ${tableroId} ganado por ${ganadorTablero}`);
-      } else if (tablero.celdas.every(c => c.valor !== null)) {
-         tablero.ganador = 'E';
-         console.log(`Tablero ${tableroId} terminado en empate`);
-      }
-    }
-
-    const ganadorGeneral = gameController.verificarGanador(juego.tableros, 'ganador');
-    if (ganadorGeneral) {
-      juego.ganador = ganadorGeneral;
-      console.log(`Juego ganado por ${ganadorGeneral}`);
-      gameController.guardarPartida(roomId, juego);
-    } else {
-        const todosTablerosTerminados = juego.tableros.every(t => t.ganador !== null);
-        if (todosTablerosTerminados) {
-            juego.ganador = 'E';
-            console.log("Juego terminado en empate");
-            gameController.guardarPartida(roomId, juego);
-        }
-    }
-    
-    const nextTablero = juego.tableros[celdaId];
-    const isNextFull = nextTablero.celdas.every(c => c.valor !== null);
-
-    if (isNextFull) {
-        juego.tableroActivo = null;
-    } else {
-        juego.tableroActivo = celdaId;
-    }
-
-    juego.turnoActual = juego.turnoActual === 'X' ? 'O' : 'X';
-    io.to(roomId).emit('actualizarJuego', juego);
+    io.to(roomId).emit('actualizarJuego', movimientoJuego);
   });
 
   socket.on('reiniciarJuego', (roomId) => {
@@ -169,11 +115,21 @@ io.on('connection', (socket) => {
     const usernamesRef = { ...juego.usernames };
     
     const nuevoJuego = gameController.iniciarEstadoJuego();
+    nuevoJuego.sala = roomId;
     nuevoJuego.jugadores = jugadoresRef;
     nuevoJuego.usernames = usernamesRef;
     
     juegos.set(roomId, nuevoJuego);
     io.to(roomId).emit('actualizarJuego', nuevoJuego);
+  });
+
+  socket.on('rendirse', (roomId) => {
+    const juego = juegos.get(roomId);
+    if (!juego) return;
+    
+    const juegoActualizado = gameController.rendirse(juego, socket.id);
+    juegos.set(roomId, juegoActualizado);
+    io.to(roomId).emit('actualizarJuego', juegoActualizado);
   });
 
   socket.on('disconnect', () => {
@@ -185,16 +141,14 @@ io.on('connection', (socket) => {
         
         if (timeoutsEliminacion.has(roomId)) clearTimeout(timeoutsEliminacion.get(roomId));
         
-        if (timeoutsEliminacion.has(roomId)) clearTimeout(timeoutsEliminacion.get(roomId));
-
         const timer = setTimeout(() => {
-            if (juegos.has(roomId)) {
-                io.to(roomId).emit('jugadorDesconectado', 'El oponente se ha desconectado. El juego ha terminado');
-                juegos.delete(roomId);
-                timeoutsEliminacion.delete(roomId);
-                console.log(`Sala ${roomId} eliminada por inactividad/desconexión`);
-            }
-        }, 30000); 
+          if (juegos.has(roomId)) {
+            io.to(roomId).emit('jugadorDesconectado', 'El oponente se ha desconectado. El juego ha terminado');
+            juegos.delete(roomId);
+            timeoutsEliminacion.delete(roomId);
+            console.log(`Sala ${roomId} eliminada por inactividad/desconexión`);
+          }
+        }, 60000); 
 
         timeoutsEliminacion.set(roomId, timer);
       }

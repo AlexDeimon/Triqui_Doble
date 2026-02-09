@@ -163,6 +163,10 @@ export class WebsocketService {
     });
   }
 
+  emitRendirse() {
+    this.socket.emit('rendirse', this.roomId);
+  }
+
   emitReset() {
     this.socket.emit('reiniciarJuego', this.roomId);
   }

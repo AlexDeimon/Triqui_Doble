@@ -1,4 +1,5 @@
 import { Component, OnInit, NgZone, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { estadoJuego } from '../../models/game';
 import { WebsocketService } from '../../services/websocket';
@@ -21,7 +22,8 @@ export class TableroComponent implements OnInit {
   constructor(
     public websocketService: WebsocketService,
     private ngZone: NgZone,
-    private audioService: AudioService
+    private audioService: AudioService,
+    private router: Router
   ) { }
 
   ngOnInit() {
@@ -39,7 +41,6 @@ export class TableroComponent implements OnInit {
            this.audioService.playMoveSound();
         }
 
-        console.log('Estado de juego:', state);
         this.gameState.set(state);
 
         if (state?.ganador) {
@@ -96,6 +97,28 @@ export class TableroComponent implements OnInit {
     }
 
     return state.tableroActivo === tableroId;
+  }
+
+  rendirse() {
+    Swal.fire({
+      title: '¿Estás seguro de que quieres rendirte?',
+      icon: 'warning',
+      background: '#16213e',
+      color: '#fff',
+      confirmButtonColor: '#e94560',
+      showCancelButton: true,
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, rendirme',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.websocketService.emitRendirse();
+      }
+    });
+  }
+
+  volverAlMenu() {
+    this.router.navigate(['/lobby']);
   }
 
   reiniciarJuego() {
