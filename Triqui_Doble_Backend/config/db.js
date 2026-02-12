@@ -1,4 +1,5 @@
 import { connect } from 'mongoose';
+import { createClient } from 'redis';
 
 export const connectDB = async () => {
     try {
@@ -12,3 +13,11 @@ export const connectDB = async () => {
         process.exit(1);
     }
 };
+
+export const redisClient = createClient({
+    password: process.env.REDIS_PASSWORD,
+    socket: {
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT
+    }
+});

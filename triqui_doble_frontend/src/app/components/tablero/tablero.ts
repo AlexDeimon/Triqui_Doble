@@ -118,7 +118,7 @@ export class TableroComponent implements OnInit {
   }
 
   volverAlMenu() {
-    this.router.navigate(['/lobby']);
+    this.websocketService.leaveRoom();
   }
 
   reiniciarJuego() {

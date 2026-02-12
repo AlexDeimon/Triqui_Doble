@@ -61,6 +61,9 @@ export class WebsocketService {
 
     this.socket.on('actualizarJuego', (state: estadoJuego) => {
       this.ngZone.run(() => {
+        if (Swal.isVisible() && Swal.getTitle()?.textContent === 'Conexión Inestable') {
+            Swal.close();
+        }
         this.gameState$.next(state);
       });
     });
@@ -104,10 +107,23 @@ export class WebsocketService {
         });
         this.roomId = '';
         localStorage.removeItem('triqui_roomId');
-        localStorage.removeItem('triqui_username');
         this.gameState$.next(null);
         this.router.navigate(['/lobby']);
       });
+    });
+
+    this.socket.on('oponenteDesconectado', (msg: string) => {
+        this.ngZone.run(() => {
+            Swal.fire({
+                title: 'Conexión Inestable',
+                text: msg,
+                icon: 'info',
+                background: '#16213e',
+                color: '#fff',
+                showConfirmButton: false,
+                allowOutsideClick: false
+            });
+        });
     });
 
     this.socket.on('error', (msg: string) => {
@@ -169,5 +185,15 @@ export class WebsocketService {
 
   emitReset() {
     this.socket.emit('reiniciarJuego', this.roomId);
+  }
+
+  leaveRoom() {
+    if (this.roomId) {
+        this.socket.emit('abandonarSala', this.roomId);
+        this.roomId = '';
+        localStorage.removeItem('triqui_roomId');
+        this.gameState$.next(null);
+        this.router.navigate(['/lobby']);
+    }
   }
 }
