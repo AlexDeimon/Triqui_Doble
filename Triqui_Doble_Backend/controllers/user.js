@@ -30,12 +30,16 @@ export const login = async (req, res) => {
   }
 };
 
-export const actualizarEstadisticas = async (username, resultado) => {
+export const actualizarEstadisticas = async (username, resultado, puntaje) => {
   try {
     const update = {};
     if (resultado === 'G') update['estadisticas.partidasGanadas'] = 1;
     if (resultado === 'P') update['estadisticas.partidasPerdidas'] = 1;
     if (resultado === 'E') update['estadisticas.partidasEmpatadas'] = 1;
+
+    if (puntaje > 0) {
+      update['estadisticas.puntaje'] = puntaje;
+    }
 
     await Usuario.findOneAndUpdate(
       { username },
@@ -48,7 +52,7 @@ export const actualizarEstadisticas = async (username, resultado) => {
 
 export const ranking = async (req, res) => {
   try {
-    const users = await Usuario.find().sort({ 'estadisticas.partidasGanadas': -1 });
+    const users = await Usuario.find().sort({ 'estadisticas.puntaje': -1 });
     res.json(users);
   } catch (error) {
     res.status(500).send('Error');

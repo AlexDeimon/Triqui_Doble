@@ -20,6 +20,7 @@
           <tr>
             <th>Posición</th>
             <th>Usuario</th>
+            <th class="centered-header">Puntaje</th>
             <th>Victorias</th>
             <th>Derrotas</th>
             <th>Empates</th>
@@ -32,6 +33,7 @@
             <td *ngIf="i === 2">🥉</td>
             <td *ngIf="i > 2">{{ i + 1 }}</td>
             <td>{{ user.username }}</td>
+            <td>{{ user.estadisticas.puntaje }}</td>
             <td>{{ user.estadisticas.partidasGanadas }}</td>
             <td>{{ user.estadisticas.partidasPerdidas }}</td>
             <td>{{ user.estadisticas.partidasEmpatadas }}</td>
@@ -96,6 +98,10 @@
       <div class="tutorial-step">
         <h3>5. Iniciar Partida</h3>
         <p>Al crear la sala, el jugador empieza con la ficha <strong>X</strong>. Se genera un código de sala que se muestra en la pantalla, este se comparte con el otro jugador el cual tendrá la ficha <strong>O</strong>.</p>
+      </div>
+      <div class="tutorial-step">
+        <h3>6. Puntaje</h3>
+        <p>Por cada mini-tablero ganado se obtienen <strong>10 puntos</strong>. Al ganar el juego se obtienen <strong>50 puntos</strong>.</p>
       </div>
     </div>
   </div>

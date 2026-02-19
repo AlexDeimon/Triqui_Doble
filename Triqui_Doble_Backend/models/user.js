@@ -6,7 +6,8 @@ const userSchema = new Schema({
     estadisticas: {
         partidasGanadas: {type: Number, default: 0},
         partidasPerdidas: {type: Number, default: 0},
-        partidasEmpatadas: {type: Number, default: 0}
+        partidasEmpatadas: {type: Number, default: 0},
+        puntaje: {type: Number, default: 0}
     }
 });
 

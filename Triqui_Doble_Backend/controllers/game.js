@@ -14,7 +14,8 @@ export const iniciarEstadoJuego = (roomId) => {
     ganador: null,
     jugadores: { X: null, O: null },
     usernames: { X: null, O: null },
-    cantidadTurnos: 0
+    cantidadTurnos: 0,
+    puntajes: { X: 0, O: 0 }
   };
 };
 
@@ -41,6 +42,7 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     const ganadorTablero = verificarGanador(tablero.celdas, 'valor');
     if (ganadorTablero) {
       tablero.ganador = ganadorTablero;
+      juego.puntajes[ganadorTablero] += 10;
       console.log(`Tablero ${tableroId} ganado por ${ganadorTablero}`);
     } else if (tablero.celdas.every(c => c.valor !== null)) {
       tablero.ganador = 'E';
@@ -51,14 +53,15 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
   const ganadorGeneral = verificarGanador(juego.tableros, 'ganador');
   if (ganadorGeneral) {
     juego.ganador = ganadorGeneral;
+    juego.puntajes[ganadorGeneral] += 50;
     console.log(`Juego ganado por ${ganadorGeneral}`);
-    guardarPartida(juego.sala, juego);
+    guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
   } else {
     const todosTablerosTerminados = juego.tableros.every(t => t.ganador !== null);
     if (todosTablerosTerminados) {
       juego.ganador = 'E';
       console.log("Juego terminado en empate");
-      guardarPartida(juego.sala, juego);
+      guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
     }
   }
 
@@ -98,11 +101,11 @@ export const rendirse = (juego, socketId) => {
   const rolJugador = jugadorX ? 'X' : 'O';
   juego.ganador = rolJugador === 'X' ? 'O' : 'X';
   console.log(`Jugador ${rolJugador} se rindio`);
-  guardarPartida(juego.sala, juego);
+  guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
   return juego;
 }
 
-export const guardarPartida = async (roomId, juego) => {
+export const guardarPartida = async (roomId, juego, puntajeX, puntajeO) => {
   try {
     const nuevaPartida = new Partidas({
       sala: roomId,
@@ -114,13 +117,16 @@ export const guardarPartida = async (roomId, juego) => {
     await nuevaPartida.save();
 
     if (juego.ganador === 'E') {
-      await actualizarEstadisticas(juego.usernames.X, 'E');
-      await actualizarEstadisticas(juego.usernames.O, 'E');
+      await actualizarEstadisticas(juego.usernames.X, 'E', puntajeX);
+      await actualizarEstadisticas(juego.usernames.O, 'E', puntajeO);
     } else {
       const ganador = juego.ganador === 'X' ? juego.usernames.X : juego.usernames.O;
       const perdedor = juego.ganador === 'X' ? juego.usernames.O : juego.usernames.X;
-      await actualizarEstadisticas(ganador, 'G');
-      await actualizarEstadisticas(perdedor, 'P');
+      const puntajeGanador = juego.ganador === 'X' ? puntajeX : puntajeO;
+      const puntajePerdedor = juego.ganador === 'X' ? puntajeO : puntajeX;
+      
+      await actualizarEstadisticas(ganador, 'G', puntajeGanador);
+      await actualizarEstadisticas(perdedor, 'P', puntajePerdedor);
     }
   } catch (error) {
     console.error('Error al guardar la partida:', error);
