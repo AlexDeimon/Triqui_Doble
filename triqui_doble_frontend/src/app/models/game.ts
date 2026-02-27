@@ -13,8 +13,11 @@ export interface tableroPequeño {
 }
 
 export interface estadoJuego {
+  sala: string;
   tableros: tableroPequeño[];
   turnoActual: Jugador;
   tableroActivo: number | null;
   ganador: Jugador;
+  usernames: { X: string | null; O: string | null };
+  espectadores?: { username: string; socketId: string }[];
 }

@@ -45,8 +45,9 @@ export class TableroComponent implements OnInit {
 
         if (state?.ganador) {
           const isTie = state.ganador === 'E';
+          const ganadorUsername = state.ganador !== 'E' ? state.usernames[state.ganador as 'X' | 'O'] : '';
           Swal.fire({
-            title: isTie ? 'El juego ha terminado en empate' : `El jugador ${state.ganador} ha ganado la partida`,
+            title: isTie ? 'El juego ha terminado en empate' : `El jugador ${ganadorUsername} (${state.ganador}) ha ganado la partida`,
             icon: isTie ? 'info' : 'success',
             background: '#16213e',
             color: '#fff',
@@ -97,6 +98,23 @@ export class TableroComponent implements OnInit {
     }
 
     return state.tableroActivo === tableroId;
+  }
+
+  getNombreTurno(): string {
+    const state = this.gameState();
+    if (!state || !state.turnoActual || state.turnoActual === 'E') return '';
+    const username = state.usernames[state.turnoActual as 'X' | 'O'];
+    return `${username} (${state.turnoActual})`;
+  }
+
+  getNombreRol(): string {
+    const role = this.myRole();
+    if (!role) return '';
+    if (role === 'Espectador') return 'Espectador';
+    const state = this.gameState();
+    if (!state) return role;
+    const username = state.usernames[role as 'X' | 'O'];
+    return `${username} (${role})`;
   }
 
   rendirse() {

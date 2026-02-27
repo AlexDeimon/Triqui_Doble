@@ -19,10 +19,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 const server = http.createServer(app);
-const io = new Server(server, { 
+const io = new Server(server, {
   cors: { origin: "*" },
   pingTimeout: 60000,
-  pingInterval: 25000 
+  pingInterval: 25000
 });
 
 const timeoutsEliminacion = new Map();
@@ -64,13 +64,27 @@ io.on('connection', (socket) => {
 
     if (juego.usernames.O === username) {
     } else if (juego.jugadores.O) {
-      socket.emit('error', 'La sala esta llena');
+      if (!juego.espectadores) juego.espectadores = [];
+      const isSpectator = juego.espectadores.find(
+        (e) => e.username === username,
+      );
+      if (!isSpectator) {
+        juego.espectadores.push({ username, socketId: socket.id });
+      } else {
+        isSpectator.socketId = socket.id;
+      }
+
+      await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
+      socket.join(roomId);
+      console.log(`Espectador ${username} se unio a la sala ${roomId}`);
+      socket.emit("salaUnida", { roomId, jugador: "Espectador" });
+      io.to(roomId).emit("actualizarJuego", juego);
       return;
     }
 
     juego.jugadores.O = socket.id;
     juego.usernames.O = username;
-    
+
     await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
     socket.join(roomId);
     console.log(`Jugador ${username} se unio a la sala ${roomId}`);
@@ -89,17 +103,25 @@ io.on('connection', (socket) => {
     let rol = null;
     if (juego.usernames.X === username) rol = 'X';
     else if (juego.usernames.O === username) rol = 'O';
+    else if (juego.espectadores && juego.espectadores.some((e) => e.username === username)) rol = 'Espectador';
 
     if (rol) {
       console.log(`Jugador ${username} (${rol}) reconectado a sala ${roomId}`);
+
+      if (rol !== 'Espectador') {
+        if (timeoutsEliminacion.has(roomId)) {
+          clearTimeout(timeoutsEliminacion.get(roomId));
+          timeoutsEliminacion.delete(roomId);
+          console.log(`Cancelada destrucción de sala ${roomId}`);
+        }
+
+        juego.jugadores[rol] = socket.id;
         
-      if (timeoutsEliminacion.has(roomId)) {
-        clearTimeout(timeoutsEliminacion.get(roomId));
-        timeoutsEliminacion.delete(roomId);
-        console.log(`Cancelada destrucción de sala ${roomId}`);
+      } else {
+        const esp = juego.espectadores.find((e) => e.username === username);
+        if (esp) esp.socketId = socket.id;
       }
 
-      juego.jugadores[rol] = socket.id;
       await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
       socket.join(roomId);
 
@@ -120,13 +142,13 @@ io.on('connection', (socket) => {
     const movimientoJuego = gameController.movimiento(juego, socket.id, tableroId, celdaId);
 
     if (movimientoJuego) {
-        await redisClient.set(`juego:${roomId}`, JSON.stringify(movimientoJuego));
-        
-        if (movimientoJuego.ganador) {
-            await redisClient.expire(`juego:${roomId}`, 60); 
+      await redisClient.set(`juego:${roomId}`, JSON.stringify(movimientoJuego));
+
+      if (movimientoJuego.ganador) {
+        await redisClient.expire(`juego:${roomId}`, 60);
             console.log(`Juego ${roomId} terminado. Se eliminará en 1 minuto si no se reinicia.`);
-        }
-        
+      }
+
         io.to(roomId).emit('actualizarJuego', movimientoJuego);
     }
   });
@@ -134,31 +156,31 @@ io.on('connection', (socket) => {
   socket.on('reiniciarJuego', async (roomId) => {
     const juegoJson = await redisClient.get(`juego:${roomId}`);
     if (!juegoJson) return;
-    
+
     const juego = JSON.parse(juegoJson);
     const jugadoresRef = { ...juego.jugadores };
     const usernamesRef = { ...juego.usernames };
-    
+
     const nuevoJuego = gameController.iniciarEstadoJuego(roomId);
     nuevoJuego.jugadores = jugadoresRef;
     nuevoJuego.usernames = usernamesRef;
-    
+
     await redisClient.set(`juego:${roomId}`, JSON.stringify(nuevoJuego));
-    await redisClient.persist(`juego:${roomId}`); 
+    await redisClient.persist(`juego:${roomId}`);
     io.to(roomId).emit('actualizarJuego', nuevoJuego);
   });
 
   socket.on('rendirse', async (roomId) => {
     const juegoJson = await redisClient.get(`juego:${roomId}`);
     if (!juegoJson) return;
-    
+
     const juego = JSON.parse(juegoJson);
-    
+
     const juegoActualizado = gameController.rendirse(juego, socket.id);
     await redisClient.set(`juego:${roomId}`, JSON.stringify(juegoActualizado));
-    
+
     if (juegoActualizado.ganador) {
-        await redisClient.expire(`juego:${roomId}`, 60); 
+      await redisClient.expire(`juego:${roomId}`, 60);
         console.log(`Juego ${roomId} terminado por rendición. Se eliminará en 1 minuto.`);
     }
 
@@ -166,68 +188,73 @@ io.on('connection', (socket) => {
   });
 
   socket.on('abandonarSala', async (roomId) => {
-      const juegoJson = await redisClient.get(`juego:${roomId}`);
-      if (!juegoJson) return;
-      
-      await redisClient.del(`juego:${roomId}`);
-      
-      if (timeoutsEliminacion.has(roomId)) {
-          clearTimeout(timeoutsEliminacion.get(roomId));
-          timeoutsEliminacion.delete(roomId);
-      }
-      
-      socket.leave(roomId);
-      console.log(`Sala ${roomId} eliminada por abandono voluntario`);
-      
+    const juegoJson = await redisClient.get(`juego:${roomId}`);
+    if (!juegoJson) return;
+
+    await redisClient.del(`juego:${roomId}`);
+
+    if (timeoutsEliminacion.has(roomId)) {
+      clearTimeout(timeoutsEliminacion.get(roomId));
+      timeoutsEliminacion.delete(roomId);
+    }
+
+    socket.leave(roomId);
+    console.log(`Sala ${roomId} eliminada por abandono voluntario`);
+
       socket.to(roomId).emit('jugadorDesconectado', 'El oponente ha abandonado la sala.');
   });
 
   socket.on('disconnecting', async () => {
     const rooms = socket.rooms;
     for (const roomId of rooms) {
-        if (roomId === socket.id) continue;
+      if (roomId === socket.id) continue;
 
-        const juegoJson = await redisClient.get(`juego:${roomId}`);
-        if (juegoJson) {
-          const juego = JSON.parse(juegoJson);
+      const juegoJson = await redisClient.get(`juego:${roomId}`);
+      if (juegoJson) {
+        const juego = JSON.parse(juegoJson);
           if (juego.jugadores.X === socket.id || juego.jugadores.O === socket.id) {
             console.log(`Jugador de sala ${roomId} desconectado. Esperando reconexión...`);
-            
+
             socket.to(roomId).emit('oponenteDesconectado', 'El oponente se ha desconectado. Esperando reconexión...');
 
             const rol = juego.jugadores.X === socket.id ? 'X' : 'O';
 
-            if (juego.ganador) {
-                 await redisClient.del(`juego:${roomId}`);
+          if (juego.ganador) {
+            await redisClient.del(`juego:${roomId}`);
                  console.log(`Sala terminada ${roomId} eliminada por desconexión de un jugador.`);
                  socket.to(roomId).emit('jugadorDesconectado', 'El oponente ha abandonado la sala.');
-                 return;
-            }
-            
-            if (timeoutsEliminacion.has(roomId)) clearTimeout(timeoutsEliminacion.get(roomId));
-            
-            const timer = setTimeout(async () => {
-              const currentJuegoJson = await redisClient.get(`juego:${roomId}`);
-              if (currentJuegoJson) {
-                const currentJuego = JSON.parse(currentJuegoJson);
-                const currentSocketId = currentJuego.jugadores[rol];
+            return;
+          }
 
-                if (currentSocketId && currentSocketId !== socket.id) {
+            if (timeoutsEliminacion.has(roomId)) clearTimeout(timeoutsEliminacion.get(roomId));
+
+          const timer = setTimeout(async () => {
+            const currentJuegoJson = await redisClient.get(`juego:${roomId}`);
+            if (currentJuegoJson) {
+              const currentJuego = JSON.parse(currentJuegoJson);
+              const currentSocketId = currentJuego.jugadores[rol];
+
+              if (currentSocketId && currentSocketId !== socket.id) {
                     console.log(`Sala ${roomId}: El jugador ${rol} se reconectó (Socket actualizado), cancelando eliminación.`);
-                    timeoutsEliminacion.delete(roomId);
-                    return;
-                }
+                timeoutsEliminacion.delete(roomId);
+                return;
+              }
 
                 io.to(roomId).emit('jugadorDesconectado', 'El oponente se ha desconectado. El juego ha terminado');
-                await redisClient.del(`juego:${roomId}`);
-                timeoutsEliminacion.delete(roomId);
+              await redisClient.del(`juego:${roomId}`);
+              timeoutsEliminacion.delete(roomId);
                 console.log(`Sala ${roomId} eliminada por inactividad/desconexión`);
-              }
-            }, 60000); 
+            }
+          }, 60000);
 
-            timeoutsEliminacion.set(roomId, timer);
-          }
+          timeoutsEliminacion.set(roomId, timer);
+        } else if (
+          juego.espectadores &&
+          juego.espectadores.some((e) => e.socketId === socket.id)
+        ) {
+          console.log(`Espectador de sala ${roomId} desconectado.`);
         }
+      }
     }
   });
 });
