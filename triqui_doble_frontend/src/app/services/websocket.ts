@@ -171,6 +171,10 @@ export class WebsocketService {
     return this.http.get<any[]>(`${this.url}/ranking`);
   }
 
+  obtenerHistorial(username: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.url}/historial/${username}`);
+  }
+
   emitMove(tableroId: number, celdaId: number) {
     this.socket.emit('Movimiento', {
       roomId: this.roomId,

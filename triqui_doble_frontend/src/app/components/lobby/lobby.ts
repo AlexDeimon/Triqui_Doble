@@ -14,6 +14,8 @@ export class LobbyComponent {
   codigoSala: string = '';
   ranking: any[] = [];
   mostrarRanking: boolean = false;
+  historial: any[] = [];
+  mostrarHistorial: boolean = false;
   mostrarTutorial: boolean = false;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
@@ -52,6 +54,23 @@ export class LobbyComponent {
 
   cerrarTutorial() {
     this.mostrarTutorial = false;
+  }
+
+  verHistorial() {
+    this.websocketService.obtenerHistorial(this.websocketService.username).subscribe({
+      next: (historial) => {
+        this.historial = historial;
+        this.mostrarHistorial = true;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error obteniendo historial:', err);
+      }
+    });
+  }
+
+  cerrarHistorial() {
+    this.mostrarHistorial = false;
   }
 
 }

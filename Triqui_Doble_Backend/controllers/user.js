@@ -1,4 +1,5 @@
 import { Usuario } from '../models/user.js';
+import { Partidas } from '../models/game.js';
 
 export const registrar = async (req, res) => {
   try {
@@ -56,5 +57,17 @@ export const ranking = async (req, res) => {
     res.json(users);
   } catch (error) {
     res.status(500).send('Error');
+  }
+};
+
+export const historialJugador = async (req, res) => {
+  const { username } = req.params;
+  try {
+    const historial = await Partidas.find({
+      $or: [{ jugadorX: username }, { jugadorO: username }]
+    }).sort({ fecha: -1 });
+    res.json(historial);
+  } catch (error) {
+    res.status(500).send('Error obteniendo historial');
   }
 };

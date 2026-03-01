@@ -2,6 +2,7 @@
   <h1>Bienvenido {{ websocketService.username }}</h1>
   <div class="lobby-actions">
     <button (click)="verRanking()" class="btn-primary">Ver Ranking</button>
+    <button (click)="verHistorial()" class="btn-primary">Historial de Partidas</button>
     <button (click)="verTutorial()" class="btn-primary">Cómo Jugar</button>
     <button (click)="crearSala()" class="btn-primary">Crear Sala</button>
     <div class="card glass-card">
@@ -37,6 +38,36 @@
             <td>{{ user.estadisticas.partidasGanadas }}</td>
             <td>{{ user.estadisticas.partidasPerdidas }}</td>
             <td>{{ user.estadisticas.partidasEmpatadas }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div *ngIf="mostrarHistorial" class="ranking-modal-container">
+  <div class="ranking-content">
+    <button (click)="cerrarHistorial()" class="btn-close"><span aria-hidden="true">&times;</span></button>
+    <h2>Historial de Partidas</h2>
+    <div class="table-wrapper">
+      <table class="ranking-table">
+        <thead>
+          <tr>
+            <th>X</th>
+            <th>O</th>
+            <th>Ganador</th>
+            <th>Turnos</th>
+            <th>Fecha</th>
+            <th>Hora</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let partida of historial">
+            <td>{{ partida.jugadorX }}</td>
+            <td>{{ partida.jugadorO }}</td>
+            <td>{{ partida.ganador === 'Empate' ? 'Empate' : partida.ganador }}</td>
+            <td>{{ partida.cantidadTurnos }}</td>
+            <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ partida.fecha | date:'HH:mm' }}</td>
           </tr>
         </tbody>
       </table>
