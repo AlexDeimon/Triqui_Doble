@@ -43,6 +43,26 @@ h2 {
   animation: fadeInUp 0.8s ease-out;
 }
 
+.salas-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 3rem auto 0;
+  background: var(--bg-mid);
+  border-radius: 16px;
+  padding: 2rem;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.salas-container h2 {
+  text-align: center;
+  color: var(--primary, #e94560);
+  font-size: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
 .ranking-modal-container {
   position: fixed;
   width: 100%;

@@ -19,6 +19,7 @@ export class WebsocketService {
   public username: string = '';
 
   public gameState$ = new BehaviorSubject<estadoJuego | null>(null);
+  public salasPublicas$ = new BehaviorSubject<any[]>([]);
   public myRole$ = new BehaviorSubject<string>('');
   public loading = signal<boolean>(true);
   public isReconnecting: boolean = false;
@@ -68,6 +69,12 @@ export class WebsocketService {
       });
     });
 
+    this.socket.on('salasDisponibles', (salas: any[]) => {
+      this.ngZone.run(() => {
+        this.salasPublicas$.next(salas);
+      });
+    });
+
     this.socket.on('salaCreada', (data: { roomId: string, jugador: string }) => {
       this.ngZone.run(() => {
         console.log('Sala creada:', data);
@@ -98,43 +105,70 @@ export class WebsocketService {
     this.socket.on('jugadorDesconectado', (msg: string) => {
       console.log('Mensaje de desconexión recibido:', msg);
       this.ngZone.run(() => {
-        Swal.fire({
-          title: msg,
-          icon: 'warning',
-          background: '#16213e',
-          color: '#fff',
-          confirmButtonColor: '#e94560'
-        });
         this.roomId = '';
         localStorage.removeItem('triqui_roomId');
         this.gameState$.next(null);
-        this.router.navigate(['/lobby']);
+        this.router.navigate(['/lobby']).then(() => {
+          Swal.fire({
+            title: msg,
+            icon: 'warning',
+            background: '#16213e',
+            color: '#fff',
+            confirmButtonColor: '#e94560'
+          });
+        });
       });
     });
 
     this.socket.on('oponenteDesconectado', (msg: string) => {
-        this.ngZone.run(() => {
-            Swal.fire({
-                title: 'Conexión Inestable',
-                text: msg,
-                icon: 'info',
-                background: '#16213e',
-                color: '#fff',
-                showConfirmButton: false,
-                allowOutsideClick: false
-            });
+      this.ngZone.run(() => {
+        if (this.myRole$.getValue() === 'Espectador') return;
+        Swal.fire({
+          title: 'Conexión Inestable',
+          text: msg,
+          icon: 'info',
+          background: '#16213e',
+          color: '#fff',
+          showConfirmButton: false,
+          allowOutsideClick: false
         });
+      });
+    });
+
+    this.socket.on('oponenteAbandonoVoluntario', (msg: string) => {
+      this.ngZone.run(() => {
+        if (this.myRole$.getValue() === 'Espectador') return;
+        if (Swal.isVisible()) Swal.close();
+
+        Swal.fire({
+          title: 'Oponente retirado',
+          text: msg,
+          icon: 'warning',
+          background: '#16213e',
+          color: '#fff',
+          showCancelButton: true,
+          confirmButtonColor: '#e94560',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Continuar',
+          cancelButtonText: 'Salir',
+          allowOutsideClick: false
+        }).then((result) => {
+          if (result.isDismissed) {
+            this.leaveRoom();
+          }
+        });
+      });
     });
 
     this.socket.on('error', (msg: string) => {
       this.ngZone.run(() => {
         if (this.isReconnecting && (msg === 'La partida ya no existe' || msg === 'La sala no existe')) {
-            console.log('Reconexión fallida (sala no existe). Limpiando sesión.');
-            this.roomId = '';
-            localStorage.removeItem('triqui_roomId');
-            localStorage.removeItem('triqui_username');
-            this.isReconnecting = false;
-            return;
+          console.log('Reconexión fallida (sala no existe). Limpiando sesión.');
+          this.roomId = '';
+          localStorage.removeItem('triqui_roomId');
+          localStorage.removeItem('triqui_username');
+          this.isReconnecting = false;
+          return;
         }
 
         this.isReconnecting = false;
@@ -191,13 +225,25 @@ export class WebsocketService {
     this.socket.emit('reiniciarJuego', this.roomId);
   }
 
+  abandonarSalaLocal() {
+    if (this.roomId) {
+      const role = this.myRole$.getValue();
+      if (role === 'Espectador') {
+        this.socket.emit('salirEspectador', this.roomId);
+      } else {
+        this.socket.emit('abandonarSala', this.roomId);
+      }
+      this.roomId = '';
+      localStorage.removeItem('triqui_roomId');
+      this.gameState$.next(null);
+      this.myRole$.next('');
+    }
+  }
+
   leaveRoom() {
     if (this.roomId) {
-        this.socket.emit('abandonarSala', this.roomId);
-        this.roomId = '';
-        localStorage.removeItem('triqui_roomId');
-        this.gameState$.next(null);
-        this.router.navigate(['/lobby']);
+      this.abandonarSalaLocal();
+      this.router.navigate(['/lobby']);
     }
   }
 }

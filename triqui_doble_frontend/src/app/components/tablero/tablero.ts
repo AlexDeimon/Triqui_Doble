@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { estadoJuego } from '../../models/game';
@@ -14,7 +14,7 @@ import Swal from 'sweetalert2';
   styleUrl: './tablero.css'
 })
 
-export class TableroComponent implements OnInit {
+export class TableroComponent implements OnInit, OnDestroy {
 
   gameState = signal<estadoJuego | null>(null);
   myRole = signal<string>('');
@@ -62,6 +62,15 @@ export class TableroComponent implements OnInit {
         this.myRole.set(role);
       });
     });
+  }
+
+  ngOnDestroy() {
+    if (this.websocketService.roomId) {
+      this.websocketService.abandonarSalaLocal();
+    }
+    if (Swal.isVisible()) {
+      Swal.close();
+    }
   }
 
   movimiento(tableroId: number, celdaId: number) {

@@ -5,9 +5,33 @@
     <button (click)="verHistorial()" class="btn-primary">Historial de Partidas</button>
     <button (click)="verTutorial()" class="btn-primary">Cómo Jugar</button>
     <button (click)="crearSala()" class="btn-primary">Crear Sala</button>
-    <div class="card glass-card">
-      <input type="text" [(ngModel)]="codigoSala" placeholder="Codigo de sala" class="custom-input" />
-      <button (click)="unirseSala()" class="btn-primary">Unirse a Sala</button>
+  </div>
+  <div class="salas-container">
+    <h2>Salas Públicas</h2>
+    <div class="table-wrapper">
+      <table class="ranking-table">
+        <thead>
+          <tr>
+            <th>ID Sala</th>
+            <th>Jugador X</th>
+            <th>Jugador O</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sala of salas">
+            <td>{{ sala.roomId }}</td>
+            <td>{{ sala.jugadorX }}</td>
+            <td>{{ sala.jugadorO }}</td>
+            <td>
+              <button (click)="unirseSalaEspecifica(sala.roomId)" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem">Unirse</button>
+            </td>
+          </tr>
+          <tr *ngIf="salas.length === 0">
+            <td colspan="4" style="text-align: center; padding: 2rem">No hay salas disponibles en este momento.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

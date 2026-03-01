@@ -1,7 +1,8 @@
-import { Component, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Component, NgZone, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from '../../services/websocket';
+import { Subscription } from 'rxjs';
 
 @Component({
   standalone: true,
@@ -10,15 +11,30 @@ import { WebsocketService } from '../../services/websocket';
   templateUrl: './lobby.html',
   styleUrl: './lobby.css',
 })
-export class LobbyComponent {
+export class LobbyComponent implements OnInit, OnDestroy {
   codigoSala: string = '';
   ranking: any[] = [];
   mostrarRanking: boolean = false;
   historial: any[] = [];
   mostrarHistorial: boolean = false;
   mostrarTutorial: boolean = false;
+  salas: any[] = [];
+  private salasSub!: Subscription;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
+
+  ngOnInit() {
+    this.salasSub = this.websocketService.salasPublicas$.subscribe(salas => {
+      this.salas = salas;
+      this.cd.detectChanges();
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.salasSub) {
+      this.salasSub.unsubscribe();
+    }
+  }
 
   crearSala() {
     const codigoRandom = Math.random().toString(36).substring(7).toUpperCase();
@@ -28,6 +44,13 @@ export class LobbyComponent {
   unirseSala() {
     if (this.codigoSala) {
       this.websocketService.unirseSala(this.codigoSala);
+    }
+  }
+
+  unirseSalaEspecifica(roomId: string) {
+    if (roomId) {
+      this.codigoSala = roomId;
+      this.unirseSala();
     }
   }
 
