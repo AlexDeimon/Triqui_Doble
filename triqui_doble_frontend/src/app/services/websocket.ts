@@ -182,6 +182,29 @@ export class WebsocketService {
         });
       });
     });
+
+    this.socket.on('tiempoAgotado', (msg: string) => {
+      this.ngZone.run(() => {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          background: '#16213e',
+          color: '#fff',
+          didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+          }
+        });
+
+        Toast.fire({
+          icon: 'warning',
+          title: msg
+        });
+      });
+    });
   }
 
   login(username: string, password: string): Observable<any> {
@@ -193,8 +216,8 @@ export class WebsocketService {
     return this.http.post(`${this.url}/registrar`, { username, password });
   }
 
-  crearSala(roomId: string) {
-    this.socket.emit('crearSala', { roomId, username: this.username });
+  crearSala(roomId: string, configuracion?: any) {
+    this.socket.emit('crearSala', { roomId, username: this.username, configuracion });
   }
 
   unirseSala(roomId: string) {

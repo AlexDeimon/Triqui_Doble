@@ -18,6 +18,8 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   gameState = signal<estadoJuego | null>(null);
   myRole = signal<string>('');
+  tiempoRestante = signal<number>(0);
+  private timerInterval: any;
 
   constructor(
     public websocketService: WebsocketService,
@@ -43,6 +45,12 @@ export class TableroComponent implements OnInit, OnDestroy {
 
         this.gameState.set(state);
 
+        if (state?.configuracion?.temporizador && state.ultimaActualizacionTurno && !state.ganador) {
+           this.iniciarTemporizadorLocal(state);
+        } else {
+           this.detenerTemporizadorLocal();
+        }
+
         if (state?.ganador) {
           const isTie = state.ganador === 'E';
           const ganadorUsername = state.ganador !== 'E' ? state.usernames[state.ganador as 'X' | 'O'] : '';
@@ -65,12 +73,38 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.detenerTemporizadorLocal();
     if (this.websocketService.roomId) {
       this.websocketService.abandonarSalaLocal();
     }
     if (Swal.isVisible()) {
       Swal.close();
     }
+  }
+
+  iniciarTemporizadorLocal(state: estadoJuego) {
+    this.detenerTemporizadorLocal();
+    if (!state.configuracion || !state.ultimaActualizacionTurno) return;
+
+    const tick = () => {
+      const msPasados = Date.now() - state.ultimaActualizacionTurno!;
+      let rest = state.configuracion!.tiempo - Math.floor(msPasados / 1000);
+      if (rest < 0) rest = 0;
+      this.ngZone.run(() => {
+         this.tiempoRestante.set(rest);
+      });
+    };
+
+    tick();
+    this.timerInterval = setInterval(tick, 1000);
+  }
+
+  detenerTemporizadorLocal() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    this.tiempoRestante.set(0);
   }
 
   movimiento(tableroId: number, celdaId: number) {

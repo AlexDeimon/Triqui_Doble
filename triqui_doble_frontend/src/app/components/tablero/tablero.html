@@ -1,15 +1,18 @@
 <div *ngIf="gameState()?.ganador" class="pantalla-victoria">
   <ng-container *ngIf="myRole() !== 'Espectador'">
-    <button (click)="reiniciarJuego()" class="btn-primary">
-      Reiniciar Juego
-    </button>
+    <button (click)="reiniciarJuego()" class="btn-primary">Reiniciar Juego</button>
     <button (click)="volverAlMenu()" class="btn-primary">Volver al Menu</button>
   </ng-container>
 </div>
 <div class="contenedor" *ngIf="gameState()">
   <h2>Sala: {{ websocketService.roomId }}</h2>
   <h2>Turno de: {{ getNombreTurno() }}</h2>
-  <h2>Eres: {{ getNombreRol() }}</h2>
+  <h2 *ngIf="myRole() == 'Espectador'">{{ getNombreRol() }}</h2>
+  <div class="timer-container" *ngIf="gameState()?.configuracion?.temporizador && !gameState()?.ganador && gameState()?.ultimaActualizacionTurno">
+    <div class="timer-circle" [class.danger]="tiempoRestante() <= 10">
+      <span class="timer-text">{{ tiempoRestante() }}</span>
+    </div>
+  </div>
   <div class="tablero-grande">
     <div *ngFor="let tablero of gameState()!.tableros" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === 'X'" [class.ganado-o]="tablero.ganador === 'O'" [class.empatado]="tablero.ganador === 'E'" [class.activoX]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'X'" [class.activoO]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'O'">
       <div *ngIf="tablero.ganador" class="tablero-ganador">{{ tablero.ganador }}</div>

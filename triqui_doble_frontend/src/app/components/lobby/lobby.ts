@@ -19,6 +19,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
   mostrarHistorial: boolean = false;
   mostrarTutorial: boolean = false;
   salas: any[] = [];
+  mostrarConfiguracionSala: boolean = false;
+  habilitarTemporizador: boolean = false;
+  tiempoTemporizador: number = 30;
   private salasSub!: Subscription;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
@@ -36,9 +39,23 @@ export class LobbyComponent implements OnInit, OnDestroy {
     }
   }
 
+  abrirConfiguracionSala() {
+    this.mostrarConfiguracionSala = true;
+  }
+
+  cerrarConfiguracionSala() {
+    this.mostrarConfiguracionSala = false;
+    this.habilitarTemporizador = false;
+    this.tiempoTemporizador = 30; // Reset
+  }
+
   crearSala() {
     const codigoRandom = Math.random().toString(36).substring(7).toUpperCase();
-    this.websocketService.crearSala(codigoRandom);
+    this.websocketService.crearSala(codigoRandom, {
+      temporizador: this.habilitarTemporizador,
+      tiempo: this.tiempoTemporizador
+    });
+    this.cerrarConfiguracionSala();
   }
 
   unirseSala() {
