@@ -87,9 +87,11 @@ export class TableroComponent implements OnInit, OnDestroy {
     if (!state.configuracion || !state.ultimaActualizacionTurno) return;
 
     const tick = () => {
-      const msPasados = Date.now() - state.ultimaActualizacionTurno!;
+      let msPasados = Date.now() - state.ultimaActualizacionTurno!;
+      if (msPasados < 0) msPasados = 0;
       let rest = state.configuracion!.tiempo - Math.floor(msPasados / 1000);
       if (rest < 0) rest = 0;
+      if (rest > state.configuracion!.tiempo) rest = state.configuracion!.tiempo;
       this.ngZone.run(() => {
          this.tiempoRestante.set(rest);
       });
