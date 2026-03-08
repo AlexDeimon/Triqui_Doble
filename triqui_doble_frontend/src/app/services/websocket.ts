@@ -23,6 +23,7 @@ export class WebsocketService {
   public myRole$ = new BehaviorSubject<string>('');
   public loading = signal<boolean>(true);
   public isReconnecting: boolean = false;
+  public timeOffset: number = 0;
 
   constructor(private http: HttpClient, private router: Router, private ngZone: NgZone) {
     this.socket = io(this.url);
@@ -45,6 +46,10 @@ export class WebsocketService {
             this.socket.emit('reconectar', { roomId: this.roomId, username: this.username });
         }
       });
+    });
+
+    this.socket.on('syncTime', (serverTime: number) => {
+      this.timeOffset = Date.now() - serverTime;
     });
 
     this.socket.on('disconnect', () => {

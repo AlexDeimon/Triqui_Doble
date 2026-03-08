@@ -91,6 +91,7 @@ const emitirSalasDisponibles = async () => {
 
 io.on('connection', (socket) => {
   console.log(`Jugador conectado: ${socket.id}`);
+  socket.emit('syncTime', Date.now());
   
   obtenerSalasDisponibles().then(salas => {
     socket.emit('salasDisponibles', salas);

@@ -87,7 +87,8 @@ export class TableroComponent implements OnInit, OnDestroy {
     if (!state.configuracion || !state.ultimaActualizacionTurno) return;
 
     const tick = () => {
-      let msPasados = Date.now() - state.ultimaActualizacionTurno!;
+      const serverTimeNow = Date.now() - this.websocketService.timeOffset;
+      let msPasados = serverTimeNow - state.ultimaActualizacionTurno!;
       if (msPasados < 0) msPasados = 0;
       let rest = state.configuracion!.tiempo - Math.floor(msPasados / 1000);
       if (rest < 0) rest = 0;
