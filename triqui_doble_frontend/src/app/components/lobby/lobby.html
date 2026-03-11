@@ -109,7 +109,7 @@
       </div>
       <div class="tutorial-step">
         <h3>2. El Objetivo</h3>
-        <p>Para ganar el juego, debes ganar 3 <strong>Mini-Tableros</strong> en línea (horizontal, vertical o diagonal), tal como en el triqui clásico.</p>
+        <p>Puedes seleccionar el objetivo del juego, que puede ser: Ganar el Tablero Principal ganando 3 Mini-Tableros en línea o ganar la mayor cantidad de Mini-Tableros (5) antes que tu oponente.</p>
       </div>
       <div class="tutorial-step highlight-step">
         <h3>3. La Regla de Oro</h3>
@@ -151,11 +151,15 @@
         <p>Si te envían a un Mini-Tablero que ya está <strong>lleno</strong>, puedes jugar en cualquier parte del tablero.</p>
       </div>
       <div class="tutorial-step">
-        <h3>5. Iniciar Partida</h3>
+        <h3>5. Temporizador</h3>
+        <p>Si se habilita el temporizador, el jugador pierde su turno si no juega antes de que el temporizador expire y el oponente juega en el Mini-Tablero activo.</p>
+      </div>
+      <div class="tutorial-step">
+        <h3>6. Iniciar Partida</h3>
         <p>Al crear la sala, el jugador empieza con la ficha <strong>X</strong>. Se genera un código de sala que se muestra en la pantalla, este se comparte con el otro jugador el cual tendrá la ficha <strong>O</strong>.</p>
       </div>
       <div class="tutorial-step">
-        <h3>6. Puntaje</h3>
+        <h3>7. Puntaje</h3>
         <p>Por cada mini-tablero ganado se obtienen <strong>10 puntos</strong>. Al ganar el juego se obtienen <strong>50 puntos</strong>.</p>
       </div>
     </div>
@@ -175,8 +179,16 @@
       <div class="form-group-config" *ngIf="habilitarTemporizador">
         <label for="timerValue" class="config-label">Tiempo por turno:</label>
         <select id="timerValue" [(ngModel)]="tiempoTemporizador" class="form-control config-select">
+          <option [ngValue]="15" class="config-option">15 segundos</option>
           <option [ngValue]="30" class="config-option">30 segundos</option>
           <option [ngValue]="60" class="config-option">1 minuto</option>
+        </select>
+      </div>
+      <div class="form-group-config">
+        <label for="gameObjective" class="config-label">Objetivo del juego:</label>
+        <select id="gameObjective" [(ngModel)]="objetivoJuego" class="form-control config-select">
+          <option value="triqui_doble" class="config-option">Triqui Doble</option>
+          <option value="mayoria" class="config-option">Mayoría de Triquis</option>
         </select>
       </div>
       <button (click)="crearSala()" class="btn-primary config-btn">Crear Sala</button>

@@ -50,7 +50,24 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     }
   }
 
-  const ganadorGeneral = verificarGanador(juego.tableros, 'ganador');
+  let ganadorGeneral = null;
+
+  if (juego.configuracion && juego.configuracion.objetivo === 'mayoria') {
+    const victoriasX = juego.tableros.filter(t => t.ganador === 'X').length;
+    const victoriasO = juego.tableros.filter(t => t.ganador === 'O').length;
+    
+    if (victoriasX >= 5) {
+      ganadorGeneral = 'X';
+    } else if (victoriasO >= 5) {
+      ganadorGeneral = 'O';
+    } else if (juego.tableros.every(t => t.ganador !== null)) {
+      if (victoriasX > victoriasO) ganadorGeneral = 'X';
+      else if (victoriasO > victoriasX) ganadorGeneral = 'O';
+    }
+  } else {
+    ganadorGeneral = verificarGanador(juego.tableros, 'ganador');
+  }
+
   if (ganadorGeneral) {
     juego.ganador = ganadorGeneral;
     juego.puntajes[ganadorGeneral] += 50;

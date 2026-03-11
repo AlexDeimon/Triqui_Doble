@@ -111,7 +111,7 @@ io.on('connection', (socket) => {
     const estadojuego = gameController.iniciarEstadoJuego(roomId);
     estadojuego.jugadores.X = socket.id;
     estadojuego.usernames.X = username;
-    estadojuego.configuracion = configuracion || { temporizador: false, tiempo: 30 };
+    estadojuego.configuracion = configuracion || { temporizador: false, tiempo: 15, objetivo: 'triqui_doble' };
     estadojuego.ultimaActualizacionTurno = null;
     await redisClient.set(`juego:${roomId}`, JSON.stringify(estadojuego));
     socket.join(roomId);

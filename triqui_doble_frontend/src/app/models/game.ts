@@ -20,6 +20,6 @@ export interface estadoJuego {
   ganador: Jugador;
   usernames: { X: string | null; O: string | null };
   espectadores?: { username: string; socketId: string }[];
-  configuracion?: { temporizador: boolean; tiempo: number };
+  configuracion?: { temporizador: boolean; tiempo: number; objetivo?: string };
   ultimaActualizacionTurno?: number;
 }

@@ -21,7 +21,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
   salas: any[] = [];
   mostrarConfiguracionSala: boolean = false;
   habilitarTemporizador: boolean = false;
-  tiempoTemporizador: number = 30;
+  tiempoTemporizador: number = 15;
+  objetivoJuego: string = 'triqui_doble';
   private salasSub!: Subscription;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
@@ -46,14 +47,16 @@ export class LobbyComponent implements OnInit, OnDestroy {
   cerrarConfiguracionSala() {
     this.mostrarConfiguracionSala = false;
     this.habilitarTemporizador = false;
-    this.tiempoTemporizador = 30; // Reset
+    this.tiempoTemporizador = 15;
+    this.objetivoJuego = 'triqui_doble';
   }
 
   crearSala() {
     const codigoRandom = Math.random().toString(36).substring(7).toUpperCase();
     this.websocketService.crearSala(codigoRandom, {
       temporizador: this.habilitarTemporizador,
-      tiempo: this.tiempoTemporizador
+      tiempo: this.tiempoTemporizador,
+      objetivo: this.objetivoJuego
     });
     this.cerrarConfiguracionSala();
   }
