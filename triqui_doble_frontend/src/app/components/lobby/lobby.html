@@ -145,6 +145,7 @@
             </div>
           </div>
         </div>
+        <p><strong>Nota:</strong> Si se selecciona el modo aleatorio, el proximo mini-tablero se seleccionara al azar.</p>
       </div>
       <div class="tutorial-step">
         <h3>4. Libertad de Movimiento</h3>
@@ -189,6 +190,13 @@
         <select id="gameObjective" [(ngModel)]="objetivoJuego" class="form-control config-select">
           <option value="triqui_doble" class="config-option">Triqui Doble</option>
           <option value="mayoria" class="config-option">Mayoría de Triquis</option>
+        </select>
+      </div>
+      <div class="form-group-config">
+        <label for="selectionMode" class="config-label">Selección del Tablero:</label>
+        <select id="selectionMode" [(ngModel)]="modoSeleccion" class="form-control config-select">
+          <option value="regla_oro" class="config-option">Regla de Oro</option>
+          <option value="aleatorio" class="config-option">Aleatorio</option>
         </select>
       </div>
       <button (click)="crearSala()" class="btn-primary config-btn">Crear Sala</button>

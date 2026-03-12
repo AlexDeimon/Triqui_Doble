@@ -82,13 +82,23 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     }
   }
 
-  const nextTablero = juego.tableros[celdaId];
-  const isNextFull = nextTablero.celdas.every(c => c.valor !== null);
-
-  if (isNextFull) {
-    juego.tableroActivo = null;
+  if (juego.configuracion && juego.configuracion.modoSeleccion === 'aleatorio') {
+    const tablerosDisponibles = juego.tableros.filter(t => !t.celdas.every(c => c.valor !== null));
+    if (tablerosDisponibles.length > 0) {
+      const randomIndex = Math.floor(Math.random() * tablerosDisponibles.length);
+      juego.tableroActivo = tablerosDisponibles[randomIndex].id;
+    } else {
+      juego.tableroActivo = null;
+    }
   } else {
-    juego.tableroActivo = celdaId;
+    const nextTablero = juego.tableros[celdaId];
+    const isNextFull = nextTablero.celdas.every(c => c.valor !== null);
+
+    if (isNextFull) {
+      juego.tableroActivo = null;
+    } else {
+      juego.tableroActivo = celdaId;
+    }
   }
 
   juego.turnoActual = juego.turnoActual === 'X' ? 'O' : 'X';
