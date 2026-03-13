@@ -12,7 +12,7 @@
       <table class="ranking-table">
         <thead>
           <tr>
-            <th>ID Sala</th>
+            <th>Objetivo</th>
             <th>Jugador X</th>
             <th>Jugador O</th>
             <th>Acción</th>
@@ -20,7 +20,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let sala of salas">
-            <td>{{ sala.roomId }}</td>
+            <td>{{ sala.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}</td>
             <td>{{ sala.jugadorX }}</td>
             <td>{{ sala.jugadorO }}</td>
             <td>
@@ -109,7 +109,8 @@
       </div>
       <div class="tutorial-step">
         <h3>2. El Objetivo</h3>
-        <p>Puedes seleccionar el objetivo del juego, que puede ser: Ganar el Tablero Principal ganando 3 Mini-Tableros en línea o ganar la mayor cantidad de Mini-Tableros (5) antes que tu oponente.</p>
+        <p><strong>Triqui Doble: </strong>El objetivo es ganar el Tablero Principal ganando 3 Mini-Tableros en línea. Si se escoje un patrón ganador diferente a <strong>cualquiera</strong>, gana el jugador que gane 2 de 3 Mini-Tableros de ese patrón.</p>
+        <p><strong>Triqui Mayoría: </strong>El objetivo es ganar la mayor cantidad de Mini-Tableros (5) antes que tu oponente.</p>
       </div>
       <div class="tutorial-step highlight-step">
         <h3>3. La Regla de Oro</h3>
@@ -196,7 +197,22 @@
         <label for="selectionMode" class="config-label">Selección del Tablero:</label>
         <select id="selectionMode" [(ngModel)]="modoSeleccion" class="form-control config-select">
           <option value="regla_oro" class="config-option">Regla de Oro</option>
-          <option value="aleatorio" class="config-option">Aleatorio</option>
+          <option value="Aleatorio" class="config-option">Aleatorio</option>
+        </select>
+      </div>
+      <div class="form-group-config" *ngIf="objetivoJuego === 'triqui_doble'">
+        <label for="winningPattern" class="config-label">Patrón Ganador:</label>
+        <select id="winningPattern" [(ngModel)]="patronGanador" class="form-control config-select">
+          <option value="Cualquiera" class="config-option">Cualquiera</option>
+          <option value="1ra Fila" class="config-option">1ra Fila</option>
+          <option value="2da Fila" class="config-option">2da Fila</option>
+          <option value="3ra Fila" class="config-option">3ra Fila</option>
+          <option value="1ra Columna" class="config-option">1ra Columna</option>
+          <option value="2da Columna" class="config-option">2da Columna</option>
+          <option value="3ra Columna" class="config-option">3ra Columna</option>
+          <option value="Diagonal Principal" class="config-option">Diagonal Principal</option>
+          <option value="Diagonal Secundaria" class="config-option">Diagonal Secundaria</option>
+          <option value="Aleatorio" class="config-option">Aleatorio</option>
         </select>
       </div>
       <button (click)="crearSala()" class="btn-primary config-btn">Crear Sala</button>

@@ -68,7 +68,9 @@ export class WebsocketService {
     this.socket.on('actualizarJuego', (state: estadoJuego) => {
       this.ngZone.run(() => {
         if (Swal.isVisible() && Swal.getTitle()?.textContent === 'Conexión Inestable') {
-            Swal.close();
+            if (state.jugadores.X && state.jugadores.O) {
+                Swal.close();
+            }
         }
         this.gameState$.next(state);
       });

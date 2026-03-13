@@ -16,10 +16,24 @@ import Swal from 'sweetalert2';
 
 export class TableroComponent implements OnInit, OnDestroy {
 
+  animarPatron = signal<boolean>(false);
+
   gameState = signal<estadoJuego | null>(null);
   myRole = signal<string>('');
   tiempoRestante = signal<number>(0);
   private timerInterval: any;
+  private yaAnimado: boolean = false;
+
+  mapeoPatrones: any = {
+    '1ra Fila': [0, 1, 2],
+    '2da Fila': [3, 4, 5],
+    '3ra Fila': [6, 7, 8],
+    '1ra Columna': [0, 3, 6],
+    '2da Columna': [1, 4, 7],
+    '3ra Columna': [2, 5, 8],
+    'Diagonal Principal': [0, 4, 8],
+    'Diagonal Secundaria': [2, 4, 6]
+  };
 
   constructor(
     public websocketService: WebsocketService,
@@ -38,6 +52,16 @@ export class TableroComponent implements OnInit, OnDestroy {
 
         const prevCount = getOccupiedCount(previousState);
         const newCount = getOccupiedCount(state);
+
+        if (state && state.usernames.X && state.usernames.O) {
+          if (!this.yaAnimado || (state.tableros.every(t => t.celdas.every(c => c.valor === null)) && prevCount > 0)) {
+            this.animarPatron.set(true);
+            this.yaAnimado = true;
+            setTimeout(() => this.animarPatron.set(false), 3000);
+          }
+        } else {
+          this.yaAnimado = false;
+        }
 
         if (state && prevCount < newCount) {
            this.audioService.playMoveSound();
@@ -132,6 +156,34 @@ export class TableroComponent implements OnInit, OnDestroy {
     }
 
     this.websocketService.emitMove(tableroId, celdaId);
+  }
+
+  tableroObjetivo(tableroId: number): boolean {
+    const state = this.gameState();
+    if (!state || state.configuracion?.objetivo === 'mayoria' || !state.configuracion?.patronGanador || state.ganador) return false;
+
+    const patron = state.configuracion.patronGanador;
+    const mapeoPatrones: { [key: string]: number } = {
+      '1ra Fila': 0, '2da Fila': 1, '3ra Fila': 2,
+      '1ra Columna': 3, '2da Columna': 4, '3ra Columna': 5,
+      'Diagonal Principal': 6, 'Diagonal Secundaria': 7
+    };
+    const patronesGanadores = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+
+    if (patron === 'Cualquiera') {
+      return true;
+    }
+
+    if (mapeoPatrones[patron] !== undefined) {
+      const index = mapeoPatrones[patron];
+      const celdasObjetivo = patronesGanadores[index];
+      return celdasObjetivo.includes(tableroId);
+    }
+    return false;
   }
 
   tableroActivo(tableroId: number): boolean {

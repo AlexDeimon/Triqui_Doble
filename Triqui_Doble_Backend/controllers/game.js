@@ -65,7 +65,8 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
       else if (victoriasO > victoriasX) ganadorGeneral = 'O';
     }
   } else {
-    ganadorGeneral = verificarGanador(juego.tableros, 'ganador');
+    const patron = juego.configuracion?.patronGanador || 'Cualquiera';
+    ganadorGeneral = verificarGanador(juego.tableros, 'ganador', patron);
   }
 
   if (ganadorGeneral) {
@@ -82,7 +83,7 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     }
   }
 
-  if (juego.configuracion && juego.configuracion.modoSeleccion === 'aleatorio') {
+  if (juego.configuracion && juego.configuracion.modoSeleccion === 'Aleatorio') {
     const tablerosDisponibles = juego.tableros.filter(t => !t.celdas.every(c => c.valor !== null));
     if (tablerosDisponibles.length > 0) {
       const randomIndex = Math.floor(Math.random() * tablerosDisponibles.length);
@@ -112,13 +113,30 @@ export const patronesGanadores = [
   [0, 4, 8], [2, 4, 6]
 ];
 
-export const verificarGanador = (elementos, propiedad) => {
-  for (const [a, b, c] of patronesGanadores) {
-    if (elementos[a][propiedad] &&
-      elementos[a][propiedad] === elementos[b][propiedad] &&
-      elementos[a][propiedad] === elementos[c][propiedad]) {
-      return elementos[a][propiedad];
+export const mapeoPatrones = {
+  '1ra Fila': 0, '2da Fila': 1, '3ra Fila': 2,
+  '1ra Columna': 3, '2da Columna': 4, '3ra Columna': 5,
+  'Diagonal Principal': 6, 'Diagonal Secundaria': 7
+};
+
+export const verificarGanador = (elementos, propiedad, patronEspecifico = 'Cualquiera') => {
+  if (patronEspecifico === 'Cualquiera' || !mapeoPatrones.hasOwnProperty(patronEspecifico)) {
+    for (const [a, b, c] of patronesGanadores) {
+      if (elementos[a][propiedad] &&
+        elementos[a][propiedad] === elementos[b][propiedad] &&
+        elementos[a][propiedad] === elementos[c][propiedad]) {
+        return elementos[a][propiedad];
+      }
     }
+  } else {
+    const index = mapeoPatrones[patronEspecifico];
+    const [a, b, c] = patronesGanadores[index];
+    const valores = [elementos[a][propiedad], elementos[b][propiedad], elementos[c][propiedad]];
+    const countX = valores.filter(v => v === 'X').length;
+    const countO = valores.filter(v => v === 'O').length;
+
+    if (countX >= 2) return 'X';
+    if (countO >= 2) return 'O';
   }
   return null;
 };

@@ -6,15 +6,22 @@
 </div>
 <div class="contenedor" *ngIf="gameState()">
   <h2>Sala: {{ websocketService.roomId }}</h2>
-  <h2>Turno de: {{ getNombreTurno() }}</h2>
   <h2 *ngIf="myRole() == 'Espectador'">{{ getNombreRol() }}</h2>
-  <div class="timer-container" *ngIf="gameState()?.configuracion?.temporizador && !gameState()?.ganador && gameState()?.ultimaActualizacionTurno">
-    <div class="timer-circle" [class.danger]="tiempoRestante() <= 10">
-      <span class="timer-text">{{ tiempoRestante() }}</span>
+  <div class="info-wrapper">
+    <div class="timer-container" *ngIf="gameState()?.configuracion?.temporizador && !gameState()?.ganador && gameState()?.ultimaActualizacionTurno">
+      <div class="timer-circle" [class.danger]="tiempoRestante() <= 10">
+        <span class="timer-text">{{ tiempoRestante() }}</span>
+      </div>
+    </div>
+    <div class="info-configuracion">
+      <p><strong>Turno de:</strong> {{ getNombreTurno() }}</p>
+      <p><strong>Objetivo:</strong> {{ gameState()?.configuracion?.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}</p>
+      <p><strong>Selección:</strong> {{ gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro' }}</p>
+      <p *ngIf="gameState()?.configuracion?.objetivo !== 'mayoria' && gameState()?.configuracion?.patronGanador"><strong>Patrón:</strong> {{ gameState()?.configuracion?.patronGanador }}</p>
     </div>
   </div>
   <div class="tablero-grande">
-    <div *ngFor="let tablero of gameState()!.tableros" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === 'X'" [class.ganado-o]="tablero.ganador === 'O'" [class.empatado]="tablero.ganador === 'E'" [class.activoX]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'X'" [class.activoO]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'O'">
+    <div *ngFor="let tablero of gameState()!.tableros" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === 'X'" [class.ganado-o]="tablero.ganador === 'O'" [class.empatado]="tablero.ganador === 'E'" [class.activoX]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'X'" [class.activoO]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'O'" [class.objetivo]="animarPatron() && tableroObjetivo(tablero.id)">
       <div *ngIf="tablero.ganador" class="tablero-ganador">{{ tablero.ganador }}</div>
       <div *ngFor="let celda of tablero.celdas" class="celda" (click)="movimiento(tablero.id, celda.id)">{{ celda.valor }}</div>
     </div>
