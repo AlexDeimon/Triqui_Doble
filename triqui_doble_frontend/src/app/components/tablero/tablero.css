@@ -1,3 +1,9 @@
+::view-transition-group(*) {
+  animation-duration: 2s; /* Duración total */
+  animation-delay: 0.2s;    /* Retardo antes de empezar */
+  animation-timing-function: cubic-bezier(0.68, -0.6, 0.32, 1.6); /* Efecto de rebote (bounce) */
+}
+
 :host {
   display: block;
   flex: 1;

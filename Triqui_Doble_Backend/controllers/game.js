@@ -1,6 +1,41 @@
 import { Partidas } from '../models/game.js';
 import { actualizarEstadisticas } from './user.js';
 
+export const patronesGanadores = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6]
+];
+
+export const mapeoPatrones = {
+  '1ra Fila': 0, '2da Fila': 1, '3ra Fila': 2,
+  '1ra Columna': 3, '2da Columna': 4, '3ra Columna': 5,
+  'Diagonal Principal': 6, 'Diagonal Secundaria': 7
+};
+
+export const verificarGanador = (elementos, propiedad, patronEspecifico = 'Cualquiera') => {
+  if (patronEspecifico === 'Cualquiera' || !mapeoPatrones.hasOwnProperty(patronEspecifico)) {
+    for (const [a, b, c] of patronesGanadores) {
+      if (elementos[a][propiedad] &&
+        elementos[a][propiedad] === elementos[b][propiedad] &&
+        elementos[a][propiedad] === elementos[c][propiedad]) {
+        return elementos[a][propiedad];
+      }
+    }
+  } else {
+    const index = mapeoPatrones[patronEspecifico];
+    const [a, b, c] = patronesGanadores[index];
+    const valores = [elementos[a][propiedad], elementos[b][propiedad], elementos[c][propiedad]];
+    const countX = valores.filter(v => v === 'X').length;
+    const countO = valores.filter(v => v === 'O').length;
+
+    if (countX >= 2) return 'X';
+    if (countO >= 2) return 'O';
+  }
+  return null;
+};
+
+
 export const iniciarEstadoJuego = (roomId) => {
   return {
     sala: roomId,
@@ -25,11 +60,12 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
 
   if (juego.turnoActual !== rolJugador) return;
 
-  if (juego.tableroActivo !== null && juego.tableroActivo !== tableroId) {
+  const currentIndex = juego.tableros.findIndex(t => t.id === tableroId);
+  if (juego.tableroActivo !== null && juego.tableroActivo !== currentIndex) {
     return;
   }
 
-  const tablero = juego.tableros[tableroId];
+  const tablero = juego.tableros.find(t => t.id === tableroId);
 
   const celda = tablero.celdas[celdaId];
 
@@ -87,7 +123,8 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     const tablerosDisponibles = juego.tableros.filter(t => !t.celdas.every(c => c.valor !== null));
     if (tablerosDisponibles.length > 0) {
       const randomIndex = Math.floor(Math.random() * tablerosDisponibles.length);
-      juego.tableroActivo = tablerosDisponibles[randomIndex].id;
+      const selectedBoard = tablerosDisponibles[randomIndex];
+      juego.tableroActivo = juego.tableros.indexOf(selectedBoard);
     } else {
       juego.tableroActivo = null;
     }
@@ -102,44 +139,30 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     }
   }
 
+  if (juego.configuracion?.tablerosMoviles && juego.cantidadTurnos > 0 && juego.cantidadTurnos % 10 === 0 && !juego.ganador) {
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+
+      const propuestos = indices.map(idx => juego.tableros[idx]);
+
+      const isWinner = verificarGanador(propuestos, 'ganador', juego.configuracion?.patronGanador || 'Cualquiera');
+      if (!isWinner) {
+        juego.tableros = propuestos;
+        break;
+      }
+    }
+  }
+
   juego.turnoActual = juego.turnoActual === 'X' ? 'O' : 'X';
 
   return juego;
 }
 
-export const patronesGanadores = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8],
-  [0, 3, 6], [1, 4, 7], [2, 5, 8],
-  [0, 4, 8], [2, 4, 6]
-];
 
-export const mapeoPatrones = {
-  '1ra Fila': 0, '2da Fila': 1, '3ra Fila': 2,
-  '1ra Columna': 3, '2da Columna': 4, '3ra Columna': 5,
-  'Diagonal Principal': 6, 'Diagonal Secundaria': 7
-};
-
-export const verificarGanador = (elementos, propiedad, patronEspecifico = 'Cualquiera') => {
-  if (patronEspecifico === 'Cualquiera' || !mapeoPatrones.hasOwnProperty(patronEspecifico)) {
-    for (const [a, b, c] of patronesGanadores) {
-      if (elementos[a][propiedad] &&
-        elementos[a][propiedad] === elementos[b][propiedad] &&
-        elementos[a][propiedad] === elementos[c][propiedad]) {
-        return elementos[a][propiedad];
-      }
-    }
-  } else {
-    const index = mapeoPatrones[patronEspecifico];
-    const [a, b, c] = patronesGanadores[index];
-    const valores = [elementos[a][propiedad], elementos[b][propiedad], elementos[c][propiedad]];
-    const countX = valores.filter(v => v === 'X').length;
-    const countO = valores.filter(v => v === 'O').length;
-
-    if (countX >= 2) return 'X';
-    if (countO >= 2) return 'O';
-  }
-  return null;
-};
 
 export const rendirse = (juego, socketId) => {
   const jugadorX = juego.jugadores.X === socketId;

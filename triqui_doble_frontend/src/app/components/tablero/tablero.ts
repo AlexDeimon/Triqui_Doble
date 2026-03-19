@@ -181,7 +181,8 @@ export class TableroComponent implements OnInit, OnDestroy {
     if (mapeoPatrones[patron] !== undefined) {
       const index = mapeoPatrones[patron];
       const celdasObjetivo = patronesGanadores[index];
-      return celdasObjetivo.includes(tableroId);
+      const pos = state.tableros.findIndex(t => t.id === tableroId);
+      return celdasObjetivo.includes(pos);
     }
     return false;
   }
@@ -195,7 +196,8 @@ export class TableroComponent implements OnInit, OnDestroy {
       return tablero ? !tablero.celdas.every(c => c.valor !== null) : false;
     }
 
-    return state.tableroActivo === tableroId;
+    const pos = state.tableros.findIndex(t => t.id === tableroId);
+    return state.tableroActivo === pos;
   }
 
   getNombreTurno(): string {
@@ -239,5 +241,9 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   reiniciarJuego() {
     this.websocketService.emitReset();
+  }
+
+  trackById(index: number, tablero: any): number {
+    return tablero.id;
   }
 }

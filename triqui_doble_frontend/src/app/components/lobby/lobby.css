@@ -43,6 +43,11 @@ h2 {
   animation: fadeInUp 0.8s ease-out;
 }
 
+.toggle-switch {
+  right: 20px;
+  position: absolute;
+}
+
 .salas-container {
   width: 100%;
   max-width: 800px;
@@ -213,6 +218,16 @@ h2 {
 .config-option {
   color: #fff;
   background-color: var(--bg-mid, #1a1a2e);
+}
+
+.config-btn {
+  margin: 20px auto;
+}
+
+.btn-sm {
+  margin-top: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
 }
 
 .ranking-content h2 {

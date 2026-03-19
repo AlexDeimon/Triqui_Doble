@@ -18,10 +18,11 @@
       <p><strong>Objetivo:</strong> {{ gameState()?.configuracion?.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}</p>
       <p><strong>Selección:</strong> {{ gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro' }}</p>
       <p *ngIf="gameState()?.configuracion?.objetivo !== 'mayoria' && gameState()?.configuracion?.patronGanador"><strong>Patrón:</strong> {{ gameState()?.configuracion?.patronGanador }}</p>
+      <p *ngIf="gameState()?.configuracion?.tablerosMoviles"><strong>Dinámico:</strong> Cada 10 turnos</p>
     </div>
   </div>
   <div class="tablero-grande">
-    <div *ngFor="let tablero of gameState()!.tableros" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === 'X'" [class.ganado-o]="tablero.ganador === 'O'" [class.empatado]="tablero.ganador === 'E'" [class.activoX]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'X'" [class.activoO]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'O'" [class.objetivo]="animarPatron() && tableroObjetivo(tablero.id)">
+    <div *ngFor="let tablero of gameState()!.tableros; trackBy: trackById" [style.view-transition-name]="'board-' + tablero.id" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === 'X'" [class.ganado-o]="tablero.ganador === 'O'" [class.empatado]="tablero.ganador === 'E'" [class.activoX]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'X'" [class.activoO]="tableroActivo(tablero.id) && gameState()!.turnoActual === 'O'" [class.objetivo]="animarPatron() && tableroObjetivo(tablero.id)">
       <div *ngIf="tablero.ganador" class="tablero-ganador">{{ tablero.ganador }}</div>
       <div *ngFor="let celda of tablero.celdas" class="celda" (click)="movimiento(tablero.id, celda.id)">{{ celda.valor }}</div>
     </div>

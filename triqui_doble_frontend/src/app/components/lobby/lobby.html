@@ -24,11 +24,11 @@
             <td>{{ sala.jugadorX }}</td>
             <td>{{ sala.jugadorO }}</td>
             <td>
-              <button (click)="unirseSalaEspecifica(sala.roomId)" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem">Unirse</button>
+              <button (click)="unirseSalaEspecifica(sala.roomId)" class="btn-primary btn-sm">Unirse</button>
             </td>
           </tr>
           <tr *ngIf="salas.length === 0">
-            <td colspan="4" style="text-align: center; padding: 2rem">No hay salas disponibles en este momento.</td>
+            <td colspan="4">No hay salas disponibles en este momento.</td>
           </tr>
         </tbody>
       </table>
@@ -157,18 +157,22 @@
         <p>Si se habilita el temporizador, el jugador pierde su turno si no juega antes de que el temporizador expire y el oponente juega en el Mini-Tablero activo.</p>
       </div>
       <div class="tutorial-step">
-        <h3>6. Iniciar Partida</h3>
+        <h3>6. Tableros Moviles</h3>
+        <p>Si se habilita esta opción, los tableros se moverán aleatoriamente cada 10 turnos.</p>
+      </div>
+      <div class="tutorial-step">
+        <h3>7. Iniciar Partida</h3>
         <p>Al crear la sala, el jugador empieza con la ficha <strong>X</strong>. Se genera un código de sala que se muestra en la pantalla, este se comparte con el otro jugador el cual tendrá la ficha <strong>O</strong>.</p>
       </div>
       <div class="tutorial-step">
-        <h3>7. Puntaje</h3>
+        <h3>8. Puntaje</h3>
         <p>Por cada mini-tablero ganado se obtienen <strong>10 puntos</strong>. Al ganar el juego se obtienen <strong>50 puntos</strong>.</p>
       </div>
     </div>
   </div>
 </div>
 <div *ngIf="mostrarConfiguracionSala" class="ranking-modal-container">
-  <div class="ranking-content" style="max-width: 400px;">
+  <div class="ranking-content">
     <button (click)="cerrarConfiguracionSala()" class="btn-close"><span aria-hidden="true">&times;</span></button>
     <h2>Configuración de la Sala</h2>
     <div class="config-body">
@@ -214,6 +218,12 @@
           <option value="Diagonal Secundaria" class="config-option">Diagonal Secundaria</option>
           <option value="Aleatorio" class="config-option">Aleatorio</option>
         </select>
+      </div>
+      <div class="form-group-config" *ngIf="objetivoJuego === 'triqui_doble'">
+        <label for="movingBoards" class="config-label">Tableros Móviles:</label>
+        <div class="toggle-switch">
+           <input type="checkbox" id="movingBoards" [(ngModel)]="tablerosMoviles" class="config-checkbox">
+        </div>
       </div>
       <button (click)="crearSala()" class="btn-primary config-btn">Crear Sala</button>
     </div>

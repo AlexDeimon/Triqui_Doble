@@ -25,6 +25,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   objetivoJuego: string = 'triqui_doble';
   modoSeleccion: string = 'regla_oro';
   patronGanador: string = 'Cualquiera';
+  tablerosMoviles: boolean = false;
   private salasSub!: Subscription;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
@@ -53,16 +54,21 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.objetivoJuego = 'triqui_doble';
     this.modoSeleccion = 'regla_oro';
     this.patronGanador = 'Cualquiera';
+    this.tablerosMoviles = false;
   }
 
   crearSala() {
     const codigoRandom = Math.random().toString(36).substring(7).toUpperCase();
+    if (this.objetivoJuego === 'mayoria') {
+      this.tablerosMoviles = false;
+    }
     this.websocketService.crearSala(codigoRandom, {
       temporizador: this.habilitarTemporizador,
       tiempo: this.tiempoTemporizador,
       objetivo: this.objetivoJuego,
       modoSeleccion: this.modoSeleccion,
-      patronGanador: this.patronGanador
+      patronGanador: this.patronGanador,
+      tablerosMoviles: this.tablerosMoviles
     });
     this.cerrarConfiguracionSala();
   }
