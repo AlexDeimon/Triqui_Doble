@@ -112,7 +112,7 @@ io.on('connection', (socket) => {
     const estadojuego = gameController.iniciarEstadoJuego(roomId);
     estadojuego.jugadores.X = socket.id;
     estadojuego.usernames.X = username;
-    estadojuego.configuracion = configuracion || { temporizador: false, tiempo: 15, objetivo: 'triqui_doble', modoSeleccion: 'regla_oro', patronGanador: 'Cualquiera', tablerosMoviles: false };
+    estadojuego.configuracion = configuracion || { temporizador: false, tiempo: 15, objetivo: 'triqui_doble', modoSeleccion: 'regla_oro', patronGanador: 'Cualquiera', tablerosMoviles: false, robarTableros: false };
     
     if (estadojuego.configuracion.objetivo === 'triqui_doble' && estadojuego.configuracion.patronGanador === 'Aleatorio') {
       const opcionesPatron = ['1ra Fila', '2da Fila', '3ra Fila', '1ra Columna', '2da Columna', '3ra Columna', 'Diagonal Principal', 'Diagonal Secundaria'];

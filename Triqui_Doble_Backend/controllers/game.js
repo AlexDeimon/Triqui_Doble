@@ -74,13 +74,20 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
   celda.valor = rolJugador;
   juego.cantidadTurnos++;
 
-  if (!tablero.ganador) {
-    const ganadorTablero = verificarGanador(tablero.celdas, 'valor');
-    if (ganadorTablero) {
-      tablero.ganador = ganadorTablero;
-      juego.puntajes[ganadorTablero] += 10;
-      console.log(`Tablero ${tableroId} ganado por ${ganadorTablero}`);
-    } else if (tablero.celdas.every(c => c.valor !== null)) {
+  const ganadorOriginal = tablero.ganador;
+  if (juego.configuracion?.robarTableros || !ganadorOriginal) {
+    const marcoLinea = patronesGanadores
+      .filter(patron => patron.includes(celdaId))
+      .some(patron => patron.every(idx => tablero.celdas[idx].valor === rolJugador));
+
+    if (marcoLinea && ganadorOriginal !== rolJugador) {
+      if (ganadorOriginal && ganadorOriginal !== 'E') {
+        juego.puntajes[ganadorOriginal] -= 10;
+      }
+      tablero.ganador = rolJugador;
+      juego.puntajes[rolJugador] += 10;
+      console.log(`Tablero ${tableroId} ganado/robado por ${rolJugador}`);
+    } else if (!ganadorOriginal && tablero.celdas.every(c => c.valor !== null)) {
       tablero.ganador = 'E';
       console.log(`Tablero ${tableroId} terminado en empate`);
     }
@@ -119,6 +126,24 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     }
   }
 
+  if (juego.configuracion?.tablerosMoviles && juego.cantidadTurnos > 0 && juego.cantidadTurnos % 10 === 0 && !juego.ganador) {
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+
+      const propuestos = indices.map(idx => juego.tableros[idx]);
+
+      const isWinner = verificarGanador(propuestos, 'ganador', juego.configuracion?.patronGanador || 'Cualquiera');
+      if (!isWinner) {
+        juego.tableros = propuestos;
+        break;
+      }
+    }
+  }
+
   if (juego.configuracion && juego.configuracion.modoSeleccion === 'Aleatorio') {
     const tablerosDisponibles = juego.tableros.filter(t => !t.celdas.every(c => c.valor !== null));
     if (tablerosDisponibles.length > 0) {
@@ -139,23 +164,7 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     }
   }
 
-  if (juego.configuracion?.tablerosMoviles && juego.cantidadTurnos > 0 && juego.cantidadTurnos % 10 === 0 && !juego.ganador) {
-    for (let attempt = 0; attempt < 50; attempt++) {
-      const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-      for (let i = indices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
-      }
 
-      const propuestos = indices.map(idx => juego.tableros[idx]);
-
-      const isWinner = verificarGanador(propuestos, 'ganador', juego.configuracion?.patronGanador || 'Cualquiera');
-      if (!isWinner) {
-        juego.tableros = propuestos;
-        break;
-      }
-    }
-  }
 
   juego.turnoActual = juego.turnoActual === 'X' ? 'O' : 'X';
 

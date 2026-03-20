@@ -19,6 +19,7 @@
       <p><strong>Selección:</strong> {{ gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro' }}</p>
       <p *ngIf="gameState()?.configuracion?.objetivo !== 'mayoria' && gameState()?.configuracion?.patronGanador"><strong>Patrón:</strong> {{ gameState()?.configuracion?.patronGanador }}</p>
       <p *ngIf="gameState()?.configuracion?.tablerosMoviles"><strong>Dinámico:</strong> Cada 10 turnos</p>
+      <p *ngIf="gameState()?.configuracion?.robarTableros"><strong>Robar Tableros:</strong> Sí</p>
     </div>
   </div>
   <div class="tablero-grande">
