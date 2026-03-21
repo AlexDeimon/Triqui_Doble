@@ -88,7 +88,7 @@
           <tr *ngFor="let partida of historial">
             <td>{{ partida.jugadorX }}</td>
             <td>{{ partida.jugadorO }}</td>
-            <td>{{ partida.ganador === 'Empate' ? 'Empate' : partida.ganador }}</td>
+            <td>{{ partida.ganador === 'X' ? partida.jugadorX : partida.jugadorO }}</td>
             <td>{{ partida.cantidadTurnos }}</td>
             <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
             <td>{{ partida.fecha | date:'HH:mm' }}</td>

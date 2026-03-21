@@ -5,7 +5,7 @@ import { Server } from "socket.io";
 import cors from 'cors';
 import { redisClient } from './config/db.js';
 import { connectDB } from './config/db.js';
-import * as userController from './controllers/user.js';
+import userRouter from './routes/user.js';
 import * as gameController from './controllers/game.js';
 
 connectDB();
@@ -18,6 +18,7 @@ console.log('Conectado a Redis');
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/', userRouter);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
@@ -86,11 +87,6 @@ const iniciarTimeoutTurno = async (roomId, io) => {
 
   turnTimeouts.set(roomId, timer);
 };
-
-app.post('/registrar', userController.registrar);
-app.post('/login', userController.login);
-app.get('/ranking', userController.ranking);
-app.get('/historial/:username', userController.historialJugador);
 
 const obtenerSalasDisponibles = async () => {
   const keys = await redisClient.keys('juego:*');
