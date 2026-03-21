@@ -38,6 +38,20 @@ export class LoginComponent {
     } else {
       this.websocketService.registrar(this.username, this.password).subscribe({
         next: () => {
+          this.websocketService.login(this.username, this.password).subscribe({
+            next: () => {
+              this.router.navigate(['/lobby']);
+            },
+            error: (err) => {
+              Swal.fire({
+                title: err.error.msg || 'Error al iniciar sesión',
+                icon: 'error',
+                background: '#16213e',
+                color: '#fff',
+                confirmButtonColor: '#e94560'
+              });
+            }
+          });
           Swal.fire({
             title: 'Usuario registrado exitosamente',
             icon: 'success',
