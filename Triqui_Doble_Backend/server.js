@@ -7,10 +7,11 @@ import { redisClient } from './config/db.js';
 import { connectDB } from './config/db.js';
 import userRouter from './routes/user.js';
 import { initializeSockets } from './sockets/socketManager.js';
+import { errorHandler } from './middlewares/errorHandler.js';
 
 connectDB();
 redisClient.on('error', err => console.log('Redis Client Error', err));
-await redisClient.connect();
+await redisClient.connect().catch(err => console.error('Error inicial conectando a Redis', err));
 console.log('Conectado a Redis');
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/', userRouter);
+app.use(errorHandler);
 
 const server = http.createServer(app);
 const io = new Server(server, {

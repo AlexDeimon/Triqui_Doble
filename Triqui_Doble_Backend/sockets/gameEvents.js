@@ -1,5 +1,6 @@
 import { redisClient } from '../config/db.js';
 import * as gameController from '../controllers/game.js';
+import { socketWrapper } from '../utils/socketWrapper.js';
 import {
   turnTimeouts,
   resetearTimeoutInactividad,
@@ -8,7 +9,7 @@ import {
 } from '../services/roomService.js';
 
 export const handleGameEvents = (io, socket) => {
-  socket.on('Movimiento', async ({ roomId, tableroId, celdaId }) => {
+  socket.on('Movimiento', socketWrapper(socket, async ({ roomId, tableroId, celdaId }) => {
     const juegoJson = await redisClient.get(`juego:${roomId}`);
 
     if (!juegoJson) return;
@@ -40,9 +41,9 @@ export const handleGameEvents = (io, socket) => {
       io.to(roomId).emit('actualizarJuego', movimientoJuego);
       resetearTimeoutInactividad(roomId, io);
     }
-  });
+  }));
 
-  socket.on('reiniciarJuego', async (roomId) => {
+  socket.on('reiniciarJuego', socketWrapper(socket, async (roomId) => {
     const juegoJson = await redisClient.get(`juego:${roomId}`);
     if (!juegoJson) return;
 
@@ -66,9 +67,9 @@ export const handleGameEvents = (io, socket) => {
     io.to(roomId).emit('actualizarJuego', nuevoJuego);
     resetearTimeoutInactividad(roomId, io);
     await emitirSalasDisponibles(io);
-  });
+  }));
 
-  socket.on('rendirse', async (roomId) => {
+  socket.on('rendirse', socketWrapper(socket, async (roomId) => {
     const juegoJson = await redisClient.get(`juego:${roomId}`);
     if (!juegoJson) return;
 
@@ -85,5 +86,5 @@ export const handleGameEvents = (io, socket) => {
 
     io.to(roomId).emit('actualizarJuego', juegoActualizado);
     resetearTimeoutInactividad(roomId, io);
-  });
+  }));
 };

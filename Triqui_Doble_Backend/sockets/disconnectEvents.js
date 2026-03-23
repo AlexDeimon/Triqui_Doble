@@ -1,4 +1,5 @@
 import { redisClient } from '../config/db.js';
+import { socketWrapper } from '../utils/socketWrapper.js';
 import {
   timeoutsEliminacion,
   turnTimeouts,
@@ -6,7 +7,7 @@ import {
 } from '../services/roomService.js';
 
 export const handleDisconnectEvents = (io, socket) => {
-  socket.on('disconnecting', async () => {
+  socket.on('disconnecting', socketWrapper(socket, async () => {
     const rooms = socket.rooms;
     for (const roomId of rooms) {
       if (roomId === socket.id) continue;
@@ -41,22 +42,26 @@ export const handleDisconnectEvents = (io, socket) => {
           if (timeoutsEliminacion.has(roomId)) clearTimeout(timeoutsEliminacion.get(roomId));
 
           const timer = setTimeout(async () => {
-            const currentJuegoJson = await redisClient.get(`juego:${roomId}`);
-            if (currentJuegoJson) {
-              const currentJuego = JSON.parse(currentJuegoJson);
-              const currentSocketId = currentJuego.jugadores[rol];
+            try {
+              const currentJuegoJson = await redisClient.get(`juego:${roomId}`);
+              if (currentJuegoJson) {
+                const currentJuego = JSON.parse(currentJuegoJson);
+                const currentSocketId = currentJuego.jugadores[rol];
 
-              if (currentSocketId && currentSocketId !== socket.id) {
-                console.log(`Sala ${roomId}: El jugador ${rol} se reconectó (Socket actualizado), cancelando eliminación.`);
+                if (currentSocketId && currentSocketId !== socket.id) {
+                  console.log(`Sala ${roomId}: El jugador ${rol} se reconectó (Socket actualizado), cancelando eliminación.`);
+                  timeoutsEliminacion.delete(roomId);
+                  return;
+                }
+
+                io.to(roomId).emit('jugadorDesconectado', 'La sala se eliminó por inactividad');
+                await redisClient.del(`juego:${roomId}`);
                 timeoutsEliminacion.delete(roomId);
-                return;
+                console.log(`Sala ${roomId} eliminada por inactividad/desconexión`);
+                await emitirSalasDisponibles(io);
               }
-
-              io.to(roomId).emit('jugadorDesconectado', 'La sala se eliminó por inactividad');
-              await redisClient.del(`juego:${roomId}`);
-              timeoutsEliminacion.delete(roomId);
-              console.log(`Sala ${roomId} eliminada por inactividad/desconexión`);
-              await emitirSalasDisponibles(io);
+            } catch (error) {
+              console.error(`[Error Redis] Timeout eliminación ${roomId}:`, error.message);
             }
           }, 60000);
 
@@ -69,5 +74,5 @@ export const handleDisconnectEvents = (io, socket) => {
         }
       }
     }
-  });
+  }));
 };
