@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, signal, effect, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { estadoJuego } from '../../models/game';
@@ -18,8 +18,8 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   animarPatron = signal<boolean>(false);
 
-  gameState = signal<estadoJuego | null>(null);
-  myRole = signal<string>('');
+  gameState = this.websocketService.gameState;
+  myRole = this.websocketService.myRole;
   tiempoRestante = signal<number>(0);
   private timerInterval: any;
   private yaAnimado: boolean = false;
@@ -40,12 +40,14 @@ export class TableroComponent implements OnInit, OnDestroy {
     private ngZone: NgZone,
     private audioService: AudioService,
     private router: Router
-  ) { }
+  ) {
+    let lastState: estadoJuego | null = null;
 
-  ngOnInit() {
-    this.websocketService.gameState$.subscribe((state) => {
+    effect(() => {
+      const state = this.websocketService.gameState();
+
       this.ngZone.run(() => {
-        const previousState = this.gameState();
+        const previousState = lastState;
 
         const getOccupiedCount = (s: estadoJuego | null) =>
           s ? s.tableros.reduce((acc, t) => acc + t.celdas.filter(c => c.valor !== null).length, 0) : 0;
@@ -67,8 +69,6 @@ export class TableroComponent implements OnInit, OnDestroy {
            this.audioService.playMoveSound();
         }
 
-        this.gameState.set(state);
-
         if (state?.configuracion?.temporizador && state.ultimaActualizacionTurno && !state.ganador) {
            this.iniciarTemporizadorLocal(state);
         } else {
@@ -86,14 +86,13 @@ export class TableroComponent implements OnInit, OnDestroy {
             confirmButtonColor: '#e94560'
           });
         }
-      });
-    });
 
-    this.websocketService.myRole$.subscribe((role) => {
-      this.ngZone.run(() => {
-        this.myRole.set(role);
+        lastState = state;
       });
     });
+  }
+
+  ngOnInit() {
   }
 
   ngOnDestroy() {

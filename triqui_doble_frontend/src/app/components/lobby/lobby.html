@@ -19,7 +19,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let sala of salas">
+          <tr *ngFor="let sala of websocketService.salasPublicas()">
             <td>{{ sala.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}</td>
             <td>{{ sala.jugadorX }}</td>
             <td>{{ sala.jugadorO }}</td>
@@ -27,7 +27,7 @@
               <button (click)="unirseSalaEspecifica(sala.roomId)" class="btn-primary btn-sm">Unirse</button>
             </td>
           </tr>
-          <tr *ngIf="salas.length === 0">
+          <tr *ngIf="websocketService.salasPublicas().length === 0">
             <td colspan="4">No hay salas disponibles en este momento.</td>
           </tr>
         </tbody>

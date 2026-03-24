@@ -2,7 +2,7 @@ import { Component, NgZone, ChangeDetectorRef, OnInit, OnDestroy } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from '../../services/websocket';
-import { Subscription } from 'rxjs';
+
 
 @Component({
   standalone: true,
@@ -18,7 +18,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   historial: any[] = [];
   mostrarHistorial: boolean = false;
   mostrarTutorial: boolean = false;
-  salas: any[] = [];
+  robarTableros: boolean = false;
   mostrarConfiguracionSala: boolean = false;
   habilitarTemporizador: boolean = false;
   tiempoTemporizador: number = 15;
@@ -26,22 +26,13 @@ export class LobbyComponent implements OnInit, OnDestroy {
   modoSeleccion: string = 'regla_oro';
   patronGanador: string = 'Cualquiera';
   tablerosMoviles: boolean = false;
-  robarTableros: boolean = false;
-  private salasSub!: Subscription;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
   ngOnInit() {
-    this.salasSub = this.websocketService.salasPublicas$.subscribe(salas => {
-      this.salas = salas;
-      this.cd.detectChanges();
-    });
   }
 
   ngOnDestroy() {
-    if (this.salasSub) {
-      this.salasSub.unsubscribe();
-    }
   }
 
   abrirConfiguracionSala() {

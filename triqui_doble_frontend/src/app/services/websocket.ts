@@ -1,6 +1,6 @@
 import { Injectable, NgZone, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { estadoJuego } from '../models/game';
 import { environment } from '../../environments/environment';
@@ -18,9 +18,9 @@ export class WebsocketService {
   public roomId: string = '';
   public username: string = '';
 
-  public gameState$ = new BehaviorSubject<estadoJuego | null>(null);
-  public salasPublicas$ = new BehaviorSubject<any[]>([]);
-  public myRole$ = new BehaviorSubject<string>('');
+  public gameState = signal<estadoJuego | null>(null);
+  public salasPublicas = signal<any[]>([]);
+  public myRole = signal<string>('');
   public loading = signal<boolean>(true);
   public isReconnecting: boolean = false;
   public timeOffset: number = 0;
@@ -74,17 +74,17 @@ export class WebsocketService {
         }
         if ('startViewTransition' in document) {
             (document as any).startViewTransition(() => {
-                this.gameState$.next(state);
+                this.gameState.set(state);
             });
         } else {
-            this.gameState$.next(state);
+            this.gameState.set(state);
         }
       });
     });
 
     this.socket.on('salasDisponibles', (salas: any[]) => {
       this.ngZone.run(() => {
-        this.salasPublicas$.next(salas);
+        this.salasPublicas.set(salas);
       });
     });
 
@@ -97,7 +97,7 @@ export class WebsocketService {
         localStorage.setItem('triqui_roomId', this.roomId);
         localStorage.setItem('triqui_username', this.username);
 
-        this.myRole$.next(data.jugador);
+        this.myRole.set(data.jugador);
         this.router.navigate(['/tablero']);
       });
     });
@@ -110,7 +110,7 @@ export class WebsocketService {
         localStorage.setItem('triqui_roomId', this.roomId);
         if (this.username) localStorage.setItem('triqui_username', this.username);
 
-        this.myRole$.next(data.jugador);
+        this.myRole.set(data.jugador);
         this.router.navigate(['/tablero']);
       });
     });
@@ -120,7 +120,7 @@ export class WebsocketService {
       this.ngZone.run(() => {
         this.roomId = '';
         localStorage.removeItem('triqui_roomId');
-        this.gameState$.next(null);
+        this.gameState.set(null);
         this.router.navigate(['/lobby']).then(() => {
           Swal.fire({
             title: msg,
@@ -135,7 +135,7 @@ export class WebsocketService {
 
     this.socket.on('oponenteDesconectado', (msg: string) => {
       this.ngZone.run(() => {
-        if (this.myRole$.getValue() === 'Espectador') return;
+        if (this.myRole() === 'Espectador') return;
         Swal.fire({
           title: 'Conexión Inestable',
           text: msg,
@@ -150,7 +150,7 @@ export class WebsocketService {
 
     this.socket.on('oponenteAbandonoVoluntario', (msg: string) => {
       this.ngZone.run(() => {
-        if (this.myRole$.getValue() === 'Espectador') return;
+        if (this.myRole() === 'Espectador') return;
         if (Swal.isVisible()) Swal.close();
 
         Swal.fire({
@@ -263,7 +263,7 @@ export class WebsocketService {
 
   abandonarSalaLocal() {
     if (this.roomId) {
-      const role = this.myRole$.getValue();
+      const role = this.myRole();
       if (role === 'Espectador') {
         this.socket.emit('salirEspectador', this.roomId);
       } else {
@@ -271,8 +271,8 @@ export class WebsocketService {
       }
       this.roomId = '';
       localStorage.removeItem('triqui_roomId');
-      this.gameState$.next(null);
-      this.myRole$.next('');
+      this.gameState.set(null);
+      this.myRole.set('');
     }
   }
 
