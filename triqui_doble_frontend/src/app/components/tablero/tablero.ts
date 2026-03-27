@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, NgZone, signal, effect, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { estadoJuego } from '../../models/game';
+import { estadoJuego, GameRole } from '../../models/game';
 import { WebsocketService } from '../../services/websocket';
 import { AudioService } from '../../services/audio';
 import Swal from 'sweetalert2';
@@ -15,6 +15,7 @@ import Swal from 'sweetalert2';
 })
 
 export class TableroComponent implements OnInit, OnDestroy {
+  public GameRole = GameRole;
 
   animarPatron = signal<boolean>(false);
 
@@ -76,8 +77,8 @@ export class TableroComponent implements OnInit, OnDestroy {
         }
 
         if (state?.ganador) {
-          const isTie = state.ganador === 'E';
-          const ganadorUsername = state.ganador !== 'E' ? state.usernames[state.ganador as 'X' | 'O'] : '';
+          const isTie = state.ganador === GameRole.Empate;
+          const ganadorUsername = state.ganador !== GameRole.Empate ? state.usernames[state.ganador as GameRole.X | GameRole.O] : '';
           Swal.fire({
             title: isTie ? 'El juego ha terminado en empate' : `El jugador ${ganadorUsername} (${state.ganador}) ha ganado la partida`,
             icon: isTie ? 'info' : 'success',
@@ -201,18 +202,18 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   getNombreTurno(): string {
     const state = this.gameState();
-    if (!state || !state.turnoActual || state.turnoActual === 'E') return '';
-    const username = state.usernames[state.turnoActual as 'X' | 'O'];
+    if (!state || !state.turnoActual || state.turnoActual === GameRole.Empate) return '';
+    const username = state.usernames[state.turnoActual as GameRole.X | GameRole.O];
     return `${username} (${state.turnoActual})`;
   }
 
   getNombreRol(): string {
     const role = this.myRole();
     if (!role) return '';
-    if (role === 'Espectador') return 'Espectador';
+    if (role === GameRole.Espectador) return 'Espectador';
     const state = this.gameState();
     if (!state) return role;
-    const username = state.usernames[role as 'X' | 'O'];
+    const username = state.usernames[role as GameRole.X | GameRole.O];
     return `${username} (${role})`;
   }
 

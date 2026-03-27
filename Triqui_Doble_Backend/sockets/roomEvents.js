@@ -1,5 +1,6 @@
 import { redisClient } from '../config/db.js';
 import * as gameController from '../controllers/game.js';
+import { GameRole } from '../utils/constants.js';
 import { socketWrapper } from '../utils/socketWrapper.js';
 import {
   timeoutsEliminacion,
@@ -35,7 +36,7 @@ export const handleRoomEvents = (io, socket) => {
     await redisClient.set(`juego:${roomId}`, JSON.stringify(estadojuego));
     socket.join(roomId);
     console.log(`Jugador ${username} creó la sala ${roomId}`);
-    socket.emit('salaCreada', {roomId, jugador: 'X'});
+    socket.emit('salaCreada', {roomId, jugador: GameRole.X});
     io.to(roomId).emit('actualizarJuego', estadojuego);
     resetearTimeoutInactividad(roomId, io);
     await emitirSalasDisponibles(io);
@@ -64,7 +65,7 @@ export const handleRoomEvents = (io, socket) => {
       await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
       socket.join(roomId);
       console.log(`Jugador ${username} se unio de nuevo a la sala ${roomId} como X`);
-      socket.emit('salaUnida', {roomId, jugador: 'X'});
+      socket.emit('salaUnida', {roomId, jugador: GameRole.X});
       io.to(roomId).emit('actualizarJuego', juego);
       resetearTimeoutInactividad(roomId, io);
       await emitirSalasDisponibles(io);
@@ -82,7 +83,7 @@ export const handleRoomEvents = (io, socket) => {
       await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
       socket.join(roomId);
       console.log(`Jugador ${username} se unio a la sala ${roomId} como O`);
-      socket.emit('salaUnida', {roomId, jugador: 'O'});
+      socket.emit('salaUnida', {roomId, jugador: GameRole.O});
       io.to(roomId).emit('actualizarJuego', juego);
       resetearTimeoutInactividad(roomId, io);
       await emitirSalasDisponibles(io);
@@ -100,7 +101,7 @@ export const handleRoomEvents = (io, socket) => {
       await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
       socket.join(roomId);
       console.log(`Espectador ${username} se unio a la sala ${roomId}`);
-      socket.emit("salaUnida", { roomId, jugador: "Espectador" });
+      socket.emit("salaUnida", { roomId, jugador: GameRole.ESPECTADOR });
       io.to(roomId).emit("actualizarJuego", juego);
       return;
     }
@@ -115,14 +116,14 @@ export const handleRoomEvents = (io, socket) => {
 
     const juego = JSON.parse(juegoJson);
     let rol = null;
-    if (juego.usernames.X === username) rol = 'X';
-    else if (juego.usernames.O === username) rol = 'O';
-    else if (juego.espectadores && juego.espectadores.some((e) => e.username === username)) rol = 'Espectador';
+    if (juego.usernames.X === username) rol = GameRole.X;
+    else if (juego.usernames.O === username) rol = GameRole.O;
+    else if (juego.espectadores && juego.espectadores.some((e) => e.username === username)) rol = GameRole.ESPECTADOR;
 
     if (rol) {
       console.log(`Jugador ${username} (${rol}) reconectado a sala ${roomId}`);
 
-      if (rol !== 'Espectador') {
+      if (rol !== GameRole.ESPECTADOR) {
         if (timeoutsEliminacion.has(roomId)) {
           clearTimeout(timeoutsEliminacion.get(roomId));
           timeoutsEliminacion.delete(roomId);
@@ -143,7 +144,7 @@ export const handleRoomEvents = (io, socket) => {
         }
         
         if (tiempoTranscurrido >= juego.configuracion.tiempo * 1000) {
-           juego.turnoActual = juego.turnoActual === 'X' ? 'O' : 'X';
+           juego.turnoActual = juego.turnoActual === GameRole.X ? GameRole.O : GameRole.X;
            juego.ultimaActualizacionTurno = Date.now();
            io.to(roomId).emit('tiempoAgotado', 'El tiempo de turno se ha agotado. Cambio de turno.');
         } else if (!juego.ultimaActualizacionTurno) {
@@ -185,8 +186,8 @@ export const handleRoomEvents = (io, socket) => {
     const juego = JSON.parse(juegoJson);
     
     let rol = null;
-    if (juego.jugadores.X === socket.id) rol = 'X';
-    else if (juego.jugadores.O === socket.id) rol = 'O';
+    if (juego.jugadores.X === socket.id) rol = GameRole.X;
+    else if (juego.jugadores.O === socket.id) rol = GameRole.O;
 
     socket.leave(roomId);
     

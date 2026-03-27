@@ -2,7 +2,7 @@ import { Injectable, NgZone, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { estadoJuego } from '../models/game';
+import { estadoJuego, GameRole } from '../models/game';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -20,7 +20,7 @@ export class WebsocketService {
 
   public gameState = signal<estadoJuego | null>(null);
   public salasPublicas = signal<any[]>([]);
-  public myRole = signal<string>('');
+  public myRole = signal<GameRole | ''>('');
   public loading = signal<boolean>(true);
   public isReconnecting: boolean = false;
   public timeOffset: number = 0;
@@ -88,7 +88,7 @@ export class WebsocketService {
       });
     });
 
-    this.socket.on('salaCreada', (data: { roomId: string, jugador: string }) => {
+    this.socket.on('salaCreada', (data: { roomId: string, jugador: GameRole }) => {
       this.ngZone.run(() => {
         console.log('Sala creada:', data);
         this.isReconnecting = false;
@@ -102,7 +102,7 @@ export class WebsocketService {
       });
     });
 
-    this.socket.on('salaUnida', (data: { roomId: string, jugador: string }) => {
+    this.socket.on('salaUnida', (data: { roomId: string, jugador: GameRole }) => {
       this.ngZone.run(() => {
         console.log('Sala unida:', data);
         this.isReconnecting = false;
@@ -135,7 +135,7 @@ export class WebsocketService {
 
     this.socket.on('oponenteDesconectado', (msg: string) => {
       this.ngZone.run(() => {
-        if (this.myRole() === 'Espectador') return;
+        if (this.myRole() === GameRole.Espectador) return;
         Swal.fire({
           title: 'Conexión Inestable',
           text: msg,
@@ -150,7 +150,7 @@ export class WebsocketService {
 
     this.socket.on('oponenteAbandonoVoluntario', (msg: string) => {
       this.ngZone.run(() => {
-        if (this.myRole() === 'Espectador') return;
+        if (this.myRole() === GameRole.Espectador) return;
         if (Swal.isVisible()) Swal.close();
 
         Swal.fire({
@@ -264,7 +264,7 @@ export class WebsocketService {
   abandonarSalaLocal() {
     if (this.roomId) {
       const role = this.myRole();
-      if (role === 'Espectador') {
+      if (role === GameRole.Espectador) {
         this.socket.emit('salirEspectador', this.roomId);
       } else {
         this.socket.emit('abandonarSala', this.roomId);

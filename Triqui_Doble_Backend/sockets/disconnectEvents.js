@@ -1,5 +1,6 @@
 import { redisClient } from '../config/db.js';
 import { socketWrapper } from '../utils/socketWrapper.js';
+import { GameRole } from '../utils/constants.js';
 import {
   timeoutsEliminacion,
   turnTimeouts,
@@ -20,7 +21,7 @@ export const handleDisconnectEvents = (io, socket) => {
 
           socket.to(roomId).emit('oponenteDesconectado', 'El oponente se ha desconectado. Esperando reconexión...');
 
-          const rol = juego.jugadores.X === socket.id ? 'X' : 'O';
+          const rol = juego.jugadores.X === socket.id ? GameRole.X : GameRole.O;
           juego.jugadores[rol] = null;
 
           if (juego.ganador) {

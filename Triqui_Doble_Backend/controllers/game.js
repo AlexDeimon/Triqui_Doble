@@ -1,5 +1,6 @@
 import { Partidas } from '../models/game.js';
 import { actualizarEstadisticas } from './user.js';
+import { GameRole } from '../utils/constants.js';
 
 export const patronesGanadores = [
   [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -26,11 +27,11 @@ export const verificarGanador = (elementos, propiedad, patronEspecifico = 'Cualq
     const index = mapeoPatrones[patronEspecifico];
     const [a, b, c] = patronesGanadores[index];
     const valores = [elementos[a][propiedad], elementos[b][propiedad], elementos[c][propiedad]];
-    const countX = valores.filter(v => v === 'X').length;
-    const countO = valores.filter(v => v === 'O').length;
+    const countX = valores.filter(v => v === GameRole.X).length;
+    const countO = valores.filter(v => v === GameRole.O).length;
 
-    if (countX >= 2) return 'X';
-    if (countO >= 2) return 'O';
+    if (countX >= 2) return GameRole.X;
+    if (countO >= 2) return GameRole.O;
   }
   return null;
 };
@@ -44,7 +45,7 @@ export const iniciarEstadoJuego = (roomId) => {
       ganador: null,
       celdas: Array.from({ length: 9 }, (_, j) => ({ id: j, valor: null }))
     })),
-    turnoActual: 'X',
+    turnoActual: GameRole.X,
     tableroActivo: null,
     ganador: null,
     jugadores: { X: null, O: null },
@@ -56,7 +57,7 @@ export const iniciarEstadoJuego = (roomId) => {
 
 export const movimiento = (juego, socketId, tableroId, celdaId) => {
   const jugadorX = juego.jugadores.X === socketId;
-  const rolJugador = jugadorX ? 'X' : 'O';
+  const rolJugador = jugadorX ? GameRole.X : GameRole.O;
 
   if (juego.turnoActual !== rolJugador) return;
 
@@ -81,14 +82,14 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
       .some(patron => patron.every(idx => tablero.celdas[idx].valor === rolJugador));
 
     if (marcoLinea && ganadorOriginal !== rolJugador) {
-      if (ganadorOriginal && ganadorOriginal !== 'E') {
+      if (ganadorOriginal && ganadorOriginal !== GameRole.EMPATE) {
         juego.puntajes[ganadorOriginal] -= 10;
       }
       tablero.ganador = rolJugador;
       juego.puntajes[rolJugador] += 10;
       console.log(`Tablero ${tableroId} ganado/robado por ${rolJugador}`);
     } else if (!ganadorOriginal && tablero.celdas.every(c => c.valor !== null)) {
-      tablero.ganador = 'E';
+      tablero.ganador = GameRole.EMPATE;
       console.log(`Tablero ${tableroId} terminado en empate`);
     }
   }
@@ -96,16 +97,16 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
   let ganadorGeneral = null;
 
   if (juego.configuracion && juego.configuracion.objetivo === 'mayoria') {
-    const victoriasX = juego.tableros.filter(t => t.ganador === 'X').length;
-    const victoriasO = juego.tableros.filter(t => t.ganador === 'O').length;
+    const victoriasX = juego.tableros.filter(t => t.ganador === GameRole.X).length;
+    const victoriasO = juego.tableros.filter(t => t.ganador === GameRole.O).length;
     
     if (victoriasX >= 5) {
-      ganadorGeneral = 'X';
+      ganadorGeneral = GameRole.X;
     } else if (victoriasO >= 5) {
-      ganadorGeneral = 'O';
+      ganadorGeneral = GameRole.O;
     } else if (juego.tableros.every(t => t.ganador !== null)) {
-      if (victoriasX > victoriasO) ganadorGeneral = 'X';
-      else if (victoriasO > victoriasX) ganadorGeneral = 'O';
+      if (victoriasX > victoriasO) ganadorGeneral = GameRole.X;
+      else if (victoriasO > victoriasX) ganadorGeneral = GameRole.O;
     }
   } else {
     const patron = juego.configuracion?.patronGanador || 'Cualquiera';
@@ -120,7 +121,7 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
   } else {
     const todosTablerosTerminados = juego.tableros.every(t => t.ganador !== null);
     if (todosTablerosTerminados) {
-      juego.ganador = 'E';
+      juego.ganador = GameRole.EMPATE;
       console.log("Juego terminado en empate");
       guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
     }
@@ -166,7 +167,7 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
 
 
 
-  juego.turnoActual = juego.turnoActual === 'X' ? 'O' : 'X';
+  juego.turnoActual = juego.turnoActual === GameRole.X ? GameRole.O : GameRole.X;
 
   return juego;
 }
@@ -175,9 +176,10 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
 
 export const rendirse = (juego, socketId) => {
   const jugadorX = juego.jugadores.X === socketId;
-  const rolJugador = jugadorX ? 'X' : 'O';
-  juego.ganador = rolJugador === 'X' ? 'O' : 'X';
-  console.log(`Jugador ${rolJugador} se rindio`);
+  const rolJugador = jugadorX ? GameRole.X : GameRole.O;
+  juego.ganador = rolJugador === GameRole.X ? GameRole.O : GameRole.X;
+  juego.puntajes[juego.ganador] += 50;
+  console.log(`Jugador ${rolJugador} se rindio. Ganador ${juego.ganador}.`);
   guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
   return juego;
 }
@@ -193,14 +195,14 @@ export const guardarPartida = async (roomId, juego, puntajeX, puntajeO) => {
     });
     await nuevaPartida.save();
 
-    if (juego.ganador === 'E') {
-      await actualizarEstadisticas(juego.usernames.X, 'E', puntajeX);
-      await actualizarEstadisticas(juego.usernames.O, 'E', puntajeO);
+    if (juego.ganador === GameRole.EMPATE) {
+      await actualizarEstadisticas(juego.usernames.X, GameRole.EMPATE, puntajeX);
+      await actualizarEstadisticas(juego.usernames.O, GameRole.EMPATE, puntajeO);
     } else {
-      const ganador = juego.ganador === 'X' ? juego.usernames.X : juego.usernames.O;
-      const perdedor = juego.ganador === 'X' ? juego.usernames.O : juego.usernames.X;
-      const puntajeGanador = juego.ganador === 'X' ? puntajeX : puntajeO;
-      const puntajePerdedor = juego.ganador === 'X' ? puntajeO : puntajeX;
+      const ganador = juego.ganador === GameRole.X ? juego.usernames.X : juego.usernames.O;
+      const perdedor = juego.ganador === GameRole.X ? juego.usernames.O : juego.usernames.X;
+      const puntajeGanador = juego.ganador === GameRole.X ? puntajeX : puntajeO;
+      const puntajePerdedor = juego.ganador === GameRole.X ? puntajeO : puntajeX;
       
       await actualizarEstadisticas(ganador, 'G', puntajeGanador);
       await actualizarEstadisticas(perdedor, 'P', puntajePerdedor);

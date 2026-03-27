@@ -1,4 +1,5 @@
 import { redisClient } from '../config/db.js';
+import { GameRole } from '../utils/constants.js';
 
 export const timeoutsEliminacion = new Map();
 export const turnTimeouts = new Map();
@@ -88,7 +89,7 @@ export const iniciarTimeoutTurno = async (roomId, io) => {
       const obj = JSON.parse(objJson);
       if (obj.ganador || !obj.jugadores.X || !obj.jugadores.O) return;
 
-      obj.turnoActual = obj.turnoActual === 'X' ? 'O' : 'X';
+      obj.turnoActual = obj.turnoActual === GameRole.X ? GameRole.O : GameRole.X;
       obj.ultimaActualizacionTurno = Date.now();
       await redisClient.set(`juego:${roomId}`, JSON.stringify(obj));
       io.to(roomId).emit('actualizarJuego', obj);

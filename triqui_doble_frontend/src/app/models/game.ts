@@ -1,4 +1,11 @@
-export type Jugador = 'X' | 'O' | 'E' | null;
+export enum GameRole {
+  X = 'X',
+  O = 'O',
+  Empate = 'E',
+  Espectador = 'Espectador'
+}
+
+export type Jugador = GameRole.X | GameRole.O | GameRole.Empate | null;
 
 export interface celda {
   id: number;
