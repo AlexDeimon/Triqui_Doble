@@ -72,13 +72,7 @@ export class WebsocketService {
                 Swal.close();
             }
         }
-        if ('startViewTransition' in document) {
-            (document as any).startViewTransition(() => {
-                this.gameState.set(state);
-            });
-        } else {
-            this.gameState.set(state);
-        }
+        this.gameState.set(state);
       });
     });
 

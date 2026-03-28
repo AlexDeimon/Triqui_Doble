@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone, signal, effect, untracked } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, signal, effect, untracked, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { estadoJuego, GameRole } from '../../models/game';
@@ -19,7 +19,7 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   animarPatron = signal<boolean>(false);
 
-  gameState = this.websocketService.gameState;
+  gameState = signal<estadoJuego | null>(null);
   myRole = this.websocketService.myRole;
   tiempoRestante = signal<number>(0);
   private timerInterval: any;
@@ -40,7 +40,8 @@ export class TableroComponent implements OnInit, OnDestroy {
     public websocketService: WebsocketService,
     private ngZone: NgZone,
     private audioService: AudioService,
-    private router: Router
+    private router: Router,
+    private cd: ChangeDetectorRef
   ) {
     let lastState: estadoJuego | null = null;
 
@@ -88,9 +89,18 @@ export class TableroComponent implements OnInit, OnDestroy {
           });
         }
 
+        if (state && previousState && 'startViewTransition' in document) {
+           (document as any).startViewTransition(() => {
+               this.gameState.set(state);
+               this.cd.detectChanges();
+           });
+        } else {
+           this.gameState.set(state);
+        }
+
         lastState = state;
       });
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {
