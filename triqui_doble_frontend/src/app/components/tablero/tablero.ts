@@ -57,7 +57,7 @@ export class TableroComponent implements OnInit, OnDestroy {
         const prevCount = getOccupiedCount(previousState);
         const newCount = getOccupiedCount(state);
 
-        if (state && state.usernames.X && state.usernames.O) {
+        if (state && state.estado === 'jugando') {
           if (!this.yaAnimado || (state.tableros.every(t => t.celdas.every(c => c.valor === null)) && prevCount > 0)) {
             this.animarPatron.set(true);
             this.yaAnimado = true;
@@ -68,20 +68,40 @@ export class TableroComponent implements OnInit, OnDestroy {
         }
 
         if (state && prevCount < newCount) {
-           this.audioService.playMoveSound();
+          this.audioService.playMoveSound();
         }
 
         if (state?.configuracion?.temporizador && state.ultimaActualizacionTurno && !state.ganador) {
-           this.iniciarTemporizadorLocal(state);
+          this.iniciarTemporizadorLocal(state);
         } else {
-           this.detenerTemporizadorLocal();
+          this.detenerTemporizadorLocal();
         }
 
         if (state?.ganador) {
           const isTie = state.ganador === GameRole.Empate;
-          const ganadorUsername = state.ganador !== GameRole.Empate ? state.usernames[state.ganador as GameRole.X | GameRole.O] : '';
+          let title = '';
+          if (isTie) {
+            title = 'El juego ha terminado en empate';
+          } else {
+            if (state.configuracion?.dosVsDos) {
+              const rol1 = `${state.ganador}1`;
+              const rol2 = `${state.ganador}2`;
+              const u1 = state.jugadores[rol1] !== null ? state.usernames[rol1] : null;
+              const u2 = state.jugadores[rol2] !== null ? state.usernames[rol2] : null;
+
+              if (u1 && u2) {
+                title = `Los jugadores ${u1} y ${u2} (${state.ganador}) han ganado la partida`;
+              } else if (u1 || u2) {
+                title = `El jugador ${u1 || u2} (${state.ganador}) ha ganado la partida`;
+              } else {
+                title = `El equipo ${state.ganador} ha ganado la partida`;
+              }
+            } else {
+              title = `El jugador ${state.usernames[state.ganador as string]} (${state.ganador}) ha ganado la partida`;
+            }
+          }
           Swal.fire({
-            title: isTie ? 'El juego ha terminado en empate' : `El jugador ${ganadorUsername} (${state.ganador}) ha ganado la partida`,
+            title: title,
             icon: isTie ? 'info' : 'success',
             background: '#16213e',
             color: '#fff',
@@ -90,12 +110,12 @@ export class TableroComponent implements OnInit, OnDestroy {
         }
 
         if (state && previousState && 'startViewTransition' in document) {
-           (document as any).startViewTransition(() => {
-               this.gameState.set(state);
-               this.cd.detectChanges();
-           });
+          (document as any).startViewTransition(() => {
+            this.gameState.set(state);
+            this.cd.detectChanges();
+          });
         } else {
-           this.gameState.set(state);
+          this.gameState.set(state);
         }
 
         lastState = state;
@@ -155,8 +175,16 @@ export class TableroComponent implements OnInit, OnDestroy {
 
     if (!tablero || !celda) return;
 
-    const isGameWon = !!state.ganador;
-    const isWrongTurn = state.turnoActual !== role;
+    const isGameWon = !!state.ganador || state.estado === 'esperando';
+    const rolActual = state.ordenTurnos ? state.ordenTurnos[state.indiceTurnoActual!] : state.turnoActual;
+    let isWrongTurn = rolActual !== role;
+
+    if (rolActual && typeof rolActual === 'string' && rolActual !== 'E') {
+      const isDisconnectedExpected = state.jugadores[rolActual] === null;
+      if (isDisconnectedExpected && role.charAt(0) === rolActual.charAt(0)) {
+        isWrongTurn = false;
+      }
+    }
     const isOccupied = celda.valor !== null;
     const isInactiveBoard = !this.tableroActivo(tableroId);
 
@@ -212,8 +240,19 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   getNombreTurno(): string {
     const state = this.gameState();
-    if (!state || !state.turnoActual || state.turnoActual === GameRole.Empate) return '';
-    const username = state.usernames[state.turnoActual as GameRole.X | GameRole.O];
+    if (!state || !state.turnoActual || state.turnoActual === GameRole.Empate || state.estado === 'esperando') return '';
+    const rolActual = state.ordenTurnos ? state.ordenTurnos[state.indiceTurnoActual!] : state.turnoActual;
+    let username = state.usernames[rolActual as string];
+
+    if (rolActual && typeof rolActual === 'string' && state.jugadores[rolActual] === null) {
+      const compa = state.ordenTurnos?.find((r: string) => r !== rolActual && r.charAt(0) === rolActual.charAt(0) && state.jugadores[r] !== null);
+      if (compa) {
+        username = state.usernames[compa];
+      } else {
+        username = 'Desconectado';
+      }
+    }
+
     return `${username} (${state.turnoActual})`;
   }
 
@@ -223,8 +262,8 @@ export class TableroComponent implements OnInit, OnDestroy {
     if (role === GameRole.Espectador) return 'Espectador';
     const state = this.gameState();
     if (!state) return role;
-    const username = state.usernames[role as GameRole.X | GameRole.O];
-    return `${username} (${role})`;
+    const username = state.usernames[role];
+    return `${username} (${role.charAt(0)})`;
   }
 
   rendirse() {

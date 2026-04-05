@@ -37,7 +37,7 @@ export const verificarGanador = (elementos, propiedad, patronEspecifico = 'Cualq
 };
 
 
-export const iniciarEstadoJuego = (roomId) => {
+export const iniciarEstadoJuego = (roomId, is2v2) => {
   return {
     sala: roomId,
     tableros: Array.from({ length: 9 }, (_, i) => ({
@@ -48,18 +48,30 @@ export const iniciarEstadoJuego = (roomId) => {
     turnoActual: GameRole.X,
     tableroActivo: null,
     ganador: null,
-    jugadores: { X: null, O: null },
-    usernames: { X: null, O: null },
+    jugadores: is2v2 ? { X1: null, O1: null, X2: null, O2: null } : { X: null, O: null },
+    usernames: is2v2 ? { X1: null, O1: null, X2: null, O2: null } : { X: null, O: null },
+    estado: 'esperando',
+    ordenTurnos: is2v2 ? [GameRole.X1, GameRole.O1, GameRole.X2, GameRole.O2] : [GameRole.X, GameRole.O],
+    indiceTurnoActual: 0,
     cantidadTurnos: 0,
     puntajes: { X: 0, O: 0 }
   };
 };
 
 export const movimiento = (juego, socketId, tableroId, celdaId) => {
-  const jugadorX = juego.jugadores.X === socketId;
-  const rolJugador = jugadorX ? GameRole.X : GameRole.O;
+  if (juego.estado && juego.estado !== 'jugando') return null;
 
-  if (juego.turnoActual !== rolJugador) return;
+  const miRolLargo = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socketId);
+  if (!miRolLargo) return null;
+  
+  const rolJugador = miRolLargo.charAt(0);
+  if (juego.turnoActual !== rolJugador) return null;
+
+  if (juego.ordenTurnos && juego.indiceTurnoActual !== undefined) {
+    const expectedRolLargo = juego.ordenTurnos[juego.indiceTurnoActual];
+    const expectedSocket = juego.jugadores[expectedRolLargo];
+    if (expectedSocket && expectedSocket !== socketId) return null;
+  }
 
   const currentIndex = juego.tableros.findIndex(t => t.id === tableroId);
   if (juego.tableroActivo !== null && juego.tableroActivo !== currentIndex) {
@@ -167,7 +179,12 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
 
 
 
-  juego.turnoActual = juego.turnoActual === GameRole.X ? GameRole.O : GameRole.X;
+  if (juego.ordenTurnos) {
+    juego.indiceTurnoActual = (juego.indiceTurnoActual + 1) % juego.ordenTurnos.length;
+    juego.turnoActual = juego.ordenTurnos[juego.indiceTurnoActual][0];
+  } else {
+    juego.turnoActual = juego.turnoActual === GameRole.X ? GameRole.O : GameRole.X;
+  }
 
   return juego;
 }
@@ -175,37 +192,57 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
 
 
 export const rendirse = (juego, socketId) => {
-  const jugadorX = juego.jugadores.X === socketId;
-  const rolJugador = jugadorX ? GameRole.X : GameRole.O;
+  const miRolLargo = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socketId);
+  if (!miRolLargo) return juego;
+
+  const rolJugador = miRolLargo.charAt(0);
   juego.ganador = rolJugador === GameRole.X ? GameRole.O : GameRole.X;
   juego.puntajes[juego.ganador] += 50;
-  console.log(`Jugador ${rolJugador} se rindio. Ganador ${juego.ganador}.`);
+  console.log(`Jugador ${miRolLargo} se rindio. Ganador ${juego.ganador}.`);
   guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
   return juego;
 }
 
 export const guardarPartida = async (roomId, juego, puntajeX, puntajeO) => {
   try {
+    const is2v2 = juego.ordenTurnos && juego.ordenTurnos.length === 4;
+    
+    const getUsername = (rol) => juego.jugadores[rol] !== null ? juego.usernames[rol] : null;
+    
+    const jugadoresXCompleto = is2v2 ? [juego.usernames.X1, juego.usernames.X2].filter(Boolean).join(',') : juego.usernames.X;
+    const jugadoresOCompleto = is2v2 ? [juego.usernames.O1, juego.usernames.O2].filter(Boolean).join(',') : juego.usernames.O;
+    
+    const ganadoresX = is2v2 ? [getUsername('X1'), getUsername('X2')].filter(Boolean).join(',') : juego.usernames.X;
+    const ganadoresO = is2v2 ? [getUsername('O1'), getUsername('O2')].filter(Boolean).join(',') : juego.usernames.O;
+
+    let textGanador = juego.ganador;
+    if (juego.ganador === GameRole.X) textGanador = ganadoresX;
+    else if (juego.ganador === GameRole.O) textGanador = ganadoresO;
+
     const nuevaPartida = new Partidas({
       sala: roomId,
-      jugadorX: juego.usernames.X,
-      jugadorO: juego.usernames.O,
-      ganador: juego.ganador,
+      jugadorX: jugadoresXCompleto,
+      jugadorO: jugadoresOCompleto,
+      ganador: textGanador,
       cantidadTurnos: juego.cantidadTurnos
     });
     await nuevaPartida.save();
 
+    const aplicarPuntos = async (rolLargo, puntaje, resultado) => {
+       const u = juego.usernames[rolLargo];
+       const s = juego.jugadores[rolLargo];
+       if (u && s) await actualizarEstadisticas(u, resultado, puntaje);
+    };
+
+    const rolesX = is2v2 ? ['X1', 'X2'] : ['X'];
+    const rolesO = is2v2 ? ['O1', 'O2'] : ['O'];
+
     if (juego.ganador === GameRole.EMPATE) {
-      await actualizarEstadisticas(juego.usernames.X, GameRole.EMPATE, puntajeX);
-      await actualizarEstadisticas(juego.usernames.O, GameRole.EMPATE, puntajeO);
+      for (const r of rolesX) await aplicarPuntos(r, puntajeX, GameRole.EMPATE);
+      for (const r of rolesO) await aplicarPuntos(r, puntajeO, GameRole.EMPATE);
     } else {
-      const ganador = juego.ganador === GameRole.X ? juego.usernames.X : juego.usernames.O;
-      const perdedor = juego.ganador === GameRole.X ? juego.usernames.O : juego.usernames.X;
-      const puntajeGanador = juego.ganador === GameRole.X ? puntajeX : puntajeO;
-      const puntajePerdedor = juego.ganador === GameRole.X ? puntajeO : puntajeX;
-      
-      await actualizarEstadisticas(ganador, 'G', puntajeGanador);
-      await actualizarEstadisticas(perdedor, 'P', puntajePerdedor);
+      for (const r of rolesX) await aplicarPuntos(r, puntajeX, juego.ganador === GameRole.X ? 'G' : 'P');
+      for (const r of rolesO) await aplicarPuntos(r, puntajeO, juego.ganador === GameRole.O ? 'G' : 'P');
     }
   } catch (error) {
     console.error('Error al guardar la partida:', error);

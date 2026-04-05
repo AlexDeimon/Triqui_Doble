@@ -20,9 +20,26 @@
         </thead>
         <tbody>
           <tr *ngFor="let sala of websocketService.salasPublicas()">
-            <td>{{ sala.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}</td>
-            <td>{{ sala.jugadorX }}</td>
-            <td>{{ sala.jugadorO }}</td>
+            <td>
+              {{ sala.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}
+              <span *ngIf="sala.dosVsDos" class="tipo-sala"> (2 vs 2)</span>
+            </td>
+            <td>
+              <ng-container *ngIf="!sala.dosVsDos">{{ sala.jugadorX }}</ng-container>
+              <ng-container *ngIf="sala.dosVsDos">
+                {{ sala.jugadorX !== 'Esperando...' ? sala.jugadorX : 'Esperando...' }}
+                <br>
+                {{ sala.jugadorX2 ? sala.jugadorX2 : 'Esperando...' }}
+              </ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="!sala.dosVsDos">{{ sala.jugadorO }}</ng-container>
+              <ng-container *ngIf="sala.dosVsDos">
+                {{ sala.jugadorO !== 'Esperando...' ? sala.jugadorO : 'Esperando...' }}
+                <br>
+                {{ sala.jugadorO2 ? sala.jugadorO2 : 'Esperando...' }}
+              </ng-container>
+            </td>
             <td>
               <button (click)="unirseSalaEspecifica(sala.roomId)" class="btn-primary btn-sm">Unirse</button>
             </td>
@@ -88,7 +105,7 @@
           <tr *ngFor="let partida of historial">
             <td>{{ partida.jugadorX }}</td>
             <td>{{ partida.jugadorO }}</td>
-            <td>{{ partida.ganador === 'X' ? partida.jugadorX : partida.jugadorO }}</td>
+            <td>{{ partida.ganador === 'E' ? 'EMPATE' : partida.ganador }}</td>
             <td>{{ partida.cantidadTurnos }}</td>
             <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
             <td>{{ partida.fecha | date:'HH:mm' }}</td>
@@ -234,6 +251,12 @@
         <label for="robarTableros" class="config-label">Robar Tableros:</label>
         <div class="toggle-switch">
            <input type="checkbox" id="robarTableros" [(ngModel)]="robarTableros" class="config-checkbox">
+        </div>
+      </div>
+      <div class="form-group-config">
+        <label for="dosVsDos" class="config-label">Juego 2 vs 2:</label>
+        <div class="toggle-switch">
+           <input type="checkbox" id="dosVsDos" [(ngModel)]="dosVsDos" class="config-checkbox">
         </div>
       </div>
       <button (click)="crearSala()" class="btn-primary config-btn">Crear Sala</button>

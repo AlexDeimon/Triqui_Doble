@@ -31,8 +31,8 @@ export class WebsocketService {
     const savedRoom = localStorage.getItem('triqui_roomId');
     const savedUser = localStorage.getItem('triqui_username');
     if (savedRoom && savedUser) {
-        this.roomId = savedRoom;
-        this.username = savedUser;
+      this.roomId = savedRoom;
+      this.username = savedUser;
     }
 
     this.socket.on('connect', () => {
@@ -41,9 +41,9 @@ export class WebsocketService {
         this.loading.set(false);
 
         if (this.roomId && this.username) {
-            console.log('Intentando reconectar a sala:', this.roomId);
-            this.isReconnecting = true;
-            this.socket.emit('reconectar', { roomId: this.roomId, username: this.username });
+          console.log('Intentando reconectar a sala:', this.roomId);
+          this.isReconnecting = true;
+          this.socket.emit('reconectar', { roomId: this.roomId, username: this.username });
         }
       });
     });
@@ -68,9 +68,10 @@ export class WebsocketService {
     this.socket.on('actualizarJuego', (state: estadoJuego) => {
       this.ngZone.run(() => {
         if (Swal.isVisible() && Swal.getTitle()?.textContent === 'Conexión Inestable') {
-            if (state.jugadores.X && state.jugadores.O) {
-                Swal.close();
-            }
+          const haysDesconectados = Object.values(state.jugadores).some(v => v === null);
+          if (!haysDesconectados && state.estado === 'jugando') {
+            Swal.close();
+          }
         }
         this.gameState.set(state);
       });
@@ -199,17 +200,24 @@ export class WebsocketService {
           timer: 3000,
           timerProgressBar: true,
           background: '#16213e',
-          color: '#fff',
-          didOpen: (toast) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer)
-            toast.addEventListener('mouseleave', Swal.resumeTimer)
-          }
+          color: '#fff'
         });
+        Toast.fire({ icon: 'warning', title: msg });
+      });
+    });
 
-        Toast.fire({
-          icon: 'warning',
-          title: msg
+    this.socket.on('toast', (msg: string) => {
+      this.ngZone.run(() => {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 4500,
+          timerProgressBar: true,
+          background: '#16213e',
+          color: '#fff'
         });
+        Toast.fire({ icon: 'info', title: msg });
       });
     });
   }

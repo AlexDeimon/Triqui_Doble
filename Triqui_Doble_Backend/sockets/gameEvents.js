@@ -56,6 +56,17 @@ export const handleGameEvents = (io, socket) => {
     nuevoJuego.usernames = usernamesRef;
     nuevoJuego.configuracion = juego.configuracion;
     nuevoJuego.ultimaActualizacionTurno = null;
+    if (nuevoJuego.ordenTurnos) {
+      nuevoJuego.ordenTurnos = juego.ordenTurnos;
+    }
+
+    const rolesLlenos = juego.ordenTurnos ? juego.ordenTurnos.every(r => nuevoJuego.jugadores[r] !== null) : Object.keys(nuevoJuego.jugadores).every(r => nuevoJuego.jugadores[r] !== null);
+    if (rolesLlenos) {
+      nuevoJuego.estado = 'jugando';
+      if (nuevoJuego.configuracion && nuevoJuego.configuracion.temporizador) {
+        nuevoJuego.ultimaActualizacionTurno = Date.now();
+      }
+    }
 
     if (turnTimeouts.has(roomId)) {
       clearTimeout(turnTimeouts.get(roomId));
@@ -67,6 +78,10 @@ export const handleGameEvents = (io, socket) => {
     io.to(roomId).emit('actualizarJuego', nuevoJuego);
     resetearTimeoutInactividad(roomId, io);
     await emitirSalasDisponibles(io);
+
+    if (nuevoJuego.estado === 'jugando' && nuevoJuego.configuracion && nuevoJuego.configuracion.temporizador) {
+      iniciarTimeoutTurno(roomId, io);
+    }
   }));
 
   socket.on('rendirse', socketWrapper(socket, async (roomId) => {

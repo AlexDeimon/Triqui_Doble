@@ -1,7 +1,6 @@
 import { redisClient } from '../config/db.js';
 import { GameRole } from '../utils/constants.js';
 
-export const timeoutsEliminacion = new Map();
 export const turnTimeouts = new Map();
 export const timeoutsInactividad = new Map();
 
@@ -16,10 +15,14 @@ export const obtenerSalasDisponibles = async () => {
       if (juegoJson) {
         const juego = JSON.parse(juegoJson);
         if (!juego.ganador) {
+          const getU = (r) => juego.jugadores && juego.jugadores[r] === null ? null : (juego.usernames && juego.usernames[r]);
           salas.push({
             roomId: key.replace('juego:', ''),
-            jugadorX: juego.usernames.X || 'Esperando...',
-            jugadorO: juego.usernames.O || 'Esperando...',
+            jugadorX: getU('X1') || getU('X') || 'Esperando...',
+            jugadorO: getU('O1') || getU('O') || 'Esperando...',
+            jugadorX2: getU('X2') || '',
+            jugadorO2: getU('O2') || '',
+            dosVsDos: juego.configuracion?.dosVsDos || false,
             objetivo: juego.configuracion?.objetivo || 'triqui_doble'
           });
         }
@@ -49,10 +52,6 @@ export const resetearTimeoutInactividad = (roomId, socketIo) => {
         socketIo.to(roomId).emit('jugadorDesconectado', 'La sala se ha cerrado por inactividad');
         await redisClient.del(`juego:${roomId}`);
         
-        if (timeoutsEliminacion.has(roomId)) {
-          clearTimeout(timeoutsEliminacion.get(roomId));
-          timeoutsEliminacion.delete(roomId);
-        }
         if (turnTimeouts.has(roomId)) {
           clearTimeout(turnTimeouts.get(roomId));
           turnTimeouts.delete(roomId);
@@ -80,16 +79,25 @@ export const iniciarTimeoutTurno = async (roomId, io) => {
 
   const juego = JSON.parse(juegoJson);
   if (!juego.configuracion || !juego.configuracion.temporizador || juego.ganador) return;
-  if (!juego.jugadores.X || !juego.jugadores.O) return;
+  const inPlayingCondition = juego.estado === 'jugando' || (juego.jugadores.X && juego.jugadores.O);
+  if (!inPlayingCondition) return;
 
   const timer = setTimeout(async () => {
     try {
       const objJson = await redisClient.get(`juego:${roomId}`);
       if (!objJson) return;
       const obj = JSON.parse(objJson);
-      if (obj.ganador || !obj.jugadores.X || !obj.jugadores.O) return;
+      
+      const currentPlaying = obj.estado === 'jugando' || (obj.jugadores.X && obj.jugadores.O);
+      if (obj.ganador || !currentPlaying) return;
 
-      obj.turnoActual = obj.turnoActual === GameRole.X ? GameRole.O : GameRole.X;
+      if (obj.ordenTurnos) {
+        obj.indiceTurnoActual = (obj.indiceTurnoActual + 1) % obj.ordenTurnos.length;
+        obj.turnoActual = obj.ordenTurnos[obj.indiceTurnoActual][0];
+      } else {
+        obj.turnoActual = obj.turnoActual === GameRole.X ? GameRole.O : GameRole.X;
+      }
+
       obj.ultimaActualizacionTurno = Date.now();
       await redisClient.set(`juego:${roomId}`, JSON.stringify(obj));
       io.to(roomId).emit('actualizarJuego', obj);

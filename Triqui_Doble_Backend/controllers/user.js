@@ -46,8 +46,9 @@ export const ranking = async (req, res) => {
 
 export const historialJugador = async (req, res) => {
   const { username } = req.params;
+  const regex = new RegExp(`(^|,)${username}(,|$)`);
   const historial = await Partidas.find({
-    $or: [{ jugadorX: username }, { jugadorO: username }]
+    $or: [{ jugadorX: regex }, { jugadorO: regex }]
   }).sort({ fecha: -1 });
   res.json(historial);
 };

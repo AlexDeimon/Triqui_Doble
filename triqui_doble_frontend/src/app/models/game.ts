@@ -1,6 +1,10 @@
 export enum GameRole {
   X = 'X',
   O = 'O',
+  X1 = 'X1',
+  O1 = 'O1',
+  X2 = 'X2',
+  O2 = 'O2',
   Empate = 'E',
   Espectador = 'Espectador'
 }
@@ -25,9 +29,12 @@ export interface estadoJuego {
   turnoActual: Jugador;
   tableroActivo: number | null;
   ganador: Jugador;
-  jugadores: { X: string | null; O: string | null };
-  usernames: { X: string | null; O: string | null };
+  jugadores: { [key: string]: string | null };
+  usernames: { [key: string]: string | null };
+  estado?: string;
+  ordenTurnos?: string[];
+  indiceTurnoActual?: number;
   espectadores?: { username: string; socketId: string }[];
-  configuracion?: { temporizador: boolean; tiempo: number; objetivo?: string; modoSeleccion?: string; patronGanador?: string; tablerosMoviles?: boolean; robarTableros?: boolean };
+  configuracion?: { temporizador: boolean; tiempo: number; objetivo?: string; modoSeleccion?: string; patronGanador?: string; tablerosMoviles?: boolean; robarTableros?: boolean; dosVsDos?: boolean };
   ultimaActualizacionTurno?: number;
 }

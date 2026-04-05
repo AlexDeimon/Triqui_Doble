@@ -26,6 +26,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   modoSeleccion: string = 'regla_oro';
   patronGanador: string = 'Cualquiera';
   tablerosMoviles: boolean = false;
+  dosVsDos: boolean = false;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
@@ -48,6 +49,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.patronGanador = 'Cualquiera';
     this.tablerosMoviles = false;
     this.robarTableros = false;
+    this.dosVsDos = false;
   }
 
   crearSala() {
@@ -62,7 +64,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
       modoSeleccion: this.modoSeleccion,
       patronGanador: this.patronGanador,
       tablerosMoviles: this.tablerosMoviles,
-      robarTableros: this.robarTableros
+      robarTableros: this.robarTableros,
+      dosVsDos: this.dosVsDos
     });
     this.cerrarConfiguracionSala();
   }

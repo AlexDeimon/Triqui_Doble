@@ -2,7 +2,6 @@ import { redisClient } from '../config/db.js';
 import { socketWrapper } from '../utils/socketWrapper.js';
 import { GameRole } from '../utils/constants.js';
 import {
-  timeoutsEliminacion,
   turnTimeouts,
   emitirSalasDisponibles
 } from '../services/roomService.js';
@@ -16,12 +15,22 @@ export const handleDisconnectEvents = (io, socket) => {
       const juegoJson = await redisClient.get(`juego:${roomId}`);
       if (juegoJson) {
         const juego = JSON.parse(juegoJson);
-        if (juego.jugadores.X === socket.id || juego.jugadores.O === socket.id) {
+        let rol = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socket.id);
+        if (rol) {
           console.log(`Jugador de sala ${roomId} desconectado. Esperando reconexión...`);
 
-          socket.to(roomId).emit('oponenteDesconectado', 'El oponente se ha desconectado. Esperando reconexión...');
+          const compa = juego.ordenTurnos.find(r => r !== rol && r.charAt(0) === rol.charAt(0) && juego.jugadores[r]);
+          if (!compa && juego.estado !== 'esperando') {
+            socket.to(roomId).emit('oponenteDesconectado', 'El oponente se ha desconectado. Esperando reconexión...');
+          }
 
-          const rol = juego.jugadores.X === socket.id ? GameRole.X : GameRole.O;
+          const usr = juego.usernames[rol];
+          if (juego.estado === 'esperando') {
+            juego.usernames[rol] = null;
+            io.to(roomId).emit('toast', `${usr || rol} se desconectó`);
+          } else if (juego.configuracion?.dosVsDos && compa) {
+            io.to(roomId).emit('toast', `${usr || rol} se desconectó, ${rol.charAt(0)} queda en manos de ${juego.usernames[compa]}, ¡suerte!`);
+          }
           juego.jugadores[rol] = null;
 
           if (juego.ganador) {
@@ -32,41 +41,18 @@ export const handleDisconnectEvents = (io, socket) => {
             continue;
           }
 
-          if (turnTimeouts.has(roomId)) {
-            clearTimeout(turnTimeouts.get(roomId));
-            turnTimeouts.delete(roomId);
-            juego.ultimaActualizacionTurno = null;
+          if (!compa) {
+            if (turnTimeouts.has(roomId)) {
+              clearTimeout(turnTimeouts.get(roomId));
+              turnTimeouts.delete(roomId);
+              juego.ultimaActualizacionTurno = null;
+              await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
+              io.to(roomId).emit('actualizarJuego', juego);
+            }
+          } else {
             await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
             io.to(roomId).emit('actualizarJuego', juego);
           }
-
-          if (timeoutsEliminacion.has(roomId)) clearTimeout(timeoutsEliminacion.get(roomId));
-
-          const timer = setTimeout(async () => {
-            try {
-              const currentJuegoJson = await redisClient.get(`juego:${roomId}`);
-              if (currentJuegoJson) {
-                const currentJuego = JSON.parse(currentJuegoJson);
-                const currentSocketId = currentJuego.jugadores[rol];
-
-                if (currentSocketId && currentSocketId !== socket.id) {
-                  console.log(`Sala ${roomId}: El jugador ${rol} se reconectó (Socket actualizado), cancelando eliminación.`);
-                  timeoutsEliminacion.delete(roomId);
-                  return;
-                }
-
-                io.to(roomId).emit('jugadorDesconectado', 'La sala se eliminó por inactividad');
-                await redisClient.del(`juego:${roomId}`);
-                timeoutsEliminacion.delete(roomId);
-                console.log(`Sala ${roomId} eliminada por inactividad/desconexión`);
-                await emitirSalasDisponibles(io);
-              }
-            } catch (error) {
-              console.error(`[Error Redis] Timeout eliminación ${roomId}:`, error.message);
-            }
-          }, 60000);
-
-          timeoutsEliminacion.set(roomId, timer);
         } else if (
           juego.espectadores &&
           juego.espectadores.some((e) => e.socketId === socket.id)

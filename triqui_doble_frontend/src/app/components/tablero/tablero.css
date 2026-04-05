@@ -88,6 +88,38 @@ h2 {
   animation: fadeIn 0.3s ease;
 }
 
+.bloqueado {
+  pointer-events: none;
+  opacity: 0.7;
+  position: relative;
+}
+
+.esperando-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.esperando-overlay h3 {
+  color: #fff;
+  font-size: 2rem;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  margin: 0;
+  padding: 1rem 2rem;
+  background: rgba(15, 52, 96, 0.6);
+  border-radius: 8px;
+  animation: pulse 2s infinite;
+}
+
 .pantalla-victoria {
   position: fixed;
   top: 0;

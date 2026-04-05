@@ -22,7 +22,10 @@
       <p *ngIf="gameState()?.configuracion?.robarTableros"><strong>Robar Tableros:</strong> Sí</p>
     </div>
   </div>
-  <div class="tablero-grande">
+  <div class="tablero-grande" [class.bloqueado]="gameState()?.estado === 'esperando'">
+    <div class="esperando-overlay" *ngIf="gameState()?.estado === 'esperando'">
+      <h3>{{ gameState()?.configuracion?.dosVsDos ? 'Esperando jugadores' : 'Esperando a oponente' }}</h3>
+    </div>
     <div *ngFor="let tablero of gameState()!.tableros; trackBy: trackById" [style.view-transition-name]="'board-' + tablero.id" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === GameRole.X" [class.ganado-o]="tablero.ganador === GameRole.O" [class.empatado]="tablero.ganador === GameRole.Empate" [class.activoX]="tableroActivo(tablero.id) && gameState()!.turnoActual === GameRole.X" [class.activoO]="tableroActivo(tablero.id) && gameState()!.turnoActual === GameRole.O" [class.objetivo]="animarPatron() && tableroObjetivo(tablero.id)">
       <div *ngIf="tablero.ganador" class="tablero-ganador">{{ tablero.ganador }}</div>
       <div *ngFor="let celda of tablero.celdas" class="celda" (click)="movimiento(tablero.id, celda.id)">{{ celda.valor }}</div>
