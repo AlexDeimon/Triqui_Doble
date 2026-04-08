@@ -5,7 +5,6 @@
   </ng-container>
 </div>
 <div class="contenedor" *ngIf="gameState()">
-  <h2>Sala: {{ websocketService.roomId }}</h2>
   <h2 *ngIf="myRole() === GameRole.Espectador">{{ getNombreRol() }}</h2>
   <div class="info-wrapper">
     <div class="timer-container" *ngIf="gameState()?.configuracion?.temporizador && !gameState()?.ganador && gameState()?.ultimaActualizacionTurno">
@@ -22,13 +21,43 @@
       <p *ngIf="gameState()?.configuracion?.robarTableros"><strong>Robar Tableros:</strong> Sí</p>
     </div>
   </div>
-  <div class="tablero-grande" [class.bloqueado]="gameState()?.estado === 'esperando'">
+  <div class="tablero-grande" [class.bloqueado]="gameState()?.estado === 'esperando' || gameState()?.estado === 'seleccionando_skin'">
     <div class="esperando-overlay" *ngIf="gameState()?.estado === 'esperando'">
       <h3>{{ gameState()?.configuracion?.dosVsDos ? 'Esperando jugadores' : 'Esperando a oponente' }}</h3>
     </div>
-    <div *ngFor="let tablero of gameState()!.tableros; trackBy: trackById" [style.view-transition-name]="'board-' + tablero.id" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === GameRole.X" [class.ganado-o]="tablero.ganador === GameRole.O" [class.empatado]="tablero.ganador === GameRole.Empate" [class.activoX]="tableroActivo(tablero.id) && gameState()!.turnoActual === GameRole.X" [class.activoO]="tableroActivo(tablero.id) && gameState()!.turnoActual === GameRole.O" [class.objetivo]="animarPatron() && tableroObjetivo(tablero.id)">
-      <div *ngIf="tablero.ganador" class="tablero-ganador">{{ tablero.ganador }}</div>
-      <div *ngFor="let celda of tablero.celdas" class="celda" (click)="movimiento(tablero.id, celda.id)">{{ celda.valor }}</div>
+
+    <div class="skin-overlay" *ngIf="gameState()?.estado === 'seleccionando_skin' && myRole() !== GameRole.Espectador">
+      <h3>Elige tu Estilo</h3>
+      <div class="skin-sections">
+        <div class="skin-section">
+          <h4>Colores</h4>
+          <div class="skin-options">
+            <button *ngFor="let color of ['#e94560', '#4597e9', '#ffb52a', '#28a745', '#9b59b6', '#00f2fe']" class="skin-btn" [style.background]="color" (click)="seleccionarSkin('color', color)" [class.disabled]="isSkinOptionDisabled('color', color)" [class.selected]="getSkinColor(myRole()) === color"></button>
+          </div>
+        </div>
+        <div class="skin-section">
+          <h4>Íconos</h4>
+          <div class="skin-options">
+            <button *ngFor="let emoji of ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐']" class="skin-btn emoji-btn" (click)="seleccionarSkin('emoji', emoji)" [class.disabled]="isSkinOptionDisabled('emoji', emoji)" [class.selected]="getSkinIcon(myRole()) === emoji">{{ emoji }}</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn-primary mt-3" (click)="toggleListo()" [class.ready]="gameState()?.jugadoresListos?.[myRole() || '']">{{ gameState()?.jugadoresListos?.[myRole() || ''] ? 'Esperando a los demás...' : '¡Estoy Listo!' }}</button>
+      <div class="team-ready-status" *ngIf="gameState()?.configuracion?.dosVsDos">
+        <small>Mismos cambios afectan a tu equipo.</small>
+      </div>
+    </div>
+    <div class="skin-overlay" *ngIf="gameState()?.estado === 'seleccionando_skin' && myRole() === GameRole.Espectador">
+      <h3>Los jugadores están eligiendo sus skins...</h3>
+    </div>
+    <div *ngFor="let tablero of gameState()!.tableros; trackBy: trackById" [style.view-transition-name]="'board-' + tablero.id" class="tablero-pequeno" [class.ganado-x]="tablero.ganador === GameRole.X" [class.ganado-o]="tablero.ganador === GameRole.O" [class.empatado]="tablero.ganador === GameRole.Empate" [class.activoX]="tableroActivo(tablero.id) && gameState()!.turnoActual === GameRole.X" [class.activoO]="tableroActivo(tablero.id) && gameState()!.turnoActual === GameRole.O" [style.border-color]="tableroActivo(tablero.id) ? getSkinColor(gameState()?.turnoActual!) : ''" [style.box-shadow]="tableroActivo(tablero.id) ? '0 0 15px ' + getSkinColor(gameState()?.turnoActual!) : ''" [class.objetivo]="animarPatron() && tableroObjetivo(tablero.id)">
+      <div *ngIf="tablero.ganador" class="tablero-ganador">
+        <span *ngIf="tablero.ganador !== 'E'" [style.color]="getSkinColor(tablero.ganador)" [style.text-shadow]="'0 0 20px ' + getSkinColor(tablero.ganador)">{{ getSkinIcon(tablero.ganador) }}</span>
+        <span *ngIf="tablero.ganador === 'E'" style="color: #f0f0f0; font-size: 4rem;">E</span>
+      </div>
+      <div *ngFor="let celda of tablero.celdas" class="celda" (click)="movimiento(tablero.id, celda.id)">
+        <span *ngIf="celda.valor" [style.color]="getSkinColor(celda.valor)">{{ getSkinIcon(celda.valor) }}</span>
+      </div>
     </div>
   </div>
   <button (click)="rendirse()" class="btn-primary" *ngIf="gameState()!.tableroActivo !== null && myRole() !== GameRole.Espectador">Rendirse</button>

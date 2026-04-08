@@ -52,6 +52,11 @@ export const iniciarEstadoJuego = (roomId, is2v2) => {
     usernames: is2v2 ? { X1: null, O1: null, X2: null, O2: null } : { X: null, O: null },
     estado: 'esperando',
     ordenTurnos: is2v2 ? [GameRole.X1, GameRole.O1, GameRole.X2, GameRole.O2] : [GameRole.X, GameRole.O],
+    skins: {
+      X: { emoji: 'X', color: '#e94560' },
+      O: { emoji: 'O', color: '#4597e9' }
+    },
+    jugadoresListos: is2v2 ? { X1: false, O1: false, X2: false, O2: false } : { X: false, O: false },
     indiceTurnoActual: 0,
     cantidadTurnos: 0,
     puntajes: { X: 0, O: 0 }

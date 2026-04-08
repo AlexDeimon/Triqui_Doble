@@ -25,8 +25,10 @@ export const handleDisconnectEvents = (io, socket) => {
           }
 
           const usr = juego.usernames[rol];
-          if (juego.estado === 'esperando') {
+          if (juego.estado === 'esperando' || juego.estado === 'seleccionando_skin') {
             juego.usernames[rol] = null;
+            juego.jugadoresListos[rol] = false;
+            juego.estado = 'esperando';
             io.to(roomId).emit('toast', `${usr || rol} se desconectó`);
           } else if (juego.configuracion?.dosVsDos && compa) {
             io.to(roomId).emit('toast', `${usr || rol} se desconectó, ${rol.charAt(0)} queda en manos de ${juego.usernames[compa]}, ¡suerte!`);

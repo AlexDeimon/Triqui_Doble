@@ -71,10 +71,7 @@ export const handleRoomEvents = (io, socket) => {
 
       const rolesLlenos = juego.ordenTurnos.every(r => juego.usernames[r] && juego.jugadores[r] !== null);
       if (juego.estado === 'esperando' && rolesLlenos) {
-        juego.estado = 'jugando';
-        if (juego.configuracion && juego.configuracion.temporizador) {
-          juego.ultimaActualizacionTurno = Date.now();
-        }
+        juego.estado = 'seleccionando_skin';
       }
 
       await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
@@ -231,9 +228,11 @@ export const handleRoomEvents = (io, socket) => {
 
       await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
       
-      if (juego.estado === 'esperando') {
+      if (juego.estado === 'esperando' || juego.estado === 'seleccionando_skin') {
         const usr = juego.usernames[rol];
         juego.usernames[rol] = null;
+        juego.jugadoresListos[rol] = false;
+        juego.estado = 'esperando';
         io.to(roomId).emit('toast', `${usr} (${rol.charAt(0)}) ha abandonado la sala`);
       } else {
         const usr = juego.usernames[rol];

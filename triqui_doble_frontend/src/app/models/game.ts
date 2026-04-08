@@ -37,4 +37,6 @@ export interface estadoJuego {
   espectadores?: { username: string; socketId: string }[];
   configuracion?: { temporizador: boolean; tiempo: number; objetivo?: string; modoSeleccion?: string; patronGanador?: string; tablerosMoviles?: boolean; robarTableros?: boolean; dosVsDos?: boolean };
   ultimaActualizacionTurno?: number;
+  skins?: { [key: string]: { emoji: string; color: string; [key: string]: string } };
+  jugadoresListos?: { [key: string]: boolean };
 }

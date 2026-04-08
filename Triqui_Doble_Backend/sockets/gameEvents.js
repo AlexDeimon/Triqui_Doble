@@ -62,10 +62,11 @@ export const handleGameEvents = (io, socket) => {
 
     const rolesLlenos = juego.ordenTurnos ? juego.ordenTurnos.every(r => nuevoJuego.jugadores[r] !== null) : Object.keys(nuevoJuego.jugadores).every(r => nuevoJuego.jugadores[r] !== null);
     if (rolesLlenos) {
-      nuevoJuego.estado = 'jugando';
-      if (nuevoJuego.configuracion && nuevoJuego.configuracion.temporizador) {
-        nuevoJuego.ultimaActualizacionTurno = Date.now();
+      nuevoJuego.estado = 'seleccionando_skin';
+      for (const r in nuevoJuego.jugadoresListos) {
+        nuevoJuego.jugadoresListos[r] = false;
       }
+      nuevoJuego.skins = juego.skins || { X: { emoji: 'X', color: '#e94560' }, O: { emoji: 'O', color: '#4597e9' } };
     }
 
     if (turnTimeouts.has(roomId)) {
@@ -100,6 +101,60 @@ export const handleGameEvents = (io, socket) => {
     }
 
     io.to(roomId).emit('actualizarJuego', juegoActualizado);
+    resetearTimeoutInactividad(roomId, io);
+  }));
+
+  socket.on('seleccionarSkin', socketWrapper(socket, async ({ roomId, equipo, tipo, valor }) => {
+    const juegoJson = await redisClient.get(`juego:${roomId}`);
+    if (!juegoJson) return;
+    const juego = JSON.parse(juegoJson);
+    
+    let rol = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socket.id);
+    if (!rol || juego.estado !== 'seleccionando_skin') return;
+    if (rol.charAt(0) !== equipo) return;
+    
+    const contrincante = equipo === 'X' ? 'O' : 'X';
+    
+    if (juego.skins[contrincante][tipo] === valor) {
+      socket.emit('error', 'Esa opción ya fue elegida por el oponente');
+      return;
+    }
+    
+    juego.skins[equipo][tipo] = valor;
+    await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
+    io.to(roomId).emit('actualizarJuego', juego);
+    resetearTimeoutInactividad(roomId, io);
+  }));
+
+  socket.on('toggleListo', socketWrapper(socket, async (roomId) => {
+    const juegoJson = await redisClient.get(`juego:${roomId}`);
+    if (!juegoJson) return;
+    const juego = JSON.parse(juegoJson);
+    
+    let rol = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socket.id);
+    if (!rol || juego.estado !== 'seleccionando_skin') return;
+    
+    juego.jugadoresListos[rol] = !juego.jugadoresListos[rol];
+    
+    const rolesLlenos = juego.ordenTurnos.every(r => juego.jugadores[r] !== null);
+    const todosListos = juego.ordenTurnos.every(r => juego.jugadoresListos[r]);
+    
+    if (rolesLlenos && todosListos) {
+      juego.estado = 'jugando';
+      if (juego.configuracion && juego.configuracion.temporizador) {
+        juego.ultimaActualizacionTurno = Date.now();
+      }
+    }
+    
+    await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
+    io.to(roomId).emit('actualizarJuego', juego);
+    
+    if (juego.estado === 'jugando') {
+      if (juego.configuracion?.temporizador) {
+        iniciarTimeoutTurno(roomId, io);
+      }
+      await emitirSalasDisponibles(io);
+    }
     resetearTimeoutInactividad(roomId, io);
   }));
 };

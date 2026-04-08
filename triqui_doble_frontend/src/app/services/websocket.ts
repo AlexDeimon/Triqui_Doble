@@ -239,6 +239,22 @@ export class WebsocketService {
     this.socket.emit('unirseASala', { roomId, username: this.username });
   }
 
+  toggleListo() {
+    if (this.roomId) {
+      this.socket.emit('toggleListo', this.roomId);
+    }
+  }
+
+  seleccionarSkin(tipo: 'emoji' | 'color', valor: string) {
+    if (this.roomId && this.gameState()?.jugadores) {
+      const state = this.gameState()!;
+      const myRol = Object.keys(state.jugadores).find(k => state.jugadores[k] === this.socket.id);
+      if (myRol) {
+        this.socket.emit('seleccionarSkin', { roomId: this.roomId, equipo: myRol.charAt(0), tipo, valor });
+      }
+    }
+  }
+
   obtenerRanking(): Observable<any[]> {
     return this.http.get<any[]>(`${this.url}/ranking`);
   }

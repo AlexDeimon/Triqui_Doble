@@ -90,14 +90,14 @@ export class TableroComponent implements OnInit, OnDestroy {
               const u2 = state.jugadores[rol2] !== null ? state.usernames[rol2] : null;
 
               if (u1 && u2) {
-                title = `Los jugadores ${u1} y ${u2} (${state.ganador}) han ganado la partida`;
+                title = `Los jugadores ${u1} y ${u2} ${this.getSkinIcon(state.ganador)} han ganado la partida`;
               } else if (u1 || u2) {
-                title = `El jugador ${u1 || u2} (${state.ganador}) ha ganado la partida`;
+                title = `El jugador ${u1 || u2} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
               } else {
-                title = `El equipo ${state.ganador} ha ganado la partida`;
+                title = `El equipo ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
               }
             } else {
-              title = `El jugador ${state.usernames[state.ganador as string]} (${state.ganador}) ha ganado la partida`;
+              title = `El jugador ${state.usernames[state.ganador as string]} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
             }
           }
           Swal.fire({
@@ -109,7 +109,9 @@ export class TableroComponent implements OnInit, OnDestroy {
           });
         }
 
-        if (state && previousState && 'startViewTransition' in document) {
+        const isMajorChange = state?.estado !== previousState?.estado || prevCount !== newCount || state?.tableroActivo !== previousState?.tableroActivo;
+
+        if (state && previousState && isMajorChange && 'startViewTransition' in document) {
           (document as any).startViewTransition(() => {
             this.gameState.set(state);
             this.cd.detectChanges();
@@ -253,7 +255,7 @@ export class TableroComponent implements OnInit, OnDestroy {
       }
     }
 
-    return `${username} (${state.turnoActual})`;
+    return `${username} ${this.getSkinIcon(state.turnoActual)}`;
   }
 
   getNombreRol(): string {
@@ -263,7 +265,7 @@ export class TableroComponent implements OnInit, OnDestroy {
     const state = this.gameState();
     if (!state) return role;
     const username = state.usernames[role];
-    return `${username} (${role.charAt(0)})`;
+    return `${username} ${this.getSkinIcon(role)}`;
   }
 
   rendirse() {
@@ -294,5 +296,41 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   trackById(index: number, tablero: any): number {
     return tablero.id;
+  }
+
+  getSkinIcon(valor: string | null): string {
+    if (!valor || valor === 'E') return valor || '';
+    const state = this.gameState();
+    if (!state || !state.skins) return valor.charAt(0);
+    const equipo = valor.charAt(0);
+    return state.skins[equipo]?.emoji || equipo;
+  }
+
+  getSkinColor(valor: string | null): string {
+    if (!valor || valor === 'E') return '';
+    const state = this.gameState();
+    if (!state || !state.skins) return '';
+    const equipo = valor.charAt(0);
+    return state.skins[equipo]?.color || '';
+  }
+
+  isSkinOptionDisabled(tipo: 'emoji' | 'color', valor: string): boolean {
+    const state = this.gameState();
+    const role = this.myRole();
+    if (!state || !state.skins || !role) return false;
+
+    const miEquipo = role.charAt(0);
+    const rival = miEquipo === 'X' ? 'O' : 'X';
+
+    return state.skins[rival]?.[tipo] === valor;
+  }
+
+  seleccionarSkin(tipo: 'emoji' | 'color', valor: string) {
+    if (this.isSkinOptionDisabled(tipo, valor)) return;
+    this.websocketService.seleccionarSkin(tipo, valor);
+  }
+
+  toggleListo() {
+    this.websocketService.toggleListo();
   }
 }
