@@ -80,7 +80,7 @@ h2 {
   align-items: center;
   font-size: 6rem;
   font-weight: 900;
-  z-index: -10;
+  z-index: 10;
   pointer-events: none;
   background: rgba(26, 26, 46, 0.85);
   backdrop-filter: blur(2px);
@@ -220,6 +220,12 @@ h2:first-of-type {
 .tablero-pequeno.activoX, .tablero-pequeno.activoO {
   transform: scale(1.02);
   z-index: 5;
+}
+
+.tablero-pequeno.activoX .tablero-ganador,
+.tablero-pequeno.activoO .tablero-ganador {
+  z-index: -10;
+  opacity: 0.3;
 }
 
 .celda:hover {
@@ -363,4 +369,42 @@ h2:first-of-type {
 .team-ready-status {
   margin-top: 1rem;
   color: var(--text-gray);
+}
+
+@media (max-width: 600px) {
+  .esperando-overlay h3 {
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 0.5rem 1rem;
+  }
+
+  .skin-overlay {
+    padding: 1rem;
+    justify-content: flex-start;
+    overflow-y: auto;
+  }
+
+  .skin-overlay h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .skin-section h4 {
+    font-size: 1rem;
+  }
+
+  .skin-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 1.2rem;
+  }
+
+  .skin-sections {
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .tablero-ganador {
+    font-size: clamp(3rem, 15vw, 6rem);
+  }
 }
