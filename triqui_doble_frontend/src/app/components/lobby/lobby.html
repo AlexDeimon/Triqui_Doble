@@ -12,7 +12,6 @@
       <table class="ranking-table">
         <thead>
           <tr>
-            <th>Objetivo</th>
             <th>Jugador X</th>
             <th>Jugador O</th>
             <th>Acción</th>
@@ -20,10 +19,6 @@
         </thead>
         <tbody>
           <tr *ngFor="let sala of websocketService.salasPublicas()">
-            <td>
-              {{ sala.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}
-              <span *ngIf="sala.dosVsDos" class="tipo-sala"> (2 vs 2)</span>
-            </td>
             <td>
               <ng-container *ngIf="!sala.dosVsDos">{{ sala.jugadorX }}</ng-container>
               <ng-container *ngIf="sala.dosVsDos">
