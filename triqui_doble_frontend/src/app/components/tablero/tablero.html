@@ -13,6 +13,7 @@
       </div>
     </div>
     <div class="info-configuracion">
+      <p><strong>Sala:</strong> {{ websocketService.roomId }}</p>
       <p><strong>Turno de:</strong> {{ getNombreTurno() }}</p>
       <p><strong>Objetivo:</strong> {{ gameState()?.configuracion?.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}</p>
       <p><strong>Selección:</strong> {{ gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro' }}</p>

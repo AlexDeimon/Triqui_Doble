@@ -79,7 +79,7 @@ export class WebsocketService {
 
     this.socket.on('salasDisponibles', (salas: any[]) => {
       this.ngZone.run(() => {
-        this.salasPublicas.set(salas);
+        this.salasPublicas.set(salas.filter(s => !s.salaPrivada));
       });
     });
 

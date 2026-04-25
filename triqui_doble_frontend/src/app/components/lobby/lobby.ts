@@ -27,6 +27,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   patronGanador: string = 'Cualquiera';
   tablerosMoviles: boolean = false;
   dosVsDos: boolean = false;
+  salaPrivada: boolean = false;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
@@ -50,6 +51,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.tablerosMoviles = false;
     this.robarTableros = false;
     this.dosVsDos = false;
+    this.salaPrivada = false;
   }
 
   crearSala() {
@@ -65,7 +67,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
       patronGanador: this.patronGanador,
       tablerosMoviles: this.tablerosMoviles,
       robarTableros: this.robarTableros,
-      dosVsDos: this.dosVsDos
+      dosVsDos: this.dosVsDos,
+      salaPrivada: this.salaPrivada
     });
     this.cerrarConfiguracionSala();
   }

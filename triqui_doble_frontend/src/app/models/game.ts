@@ -39,4 +39,5 @@ export interface estadoJuego {
   ultimaActualizacionTurno?: number;
   skins?: { [key: string]: { emoji: string; color: string; [key: string]: string } };
   jugadoresListos?: { [key: string]: boolean };
+  salaPrivada?: boolean;
 }

@@ -22,7 +22,8 @@ export const obtenerSalasDisponibles = async () => {
             jugadorO: getU('O1') || getU('O') || 'Esperando...',
             jugadorX2: getU('X2') || '',
             jugadorO2: getU('O2') || '',
-            dosVsDos: juego.configuracion?.dosVsDos || false
+            dosVsDos: juego.configuracion?.dosVsDos || false,
+            salaPrivada: juego.configuracion?.salaPrivada || false
           });
         }
       }
