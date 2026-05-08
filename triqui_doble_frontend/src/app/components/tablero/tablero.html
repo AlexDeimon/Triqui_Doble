@@ -25,6 +25,7 @@
   <div class="tablero-grande" [class.bloqueado]="gameState()?.estado === 'esperando' || gameState()?.estado === 'seleccionando_skin'">
     <div class="esperando-overlay" *ngIf="gameState()?.estado === 'esperando'">
       <h3>{{ gameState()?.configuracion?.dosVsDos ? 'Esperando jugadores' : 'Esperando a oponente' }}</h3>
+      <button (click)="abrirInvitacionAmigos()" class="btn-primary mt-2">Invitar Amigos</button>
     </div>
 
     <div class="skin-overlay" *ngIf="gameState()?.estado === 'seleccionando_skin' && myRole() !== GameRole.Espectador">

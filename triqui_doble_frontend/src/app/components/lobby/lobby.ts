@@ -2,6 +2,7 @@ import { Component, NgZone, ChangeDetectorRef, OnInit, OnDestroy } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from '../../services/websocket';
+import Swal from 'sweetalert2';
 
 
 @Component({
@@ -28,13 +29,95 @@ export class LobbyComponent implements OnInit, OnDestroy {
   tablerosMoviles: boolean = false;
   dosVsDos: boolean = false;
   salaPrivada: boolean = false;
+  mostrarAmigos: boolean = false;
+  queryBusqueda: string = '';
+  resultadosBusqueda: any[] = [];
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
   ngOnInit() {
+    this.websocketService.identificar();
   }
 
   ngOnDestroy() {
+  }
+
+  abrirAmigos() {
+    this.mostrarAmigos = true;
+    this.websocketService.actualizarAmigos();
+  }
+
+  cerrarAmigos() {
+    this.mostrarAmigos = false;
+    this.queryBusqueda = '';
+    this.resultadosBusqueda = [];
+  }
+
+  buscarUsuarios() {
+    if (this.queryBusqueda.length > 2) {
+      this.websocketService.buscarUsuarios(this.queryBusqueda, this.websocketService.username).subscribe(users => {
+        this.resultadosBusqueda = users;
+        this.cd.detectChanges();
+      });
+    } else {
+      this.resultadosBusqueda = [];
+    }
+  }
+
+  enviarSolicitud(username: string) {
+    this.websocketService.enviarSolicitud(username).subscribe({
+      next: () => {
+        this.websocketService.notificarSolicitudEnviada(username);
+        this.websocketService.actualizarAmigos();
+        this.queryBusqueda = '';
+        this.resultadosBusqueda = [];
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          background: '#16213e',
+          color: '#fff'
+        });
+        Toast.fire({ icon: 'success', title: 'Solicitud enviada' });
+      }
+    });
+  }
+
+  aceptarSolicitud(username: string) {
+    this.websocketService.aceptarSolicitud(username).subscribe({
+      next: () => {
+        this.websocketService.notificarSolicitudAceptada(username);
+        this.websocketService.actualizarAmigos();
+      }
+    });
+  }
+
+  rechazarSolicitud(username: string) {
+    this.websocketService.rechazarSolicitud(username).subscribe({
+      next: () => this.websocketService.actualizarAmigos()
+    });
+  }
+
+  eliminarAmigo(username: string) {
+    Swal.fire({
+      title: '¿Eliminar amigo?',
+      text: `¿Estás seguro de que quieres eliminar a ${username}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e94560',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      background: '#16213e',
+      color: '#fff'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.websocketService.eliminarAmigo(username).subscribe({
+          next: () => this.websocketService.actualizarAmigos()
+        });
+      }
+    });
   }
 
   abrirConfiguracionSala() {

@@ -126,6 +126,7 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.websocketService.actualizarAmigos();
   }
 
   ngOnDestroy() {
@@ -332,5 +333,71 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   toggleListo() {
     this.websocketService.toggleListo();
+  }
+
+  abrirInvitacionAmigos() {
+    const todosLosAmigos = this.websocketService.amigos().filter(a => a.estado === 'aceptado');
+
+    if (todosLosAmigos.length === 0) {
+      Swal.fire({
+        title: 'No tienes amigos',
+        text: 'Agrega amigos desde el lobby para poder invitarlos a jugar.',
+        icon: 'info',
+        background: '#16213e',
+        color: '#fff'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Invitar Amigo',
+      background: '#16213e',
+      color: '#fff',
+      html: `
+        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding: 10px;">
+          ${todosLosAmigos.map(a => {
+            const isOnline = this.websocketService.amigosOnline().has(a.username);
+            return `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#28a745' : '#e94560'}; box-shadow: 0 0 5px ${isOnline ? '#28a745' : '#e94560'};"></div>
+                <span style="font-weight: 500;">${a.username}</span>
+              </div>
+              <button id="invite-${a.username}" 
+                class="swal2-confirm swal2-styled" 
+                style="margin: 0; padding: 5px 15px; font-size: 0.9rem; transition: all 0.3s; ${isOnline ? '' : 'background-color: #6c757d !important; cursor: not-allowed; opacity: 0.6;'}"
+                ${isOnline ? '' : 'disabled'}>
+                Invitar
+              </button>
+            </div>
+            `;
+          }).join('')}
+        </div>
+      `,
+      showConfirmButton: false,
+      didOpen: () => {
+        todosLosAmigos.forEach(a => {
+          const isOnline = this.websocketService.amigosOnline().has(a.username);
+          if (isOnline) {
+            const btn = document.getElementById(`invite-${a.username}`);
+            if (btn) {
+              btn.addEventListener('click', () => {
+                this.websocketService.invitarAmigo(a.username, this.websocketService.roomId);
+                Swal.close();
+                const Toast = Swal.mixin({
+                  toast: true,
+                  position: 'top-end',
+                  showConfirmButton: false,
+                  timer: 3000,
+                  background: '#16213e',
+                  color: '#fff'
+                });
+                Toast.fire({ icon: 'success', title: `Invitación enviada a ${a.username}` });
+              });
+            }
+          }
+        });
+      }
+    });
   }
 }

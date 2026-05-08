@@ -24,6 +24,8 @@ export class WebsocketService {
   public loading = signal<boolean>(true);
   public isReconnecting: boolean = false;
   public timeOffset: number = 0;
+  public amigos = signal<any[]>([]);
+  public amigosOnline = signal<Set<string>>(new Set());
 
   constructor(private http: HttpClient, private router: Router, private ngZone: NgZone) {
     this.socket = io(this.url);
@@ -39,6 +41,10 @@ export class WebsocketService {
       this.ngZone.run(() => {
         console.log('Conectado al servidor');
         this.loading.set(false);
+
+        if (this.username) {
+          this.identificar();
+        }
 
         if (this.roomId && this.username) {
           console.log('Intentando reconectar a sala:', this.roomId);
@@ -220,6 +226,67 @@ export class WebsocketService {
         Toast.fire({ icon: 'info', title: msg });
       });
     });
+
+    this.socket.on('invitacionRecibida', (data: { from: string, roomId: string }) => {
+      this.ngZone.run(() => {
+        Swal.fire({
+          title: '¡Invitación recibida!',
+          text: `${data.from} te ha invitado a jugar en la sala ${data.roomId}`,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonColor: '#e94560',
+          confirmButtonText: 'Aceptar',
+          cancelButtonText: 'Ignorar',
+          background: '#16213e',
+          color: '#fff'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.unirseSala(data.roomId);
+          }
+        });
+      });
+    });
+
+    this.socket.on('amigoStatus', (data: { username: string, isOnline: boolean }) => {
+      this.ngZone.run(() => {
+        const online = new Set(this.amigosOnline());
+        if (data.isOnline) online.add(data.username);
+        else online.delete(data.username);
+        this.amigosOnline.set(online);
+      });
+    });
+
+    this.socket.on('nuevaSolicitud', (data: { from: string }) => {
+      this.ngZone.run(() => {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          background: '#16213e',
+          color: '#fff'
+        });
+        Toast.fire({ icon: 'info', title: `Nueva solicitud de amistad de ${data.from}` });
+        this.actualizarAmigos();
+      });
+    });
+
+    this.socket.on('solicitudAceptada', (data: { from: string }) => {
+      this.ngZone.run(() => {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          background: '#16213e',
+          color: '#fff'
+        });
+        Toast.fire({ icon: 'success', title: `${data.from} aceptó tu solicitud de amistad` });
+        this.actualizarAmigos();
+      });
+    });
   }
 
   login(username: string, password: string): Observable<any> {
@@ -299,5 +366,73 @@ export class WebsocketService {
       this.abandonarSalaLocal();
       this.router.navigate(['/lobby']);
     }
+  }
+
+  identificar() {
+    if (this.username) {
+      this.socket.emit('identificar', this.username);
+      this.actualizarAmigos();
+    }
+  }
+
+  actualizarAmigos() {
+    if (this.username) {
+      this.obtenerAmigos(this.username).subscribe(amigos => {
+        this.amigos.set(amigos);
+      });
+    }
+  }
+
+  buscarUsuarios(query: string, requester: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.url}/buscar-usuarios/${query}/${requester}`);
+  }
+
+  obtenerAmigos(username: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.url}/amigos/${username}`);
+  }
+
+  enviarSolicitud(amigoUsername: string): Observable<any> {
+    return this.http.post(`${this.url}/solicitud-amistad`, {
+      usernameOrigen: this.username,
+      usernameDestino: amigoUsername
+    });
+  }
+
+  aceptarSolicitud(amigoUsername: string): Observable<any> {
+    return this.http.post(`${this.url}/aceptar-amistad`, {
+      usernameAcepta: this.username,
+      usernameAmigo: amigoUsername
+    });
+  }
+
+  rechazarSolicitud(amigoUsername: string): Observable<any> {
+    return this.http.post(`${this.url}/rechazar-amistad`, {
+      usernameRechaza: this.username,
+      usernameAmigo: amigoUsername
+    });
+  }
+
+  eliminarAmigo(amigoUsername: string): Observable<any> {
+    return this.http.post(`${this.url}/eliminar-amigo`, {
+      usernameSolicita: this.username,
+      usernameAmigo: amigoUsername
+    });
+  }
+
+  invitarAmigo(amigoUsername: string, roomId: string) {
+    this.socket.emit('invitarAmigo', { friendUsername: amigoUsername, roomId });
+  }
+
+  notificarSolicitudEnviada(toUsername: string) {
+    this.socket.emit('enviarSolicitudRealtime', { toUsername });
+  }
+
+  logout() {
+    this.socket.emit('logout');
+    this.username = '';
+  }
+
+  notificarSolicitudAceptada(toUsername: string) {
+    this.socket.emit('aceptarSolicitudRealtime', { toUsername });
   }
 }

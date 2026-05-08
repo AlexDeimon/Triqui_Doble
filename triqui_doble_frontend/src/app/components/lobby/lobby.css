@@ -230,6 +230,53 @@ h2 {
   font-size: 0.9rem;
 }
 
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #6c757d;
+  margin-right: 8px;
+}
+
+.search-results {
+  position: absolute;
+  top: 130px;
+  left: 0;
+  width: 100%;
+  background: #1a1a2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0 0 8px 8px;
+  z-index: 20;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.search-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-group-sm {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.mx-1 {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+
+.text-muted {
+  color: #888;
+  font-size: 0.8rem;
+}
+
 .ranking-content h2 {
   text-align: center;
   margin-bottom: 0.5rem;
@@ -238,6 +285,11 @@ h2 {
   font-size: 2rem;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.ranking-content input {
+  min-width: 100%;
+  margin-bottom: 0;
 }
 
 .table-wrapper::-webkit-scrollbar {
@@ -302,6 +354,15 @@ h2 {
   margin-bottom: 1.5rem;
 }
 
+.search-item span {
+  color: #fff;
+  font-weight: 500;
+}
+
+.search-item .btn-primary {
+  max-width: 100px;
+}
+
 .btn-close:hover {
   color: #fff;
   background-color: rgba(233, 69, 96, 0.8);
@@ -335,6 +396,15 @@ h2 {
   border: 3px solid var(--primary);
   box-shadow: 0 0 10px rgba(233, 69, 96, 0.4);
   animation: flash 2s infinite;
+}
+
+.status-dot.online {
+  background-color: #28a745;
+  box-shadow: 0 0 5px #28a745;
+}
+
+.search-item:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .ranking-table tbody tr:hover {

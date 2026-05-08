@@ -52,3 +52,81 @@ export const historialJugador = async (req, res) => {
   }).sort({ fecha: -1 });
   res.json(historial);
 };
+
+export const buscarUsuarios = async (req, res) => {
+  const { query, requester } = req.params;
+  const user = await Usuario.findOne({ username: requester });
+  const amigosUsernames = user ? user.amigos.map(a => a.username) : [];
+
+  const users = await Usuario.find({ 
+    $and: [
+      { username: { $regex: query, $options: 'i' } },
+      { username: { $nin: [requester, ...amigosUsernames] } }
+    ]
+  }).limit(10).select('username');
+  res.json(users);
+};
+
+export const enviarSolicitudAmistad = async (req, res) => {
+  const { usernameOrigen, usernameDestino } = req.body;
+  if (usernameOrigen === usernameDestino) return res.status(400).json({ msg: 'No puedes agregarte a ti mismo' });
+
+  const origen = await Usuario.findOne({ username: usernameOrigen });
+  const destino = await Usuario.findOne({ username: usernameDestino });
+
+  if (!destino) return res.status(404).json({ msg: 'Usuario no encontrado' });
+
+  const yaSolicitado = origen.amigos.find(a => a.username === usernameDestino);
+  if (yaSolicitado) return res.status(400).json({ msg: 'Ya hay una relación pendiente o existente' });
+
+  origen.amigos.push({ usuario: destino._id, username: usernameDestino, estado: 'solicitado' });
+  destino.amigos.push({ usuario: origen._id, username: usernameOrigen, estado: 'pendiente' });
+
+  await origen.save();
+  await destino.save();
+
+  res.json({ msg: 'Solicitud enviada' });
+};
+
+export const aceptarSolicitudAmistad = async (req, res) => {
+  const { usernameAcepta, usernameAmigo } = req.body;
+
+  const acepta = await Usuario.findOne({ username: usernameAcepta });
+  const amigo = await Usuario.findOne({ username: usernameAmigo });
+
+  const relAcepta = acepta.amigos.find(a => a.username === usernameAmigo);
+  const relAmigo = amigo.amigos.find(a => a.username === usernameAcepta);
+
+  if (relAcepta) relAcepta.estado = 'aceptado';
+  if (relAmigo) relAmigo.estado = 'aceptado';
+
+  await acepta.save();
+  await amigo.save();
+
+  res.json({ msg: 'Solicitud aceptada' });
+};
+
+export const rechazarSolicitudAmistad = async (req, res) => {
+  const { usernameRechaza, usernameAmigo } = req.body;
+  
+  await Usuario.updateOne({ username: usernameRechaza }, { $pull: { amigos: { username: usernameAmigo } } });
+  await Usuario.updateOne({ username: usernameAmigo }, { $pull: { amigos: { username: usernameRechaza } } });
+
+  res.json({ msg: 'Solicitud rechazada' });
+};
+
+export const eliminarAmigo = async (req, res) => {
+  const { usernameSolicita, usernameAmigo } = req.body;
+  
+  await Usuario.updateOne({ username: usernameSolicita }, { $pull: { amigos: { username: usernameAmigo } } });
+  await Usuario.updateOne({ username: usernameAmigo }, { $pull: { amigos: { username: usernameSolicita } } });
+
+  res.json({ msg: 'Amigo eliminado' });
+};
+
+export const obtenerAmigos = async (req, res) => {
+  const { username } = req.params;
+  const user = await Usuario.findOne({ username });
+  if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+  res.json(user.amigos || []);
+};
