@@ -484,3 +484,60 @@ h2 {
 
   .rule-arrow { display: none; }
 }
+
+.feature-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.4;
+  filter: grayscale(100%);
+}
+
+.feature-btn:hover {
+  transform: scale(1.1);
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.feature-btn.active {
+  opacity: 1;
+  filter: grayscale(0%);
+  border-color: var(--primary, #e94560);
+  box-shadow: 0 0 15px var(--primary, #e94560);
+  transform: scale(1.1);
+  background: rgba(233, 69, 96, 0.2);
+}
+
+.small-features-container {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.feature-icon {
+  font-size: 1.2rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.feature-icon:hover {
+  background: rgba(233, 69, 96, 0.2);
+  border-color: var(--primary, #e94560);
+  transform: translateY(-2px);
+}

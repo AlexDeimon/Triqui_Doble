@@ -34,7 +34,7 @@
             </td>
           </tr>
           <tr *ngIf="websocketService.salasPublicas().length === 0">
-            <td colspan="4">No hay salas disponibles en este momento.</td>
+            <td colspan="3">No hay salas disponibles en este momento.</td>
           </tr>
         </tbody>
       </table>
@@ -245,36 +245,29 @@
     <button (click)="cerrarConfiguracionSala()" class="btn-close"><span aria-hidden="true">&times;</span></button>
     <h2>Configuración de la Sala</h2>
     <div class="config-body">
-      <div class="form-group-config">
-        <label for="timerEnabled" class="config-label">Habilitar Temporizador:</label>
-        <div class="toggle-switch">
-          <input type="checkbox" id="timerEnabled" [(ngModel)]="habilitarTemporizador" class="config-checkbox">
-        </div>
+      <div class="config-features" style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-bottom: 25px;">
+        <button class="feature-btn" [class.active]="habilitarTemporizador" (click)="habilitarTemporizador = !habilitarTemporizador" title="Habilitar Temporizador">⏱️</button>
+        <button class="feature-btn active" (click)="objetivoJuego = objetivoJuego === 'triqui_doble' ? 'mayoria' : 'triqui_doble'" [title]="'Objetivo: ' + (objetivoJuego === 'triqui_doble' ? 'Triqui Doble' : 'Mayoría de Triquis')">
+          {{ objetivoJuego === 'triqui_doble' ? '🎯' : '🏆' }}
+        </button>
+        <button class="feature-btn active" (click)="modoSeleccion = modoSeleccion === 'regla_oro' ? 'Aleatorio' : 'regla_oro'" [title]="'Selección del Tablero: ' + (modoSeleccion === 'regla_oro' ? 'Regla de Oro' : 'Aleatorio')">
+          {{ modoSeleccion === 'regla_oro' ? '✨' : '🎲' }}
+        </button>
+        <button class="feature-btn" *ngIf="objetivoJuego === 'triqui_doble'" [class.active]="tablerosMoviles" (click)="tablerosMoviles = !tablerosMoviles" title="Tableros Móviles">🔄</button>
+        <button class="feature-btn" [class.active]="robarTableros" (click)="robarTableros = !robarTableros" title="Robar Tableros">🥷</button>
+        <button class="feature-btn" [class.active]="dosVsDos" (click)="dosVsDos = !dosVsDos" title="Juego 2 vs 2">👥</button>
+        <button class="feature-btn" [class.active]="salaPrivada" (click)="salaPrivada = !salaPrivada" title="Sala Privada">🔒</button>
       </div>
       <div class="form-group-config" *ngIf="habilitarTemporizador">
-        <label for="timerValue" class="config-label">Tiempo por turno:</label>
+        <label for="timerValue" class="config-label">⏱️ Tiempo por turno:</label>
         <select id="timerValue" [(ngModel)]="tiempoTemporizador" class="form-control config-select">
           <option [ngValue]="15" class="config-option">15 segundos</option>
           <option [ngValue]="30" class="config-option">30 segundos</option>
           <option [ngValue]="60" class="config-option">1 minuto</option>
         </select>
       </div>
-      <div class="form-group-config">
-        <label for="gameObjective" class="config-label">Objetivo del juego:</label>
-        <select id="gameObjective" [(ngModel)]="objetivoJuego" class="form-control config-select">
-          <option value="triqui_doble" class="config-option">Triqui Doble</option>
-          <option value="mayoria" class="config-option">Mayoría de Triquis</option>
-        </select>
-      </div>
-      <div class="form-group-config">
-        <label for="selectionMode" class="config-label">Selección del Tablero:</label>
-        <select id="selectionMode" [(ngModel)]="modoSeleccion" class="form-control config-select">
-          <option value="regla_oro" class="config-option">Regla de Oro</option>
-          <option value="Aleatorio" class="config-option">Aleatorio</option>
-        </select>
-      </div>
       <div class="form-group-config" *ngIf="objetivoJuego === 'triqui_doble'">
-        <label for="winningPattern" class="config-label">Patrón Ganador:</label>
+        <label for="winningPattern" class="config-label">🧩 Patrón Ganador:</label>
         <select id="winningPattern" [(ngModel)]="patronGanador" class="form-control config-select">
           <option value="Cualquiera" class="config-option">Cualquiera</option>
           <option value="1ra Fila" class="config-option">1ra Fila</option>
@@ -287,30 +280,6 @@
           <option value="Diagonal Secundaria" class="config-option">Diagonal Secundaria</option>
           <option value="Aleatorio" class="config-option">Aleatorio</option>
         </select>
-      </div>
-      <div class="form-group-config" *ngIf="objetivoJuego === 'triqui_doble'">
-        <label for="movingBoards" class="config-label">Tableros Móviles:</label>
-        <div class="toggle-switch">
-           <input type="checkbox" id="movingBoards" [(ngModel)]="tablerosMoviles" class="config-checkbox">
-        </div>
-      </div>
-      <div class="form-group-config">
-        <label for="robarTableros" class="config-label">Robar Tableros:</label>
-        <div class="toggle-switch">
-           <input type="checkbox" id="robarTableros" [(ngModel)]="robarTableros" class="config-checkbox">
-        </div>
-      </div>
-      <div class="form-group-config">
-        <label for="dosVsDos" class="config-label">Juego 2 vs 2:</label>
-        <div class="toggle-switch">
-           <input type="checkbox" id="dosVsDos" [(ngModel)]="dosVsDos" class="config-checkbox">
-        </div>
-      </div>
-      <div class="form-group-config">
-        <label for="salaPrivada" class="config-label">Sala Privada:</label>
-        <div class="toggle-switch">
-           <input type="checkbox" id="salaPrivada" [(ngModel)]="salaPrivada" class="config-checkbox">
-        </div>
       </div>
       <button (click)="crearSala()" class="btn-primary config-btn">Crear Sala</button>
     </div>

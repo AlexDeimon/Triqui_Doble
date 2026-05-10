@@ -22,6 +22,7 @@ export class TableroComponent implements OnInit, OnDestroy {
   gameState = signal<estadoJuego | null>(null);
   myRole = this.websocketService.myRole;
   tiempoRestante = signal<number>(0);
+  animacionesGanador: { [id: number]: boolean } = {};
   private timerInterval: any;
   private yaAnimado: boolean = false;
 
@@ -69,6 +70,19 @@ export class TableroComponent implements OnInit, OnDestroy {
 
         if (state && prevCount < newCount) {
           this.audioService.playMoveSound();
+        }
+
+        if (state && previousState) {
+          state.tableros.forEach((t, i) => {
+            const prevT = previousState.tableros[i];
+            if (t.ganador && t.ganador !== prevT.ganador) {
+               this.animacionesGanador[t.id] = true;
+               setTimeout(() => {
+                 this.animacionesGanador[t.id] = false;
+                 this.cd.detectChanges();
+               }, 1000);
+            }
+          });
         }
 
         if (state?.configuracion?.temporizador && state.ultimaActualizacionTurno && !state.ganador) {
@@ -269,6 +283,94 @@ export class TableroComponent implements OnInit, OnDestroy {
     return `${username} ${this.getSkinIcon(role)}`;
   }
 
+  getUsernamesForTeam(team: string): string[] {
+    const state = this.gameState();
+    if (!state) return [];
+    if (state.configuracion?.dosVsDos) {
+      const u1 = state.usernames[`${team}1`];
+      const u2 = state.usernames[`${team}2`];
+      const names = [];
+      if (u1) names.push(u1);
+      if (u2) names.push(u2);
+      return names;
+    } else {
+      const u = state.usernames[team];
+      return u ? [u] : [];
+    }
+  }
+
+  getPuntos(team: string): number {
+    const state = this.gameState();
+    if (!state) return 0;
+    return state.tableros.filter(t => t.ganador === team).length * 10;
+  }
+
+  get turnosFaltantesParaMover(): number {
+    const state = this.gameState();
+    if (!state || !state.configuracion?.tablerosMoviles) return 0;
+    
+    let turnosJugados = 0;
+    for (const t of state.tableros) {
+      for (const c of t.celdas) {
+        if (c.valor) turnosJugados++;
+      }
+    }
+    
+    const remaining = 10 - (turnosJugados % 10);
+    return remaining;
+  }
+
+  mostrarInfoConfiguracion() {
+    const state = this.gameState();
+    if (!state || !state.configuracion) return;
+    const config = state.configuracion;
+
+    let htmlContent = `<div style="text-align: left; padding: 10px; font-size: 1.1rem; line-height: 1.6;">`;
+
+    htmlContent += `<p><strong>Sala:</strong> ${this.websocketService.roomId}</p>`;
+
+    if (config.temporizador) {
+      htmlContent += `<p>⏱️ <strong>Temporizador:</strong> ${config.tiempo} segundos</p>`;
+    }
+
+    htmlContent += `<p>${config.objetivo === 'mayoria' ? '🏆' : '🎯'} <strong>Objetivo:</strong> ${config.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble'}</p>`;
+    htmlContent += `<p>${config.modoSeleccion === 'Aleatorio' ? '🎲' : '✨'} <strong>Selección:</strong> ${config.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro'}</p>`;
+
+    if (config.objetivo !== 'mayoria' && config.patronGanador) {
+      htmlContent += `<p>🧩 <strong>Patrón:</strong> ${config.patronGanador}</p>`;
+    }
+
+    if (config.tablerosMoviles) {
+      htmlContent += `<p>🔄 <strong>Tableros Móviles:</strong> Sí (Faltan ${this.turnosFaltantesParaMover} turnos para moverse)</p>`;
+    }
+
+    if (config.robarTableros) {
+      htmlContent += `<p>🥷 <strong>Robar Tableros:</strong> Sí</p>`;
+    }
+
+    if (config.dosVsDos) {
+      htmlContent += `<p>👥 <strong>Juego:</strong> 2 vs 2</p>`;
+    }
+
+    if (config.salaPrivada) {
+      htmlContent += `<p>🔒 <strong>Privacidad:</strong> Sala Privada</p>`;
+    }
+
+    htmlContent += `</div>`;
+
+    Swal.fire({
+      title: 'Configuración de la Partida',
+      html: htmlContent,
+      background: '#16213e',
+      color: '#fff',
+      confirmButtonColor: '#e94560',
+      confirmButtonText: 'Entendido',
+      customClass: {
+        popup: 'glass-modal'
+      }
+    });
+  }
+
   rendirse() {
     Swal.fire({
       title: '¿Estás seguro de que quieres rendirte?',
@@ -313,6 +415,14 @@ export class TableroComponent implements OnInit, OnDestroy {
     if (!state || !state.skins) return '';
     const equipo = valor.charAt(0);
     return state.skins[equipo]?.color || '';
+  }
+
+  getCellBackground(ganador: string | null): string {
+    if (!ganador) return '';
+    if (ganador === 'E') return 'rgba(100, 100, 100, 0.3)';
+    const color = this.getSkinColor(ganador);
+    if (!color) return '';
+    return color + '99';
   }
 
   isSkinOptionDisabled(tipo: 'emoji' | 'color', valor: string): boolean {
@@ -363,8 +473,8 @@ export class TableroComponent implements OnInit, OnDestroy {
                 <div style="width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#28a745' : '#e94560'}; box-shadow: 0 0 5px ${isOnline ? '#28a745' : '#e94560'};"></div>
                 <span style="font-weight: 500;">${a.username}</span>
               </div>
-              <button id="invite-${a.username}" 
-                class="swal2-confirm swal2-styled" 
+              <button id="invite-${a.username}"
+                class="swal2-confirm swal2-styled"
                 style="margin: 0; padding: 5px 15px; font-size: 0.9rem; transition: all 0.3s; ${isOnline ? '' : 'background-color: #6c757d !important; cursor: not-allowed; opacity: 0.6;'}"
                 ${isOnline ? '' : 'disabled'}>
                 Invitar
