@@ -30,8 +30,8 @@ export const verificarGanador = (elementos, propiedad, patronEspecifico = 'Cualq
     const countX = valores.filter(v => v === GameRole.X).length;
     const countO = valores.filter(v => v === GameRole.O).length;
 
-    if (countX >= 2) return GameRole.X;
-    if (countO >= 2) return GameRole.O;
+    if (countX >= 3) return GameRole.X;
+    if (countO >= 3) return GameRole.O;
   }
   return null;
 };

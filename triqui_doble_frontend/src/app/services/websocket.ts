@@ -1,6 +1,6 @@
 import { Injectable, NgZone, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { estadoJuego, GameRole } from '../models/game';
 import { environment } from '../../environments/environment';
@@ -30,11 +30,14 @@ export class WebsocketService {
   constructor(private http: HttpClient, private router: Router, private ngZone: NgZone) {
     this.socket = io(this.url);
 
-    const savedRoom = localStorage.getItem('triqui_roomId');
     const savedUser = localStorage.getItem('triqui_username');
-    if (savedRoom && savedUser) {
-      this.roomId = savedRoom;
+    if (savedUser) {
       this.username = savedUser;
+    }
+
+    const savedRoom = localStorage.getItem('triqui_roomId');
+    if (savedRoom) {
+      this.roomId = savedRoom;
     }
 
     this.socket.on('connect', () => {
@@ -177,11 +180,20 @@ export class WebsocketService {
     this.socket.on('error', (msg: string) => {
       this.ngZone.run(() => {
         if (this.isReconnecting && (msg === 'La partida ya no existe' || msg === 'La sala no existe')) {
-          console.log('Reconexión fallida (sala no existe). Limpiando sesión.');
+          console.log('Reconexión fallida (sala no existe). Limpiando sala.');
           this.roomId = '';
           localStorage.removeItem('triqui_roomId');
-          localStorage.removeItem('triqui_username');
           this.isReconnecting = false;
+          this.router.navigate(['/lobby']).then(() => {
+            Swal.fire({
+              title: 'Partida no encontrada',
+              text: 'Te desconectaste de tu ultima partida, la cual ya finalizo',
+              icon: 'warning',
+              background: '#16213e',
+              color: '#fff',
+              confirmButtonColor: '#e94560'
+            });
+          });
           return;
         }
 
@@ -290,8 +302,13 @@ export class WebsocketService {
   }
 
   login(username: string, password: string): Observable<any> {
-    this.username = username;
-    return this.http.post(`${this.url}/login`, { username, password });
+    return this.http.post(`${this.url}/login`, { username, password }).pipe(
+      tap(() => {
+        this.username = username;
+        localStorage.setItem('triqui_username', username);
+        this.identificar();
+      })
+    );
   }
 
   registrar(username: string, password: string): Observable<any> {
@@ -430,6 +447,9 @@ export class WebsocketService {
   logout() {
     this.socket.emit('logout');
     this.username = '';
+    localStorage.removeItem('triqui_username');
+    localStorage.removeItem('triqui_roomId');
+    this.router.navigate(['/login']);
   }
 
   notificarSolicitudAceptada(toUsername: string) {

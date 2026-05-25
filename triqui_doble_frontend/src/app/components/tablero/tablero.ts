@@ -299,6 +299,14 @@ export class TableroComponent implements OnInit, OnDestroy {
     }
   }
 
+  isCurrentTurnPlayer(team: string, username: string): boolean {
+    const state = this.gameState();
+    if (!state || !state.configuracion?.dosVsDos || !state.ordenTurnos || state.indiceTurnoActual === undefined) return false;
+    const rolActual = state.ordenTurnos[state.indiceTurnoActual];
+    if (!rolActual || !rolActual.startsWith(team)) return false;
+    return state.usernames[rolActual] === username;
+  }
+
   getPuntos(team: string): number {
     const state = this.gameState();
     if (!state) return 0;
@@ -308,14 +316,14 @@ export class TableroComponent implements OnInit, OnDestroy {
   get turnosFaltantesParaMover(): number {
     const state = this.gameState();
     if (!state || !state.configuracion?.tablerosMoviles) return 0;
-    
+
     let turnosJugados = 0;
     for (const t of state.tableros) {
       for (const c of t.celdas) {
         if (c.valor) turnosJugados++;
       }
     }
-    
+
     const remaining = 10 - (turnosJugados % 10);
     return remaining;
   }
@@ -336,7 +344,7 @@ export class TableroComponent implements OnInit, OnDestroy {
     htmlContent += `<p>${config.objetivo === 'mayoria' ? '🏆' : '🎯'} <strong>Objetivo:</strong> ${config.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble'}</p>`;
     htmlContent += `<p>${config.modoSeleccion === 'Aleatorio' ? '🎲' : '✨'} <strong>Selección:</strong> ${config.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro'}</p>`;
 
-    if (config.objetivo !== 'mayoria' && config.patronGanador) {
+    if (config.patronGanador !== "Cualquiera") {
       htmlContent += `<p>🧩 <strong>Patrón:</strong> ${config.patronGanador}</p>`;
     }
 

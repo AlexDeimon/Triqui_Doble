@@ -200,6 +200,25 @@ h2 {
   letter-spacing: 1px;
 }
 
+.player-names span.current-turn {
+  animation: pulseGlow 1s ease-in-out infinite alternate;
+  position: relative;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes pulseGlow {
+  0% {
+    text-shadow: 0 0 5px currentColor;
+    transform: scale(1);
+  }
+  100% {
+    text-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+    transform: scale(1.08);
+  }
+}
+
 .player-score {
   font-size: 1.2rem;
   font-weight: 900;

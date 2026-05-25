@@ -50,6 +50,7 @@
     <button (click)="verRanking()" class="btn-primary">Ver Ranking</button>
     <button (click)="verHistorial()" class="btn-primary">Historial de Partidas</button>
     <button (click)="abrirAmigos()" class="btn-primary">Amigos</button>
+    <button (click)="websocketService.logout()" class="btn-primary">Cerrar Sesión</button>
   </div>
 </div>
 
@@ -173,11 +174,11 @@
       </div>
       <div class="tutorial-step">
         <h3>2. El Objetivo</h3>
-        <p><strong>Triqui Doble: </strong>El objetivo es ganar el Tablero Principal ganando 3 Mini-Tableros en línea. Si se escoje un patrón ganador diferente a <strong>cualquiera</strong>, gana el jugador que gane 2 de 3 Mini-Tableros de ese patrón.</p>
-        <p><strong>Triqui Mayoría: </strong>El objetivo es ganar la mayor cantidad de Mini-Tableros (5) antes que tu oponente.</p>
+        <p><strong>🎯 Triqui Doble: </strong>El objetivo es ganar el Tablero Principal ganando 3 Mini-Tableros en línea. Si se escoje un patrón ganador 🧩 diferente a <strong>cualquiera</strong>, gana el jugador que gane los 3 Mini-Tableros de ese patrón.</p>
+        <p><strong>🏆 Triqui Mayoría: </strong>El objetivo es ganar la mayor cantidad de Mini-Tableros (5) antes que tu oponente.</p>
       </div>
       <div class="tutorial-step highlight-step">
-        <h3>3. La Regla de Oro</h3>
+        <h3>3. La Regla de Oro ✨</h3>
         <p>Tu movimiento determina en qué Mini-Tablero debe jugar tu oponente.</p>
         <div class="visual-rule">
           <div class="rule-part">
@@ -210,23 +211,23 @@
             </div>
           </div>
         </div>
-        <p><strong>Nota:</strong> Si se selecciona el modo aleatorio, el proximo mini-tablero se seleccionara al azar.</p>
+        <p><strong>Nota:</strong> Si se selecciona el modo aleatorio 🎲, el proximo mini-tablero se seleccionara al azar.</p>
       </div>
       <div class="tutorial-step">
         <h3>4. Libertad de Movimiento</h3>
         <p>Si te envían a un Mini-Tablero que ya está <strong>lleno</strong>, puedes jugar en cualquier parte del tablero.</p>
       </div>
       <div class="tutorial-step">
-        <h3>5. Temporizador</h3>
+        <h3>5. Temporizador ⏰</h3>
         <p>Si se habilita el temporizador, el jugador pierde su turno si no juega antes de que el temporizador expire y el oponente juega en el Mini-Tablero activo.</p>
         <p><strong>Nota:</strong> Si ningun jugador juega en 2 minutos, la sala se cerrara.</p>
       </div>
       <div class="tutorial-step">
-        <h3>6. Tableros Moviles</h3>
+        <h3>6. Tableros Moviles 🔄</h3>
         <p>Si se habilita esta opción, los tableros se moverán aleatoriamente cada 10 turnos.</p>
       </div>
       <div class="tutorial-step">
-        <h3>7. Robar Tableros</h3>
+        <h3>7. Robar Tableros 🥷</h3>
         <p>Si se habilita esta opción, si un jugador hace 3 en linea en un mini-tablero ya ganado, el jugador podra robar el mini-tablero y sus puntos.</p>
       </div>
       <div class="tutorial-step">
