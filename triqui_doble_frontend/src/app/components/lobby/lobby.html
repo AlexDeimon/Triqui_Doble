@@ -250,11 +250,19 @@
         <p>Si se habilita esta opción, si un jugador hace 3 en linea en un mini-tablero ya ganado, el jugador podra robar el mini-tablero y sus puntos.</p>
       </div>
       <div class="tutorial-step">
-        <h3>8. Iniciar Partida</h3>
+        <h3>8. 2 Vs 2 👥</h3>
+        <p>Si se habilita esta opción, se jugara en equipos de 2 vs 2. Los jugadores de cada equipo se alternaran para jugar.</p>
+      </div>
+      <div class="tutorial-step">
+        <h3>9. Ruleta Aleatoria 🎰</h3>
+        <p>Si se habilita esta opción, todas las reglas del juego seran seleccionadas al azar.</p>
+      </div>
+      <div class="tutorial-step">
+        <h3>10. Iniciar Partida</h3>
         <p>Al crear la sala, el jugador empieza con la ficha <strong>X</strong>. Se genera un código de sala que se muestra en la pantalla, este se comparte con el otro jugador el cual tendrá la ficha <strong>O</strong>.</p>
       </div>
       <div class="tutorial-step">
-        <h3>9. Puntaje</h3>
+        <h3>11. Puntaje</h3>
         <p>Por cada mini-tablero ganado se obtienen <strong>10 puntos</strong>. Al ganar el juego se obtienen <strong>50 puntos</strong>.</p>
       </div>
     </div>
@@ -266,19 +274,20 @@
     <h2>Configuración de la Sala</h2>
     <div class="config-body">
       <div class="config-features">
-        <button class="feature-btn" [class.active]="objetivoJuego === 'triqui_doble'" (click)="objetivoJuego = objetivoJuego === 'triqui_doble' ? 'mayoria' : 'triqui_doble'" [title]="'Objetivo: ' + (objetivoJuego === 'triqui_doble' ? 'Triqui Doble' : 'Mayoría de Triquis')">🎯</button>
-        <button class="feature-btn" [class.active]="objetivoJuego === 'mayoria'" (click)="objetivoJuego = objetivoJuego === 'triqui_doble' ? 'mayoria' : 'triqui_doble'" [title]="'Objetivo: ' + (objetivoJuego === 'triqui_doble' ? 'Triqui Doble' : 'Mayoría de Triquis')">🏆</button>
-        <button class="feature-btn" [class.active]="modoSeleccion === 'regla_oro'" (click)="modoSeleccion = modoSeleccion === 'regla_oro' ? 'Aleatorio' : 'regla_oro'" [title]="'Selección del Tablero: ' + (modoSeleccion === 'regla_oro' ? 'Regla de Oro' : 'Aleatorio')">✨</button>
-        <button class="feature-btn" [class.active]="modoSeleccion === 'Aleatorio'" (click)="modoSeleccion = modoSeleccion === 'Aleatorio' ? 'regla_oro' : 'Aleatorio'" [title]="'Selección del Tablero: ' + (modoSeleccion === 'regla_oro' ? 'Regla de Oro' : 'Aleatorio')">🎲</button>
+        <button class="feature-btn" *ngIf="!ruletaAleatoria" [class.active]="objetivoJuego === 'triqui_doble'" (click)="objetivoJuego = objetivoJuego === 'triqui_doble' ? 'mayoria' : 'triqui_doble'" [title]="'Objetivo: ' + (objetivoJuego === 'triqui_doble' ? 'Triqui Doble' : 'Mayoría de Triquis')">🎯</button>
+        <button class="feature-btn" *ngIf="!ruletaAleatoria" [class.active]="objetivoJuego === 'mayoria'" (click)="objetivoJuego = objetivoJuego === 'triqui_doble' ? 'mayoria' : 'triqui_doble'" [title]="'Objetivo: ' + (objetivoJuego === 'triqui_doble' ? 'Triqui Doble' : 'Mayoría de Triquis')">🏆</button>
+        <button class="feature-btn" *ngIf="!ruletaAleatoria" [class.active]="modoSeleccion === 'regla_oro'" (click)="modoSeleccion = modoSeleccion === 'regla_oro' ? 'Aleatorio' : 'regla_oro'" [title]="'Selección del Tablero: ' + (modoSeleccion === 'regla_oro' ? 'Regla de Oro' : 'Aleatorio')">✨</button>
+        <button class="feature-btn" *ngIf="!ruletaAleatoria" [class.active]="modoSeleccion === 'Aleatorio'" (click)="modoSeleccion = modoSeleccion === 'Aleatorio' ? 'regla_oro' : 'Aleatorio'" [title]="'Selección del Tablero: ' + (modoSeleccion === 'regla_oro' ? 'Regla de Oro' : 'Aleatorio')">🎲</button>
+        <button class="feature-btn" [class.active]="ruletaAleatoria" (click)="ruletaAleatoria = !ruletaAleatoria" title="Ruleta Aleatoria">🎰</button>
       </div>
       <div class="config-features">
-        <button class="feature-btn" [class.active]="habilitarTemporizador" (click)="habilitarTemporizador = !habilitarTemporizador" title="Habilitar Temporizador">⏱️</button>
-        <button class="feature-btn" *ngIf="objetivoJuego === 'triqui_doble'" [class.active]="tablerosMoviles" (click)="tablerosMoviles = !tablerosMoviles" title="Tableros Móviles">🔄</button>
-        <button class="feature-btn" [class.active]="robarTableros" (click)="robarTableros = !robarTableros" title="Robar Tableros">🥷</button>
+        <button class="feature-btn" *ngIf="!ruletaAleatoria" [class.active]="habilitarTemporizador" (click)="habilitarTemporizador = !habilitarTemporizador" title="Habilitar Temporizador">⏱️</button>
+        <button class="feature-btn" *ngIf="objetivoJuego === 'triqui_doble' && !ruletaAleatoria" [class.active]="tablerosMoviles && !ruletaAleatoria" (click)="tablerosMoviles = !tablerosMoviles" title="Tableros Móviles">🔄</button>
+        <button class="feature-btn" *ngIf="!ruletaAleatoria" [class.active]="robarTableros && !ruletaAleatoria" (click)="robarTableros = !robarTableros" title="Robar Tableros">🥷</button>
         <button class="feature-btn" [class.active]="dosVsDos" (click)="dosVsDos = !dosVsDos" title="Juego 2 vs 2">👥</button>
         <button class="feature-btn" [class.active]="salaPrivada" (click)="salaPrivada = !salaPrivada" title="Sala Privada">🔒</button>
       </div>
-      <div class="form-group-config" *ngIf="habilitarTemporizador">
+      <div class="form-group-config" *ngIf="habilitarTemporizador && !ruletaAleatoria">
         <label for="timerValue" class="config-label">⏱️ Tiempo por turno:</label>
         <select id="timerValue" [(ngModel)]="tiempoTemporizador" class="form-control config-select">
           <option [ngValue]="15" class="config-option">15 segundos</option>
@@ -286,7 +295,7 @@
           <option [ngValue]="60" class="config-option">1 minuto</option>
         </select>
       </div>
-      <div class="form-group-config" *ngIf="objetivoJuego === 'triqui_doble'">
+      <div class="form-group-config" *ngIf="objetivoJuego === 'triqui_doble' && !ruletaAleatoria">
         <label for="winningPattern" class="config-label">🧩 Patrón Ganador:</label>
         <select id="winningPattern" [(ngModel)]="patronGanador" class="form-control config-select">
           <option value="Cualquiera" class="config-option">Cualquiera</option>

@@ -32,6 +32,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   queryBusqueda: string = '';
   resultadosBusqueda: any[] = [];
   perfilTabActive: number = 0;
+  ruletaAleatoria: boolean = false;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
@@ -149,11 +150,29 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.robarTableros = false;
     this.dosVsDos = false;
     this.salaPrivada = false;
+    this.ruletaAleatoria = false;
   }
 
   crearSala() {
     const codigoRandom = Math.random().toString(36).substring(7).toUpperCase();
+
+    if (this.ruletaAleatoria) {
+      this.objetivoJuego = ['triqui_doble', 'mayoria'][Math.floor(Math.random() * 2)];
+      this.modoSeleccion = ['regla_oro', 'Aleatorio'][Math.floor(Math.random() * 2)];
+      if (this.modoSeleccion === 'regla_oro') {
+        this.patronGanador = ['Cualquiera', 'Aleatorio'][Math.floor(Math.random() * 2)];
+        this.tablerosMoviles = Math.random() < 0.5;
+      }
+      this.robarTableros = Math.random() < 0.5;
+      this.habilitarTemporizador = Math.random() < 0.5;
+      if (this.habilitarTemporizador) {
+        this.tiempoTemporizador = [15, 30, 60][Math.floor(Math.random() * 3)];
+      }
+      this.ruletaAleatoria = false;
+    }
+
     if (this.objetivoJuego === 'mayoria') {
+      this.patronGanador = 'Cualquiera';
       this.tablerosMoviles = false;
     }
     this.websocketService.crearSala(codigoRandom, {
