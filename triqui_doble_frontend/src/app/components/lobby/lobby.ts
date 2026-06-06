@@ -17,7 +17,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
   ranking: any[] = [];
   mostrarRanking: boolean = false;
   historial: any[] = [];
-  mostrarHistorial: boolean = false;
   mostrarTutorial: boolean = false;
   robarTableros: boolean = false;
   mostrarConfiguracionSala: boolean = false;
@@ -29,9 +28,10 @@ export class LobbyComponent implements OnInit, OnDestroy {
   tablerosMoviles: boolean = false;
   dosVsDos: boolean = false;
   salaPrivada: boolean = false;
-  mostrarAmigos: boolean = false;
+  mostrarPerfil: boolean = false;
   queryBusqueda: string = '';
   resultadosBusqueda: any[] = [];
+  perfilTabActive: number = 0;
 
   constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
@@ -42,15 +42,29 @@ export class LobbyComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
   }
 
-  abrirAmigos() {
-    this.mostrarAmigos = true;
+  abrirPerfil() {
+    this.mostrarPerfil = true;
+    this.perfilTabActive = 0;
     this.websocketService.actualizarAmigos();
+    this.websocketService.obtenerHistorial(this.websocketService.username).subscribe({
+      next: (historial) => {
+        this.historial = historial;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error obteniendo historial:', err);
+      }
+    });
   }
 
-  cerrarAmigos() {
-    this.mostrarAmigos = false;
+  cerrarPerfil() {
+    this.mostrarPerfil = false;
     this.queryBusqueda = '';
     this.resultadosBusqueda = [];
+  }
+
+  setPerfilTab(index: number) {
+    this.perfilTabActive = index;
   }
 
   buscarUsuarios() {
@@ -192,23 +206,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   cerrarTutorial() {
     this.mostrarTutorial = false;
-  }
-
-  verHistorial() {
-    this.websocketService.obtenerHistorial(this.websocketService.username).subscribe({
-      next: (historial) => {
-        this.historial = historial;
-        this.mostrarHistorial = true;
-        this.cd.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error obteniendo historial:', err);
-      }
-    });
-  }
-
-  cerrarHistorial() {
-    this.mostrarHistorial = false;
   }
 
 }

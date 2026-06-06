@@ -1,5 +1,12 @@
 <div class="lobby-container">
-  <h1>Bienvenido {{ websocketService.username }}</h1>
+  <header>
+    <div class="header-buttons">
+      <button class="header-btn" (click)="abrirPerfil()" title="Perfil">👤</button>
+      <button class="header-btn play" (click)="abrirConfiguracionSala()" title="Crear Partida">🔺</button>
+      <button class="header-btn" (click)="verRanking()" title="Ranking">🥇</button>
+      <button class="header-btn" (click)="verTutorial()" title="Como Jugar">❓</button>
+    </div>
+  </header>
   <div class="salas-container">
     <h2>Salas Públicas</h2>
     <div class="table-wrapper">
@@ -45,64 +52,106 @@
       <input type="text" [(ngModel)]="codigoSala" placeholder="Codigo de sala privada" class="custom-input" />
       <button (click)="unirseSala()" class="btn-primary">Unirse a Sala Privada</button>
     </div>
-    <button (click)="verTutorial()" class="btn-primary">Cómo Jugar</button>
-    <button (click)="abrirConfiguracionSala()" class="btn-primary">Crear Sala</button>
-    <button (click)="verRanking()" class="btn-primary">Ver Ranking</button>
-    <button (click)="verHistorial()" class="btn-primary">Historial de Partidas</button>
-    <button (click)="abrirAmigos()" class="btn-primary">Amigos</button>
-    <button (click)="websocketService.logout()" class="btn-primary">Cerrar Sesión</button>
   </div>
 </div>
-
-<div *ngIf="mostrarAmigos" class="ranking-modal-container">
-  <div class="ranking-content">
-    <button (click)="cerrarAmigos()" class="btn-close"><span aria-hidden="true">&times;</span></button>
-    <h2>Mis Amigos</h2>
-    <input type="text" [(ngModel)]="queryBusqueda" (input)="buscarUsuarios()" placeholder="Buscar jugadores por nombre..." class="custom-input" />
-    <div *ngIf="resultadosBusqueda.length > 0" class="search-results">
-      <div *ngFor="let res of resultadosBusqueda" class="search-item">
-        <span>{{ res.username }}</span>
-        <button (click)="enviarSolicitud(res.username)" class="btn-primary btn-sm">Agregar</button>
+<div *ngIf="mostrarPerfil" class="ranking-modal-container">
+  <div class="ranking-content profile-modal">
+    <button (click)="cerrarPerfil()" class="btn-close"><span aria-hidden="true">❌</span></button>
+    <div class="profile-header">
+      <div class="header-btn perfil-img" title="Usuario">👤</div>
+      <h2>{{ websocketService.username }}</h2>
+    </div>
+    <div class="carousel-nav">
+      <button class="carousel-nav-btn" [class.active]="perfilTabActive === 0" (click)="setPerfilTab(0)">👥 AMIGOS</button>
+      <button class="carousel-nav-btn" [class.active]="perfilTabActive === 1" (click)="setPerfilTab(1)">📜 HISTORIAL</button>
+    </div>
+    <div class="carousel-wrapper">
+      <div class="carousel-viewport">
+        <div class="carousel-track" [style.transform]="'translateX(-' + (perfilTabActive * 50) + '%)'">
+          <div class="carousel-slide">
+            <div class="search-container">
+              <input type="text" [(ngModel)]="queryBusqueda" (input)="buscarUsuarios()" placeholder="Buscar jugadores por nombre..." class="custom-input" />
+              <div *ngIf="resultadosBusqueda.length > 0" class="search-results-inline">
+                <div *ngFor="let res of resultadosBusqueda" class="search-item">
+                  <span>{{ res.username }}</span>
+                  <button (click)="enviarSolicitud(res.username)" class="btn-secondary">Solicitar ✅</button>
+                </div>
+              </div>
+            </div>
+            <div class="friends-list table-wrapper">
+              <table class="ranking-table">
+                <thead>
+                  <tr>
+                    <th>Estado</th>
+                    <th>Usuario</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let amigo of websocketService.amigos()">
+                    <td>
+                      <span class="status-dot" [class.online]="websocketService.amigosOnline().has(amigo.username)"></span>
+                      {{ websocketService.amigosOnline().has(amigo.username) ? 'Online' : 'Offline' }}
+                    </td>
+                    <td>
+                      {{ amigo.username }}
+                      <small *ngIf="amigo.estado !== 'aceptado'" class="text-muted">({{ amigo.estado }})</small>
+                    </td>
+                    <td class="friend-actions-cell">
+                      <div class="btn-group-sm">
+                        <button *ngIf="amigo.estado === 'pendiente'" (click)="aceptarSolicitud(amigo.username)" class="btn-secondary">✅</button>
+                        <button *ngIf="amigo.estado === 'pendiente'" (click)="rechazarSolicitud(amigo.username)" class="btn-secondary">❌</button>
+                        <button *ngIf="amigo.estado === 'aceptado'" (click)="eliminarAmigo(amigo.username)" class="btn-secondary">❌</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="websocketService.amigos().length === 0">
+                    <td colspan="3">Aún no tienes amigos. ¡Busca usuarios arriba!</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="carousel-slide">
+            <div class="table-wrapper">
+              <table class="ranking-table">
+                <thead>
+                  <tr>
+                    <th>X</th>
+                    <th>O</th>
+                    <th>Ganador</th>
+                    <th>Turnos</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let partida of historial">
+                    <td>{{ partida.jugadorX }}</td>
+                    <td>{{ partida.jugadorO }}</td>
+                    <td>{{ partida.ganador === 'E' ? 'EMPATE' : partida.ganador }}</td>
+                    <td>{{ partida.cantidadTurnos }}</td>
+                    <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ partida.fecha | date:'HH:mm' }}</td>
+                  </tr>
+                  <tr *ngIf="historial.length === 0">
+                    <td colspan="6">No tienes partidas registradas en el historial.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="friends-list table-wrapper">
-      <table class="ranking-table">
-        <thead>
-          <tr>
-            <th>Estado</th>
-            <th>Usuario</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let amigo of websocketService.amigos()">
-            <td>
-              <span class="status-dot" [class.online]="websocketService.amigosOnline().has(amigo.username)"></span>
-              {{ websocketService.amigosOnline().has(amigo.username) ? 'Online' : 'Offline' }}
-            </td>
-            <td>
-              {{ amigo.username }}
-              <small *ngIf="amigo.estado !== 'aceptado'" class="text-muted">({{ amigo.estado }})</small>
-            </td>
-            <td class="friend-actions-cell">
-              <div class="btn-group-sm">
-                <button *ngIf="amigo.estado === 'pendiente'" (click)="aceptarSolicitud(amigo.username)" class="btn-primary btn-sm mx-1">Aceptar</button>
-                <button *ngIf="amigo.estado === 'pendiente'" (click)="rechazarSolicitud(amigo.username)" class="btn-primary btn-sm mx-1">Rechazar</button>
-                <button *ngIf="amigo.estado === 'aceptado'" (click)="eliminarAmigo(amigo.username)" class="btn-primary btn-sm mx-1">X</button>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="websocketService.amigos().length === 0">
-            <td colspan="3">Aún no tienes amigos. ¡Busca usuarios arriba!</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="profile-footer">
+      <button (click)="websocketService.logout()" class="btn-secondary logout-btn">Cerrar Sesión</button>
     </div>
   </div>
 </div>
 <div *ngIf="mostrarRanking" class="ranking-modal-container">
   <div class="ranking-content">
-    <button (click)="cerrarRanking()" class="btn-close"><span aria-hidden="true">&times;</span></button>
+    <button (click)="cerrarRanking()" class="btn-close"><span aria-hidden="true">❌</span></button>
     <h2>Ranking de Jugadores</h2>
     <div class="table-wrapper">
       <table class="ranking-table">
@@ -133,39 +182,9 @@
     </div>
   </div>
 </div>
-<div *ngIf="mostrarHistorial" class="ranking-modal-container">
-  <div class="ranking-content">
-    <button (click)="cerrarHistorial()" class="btn-close"><span aria-hidden="true">&times;</span></button>
-    <h2>Historial de Partidas</h2>
-    <div class="table-wrapper">
-      <table class="ranking-table">
-        <thead>
-          <tr>
-            <th>X</th>
-            <th>O</th>
-            <th>Ganador</th>
-            <th>Turnos</th>
-            <th>Fecha</th>
-            <th>Hora</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let partida of historial">
-            <td>{{ partida.jugadorX }}</td>
-            <td>{{ partida.jugadorO }}</td>
-            <td>{{ partida.ganador === 'E' ? 'EMPATE' : partida.ganador }}</td>
-            <td>{{ partida.cantidadTurnos }}</td>
-            <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
-            <td>{{ partida.fecha | date:'HH:mm' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
 <div *ngIf="mostrarTutorial" class="ranking-modal-container">
   <div class="ranking-content">
-    <button (click)="cerrarTutorial()" class="btn-close"><span aria-hidden="true">&times;</span></button>
+    <button (click)="cerrarTutorial()" class="btn-close"><span aria-hidden="true">❌</span></button>
     <h2>¿Cómo Jugar Triqui Doble?</h2>
     <div class="tutorial-body">
       <div class="tutorial-step">
@@ -243,17 +262,17 @@
 </div>
 <div *ngIf="mostrarConfiguracionSala" class="ranking-modal-container">
   <div class="ranking-content">
-    <button (click)="cerrarConfiguracionSala()" class="btn-close"><span aria-hidden="true">&times;</span></button>
+    <button (click)="cerrarConfiguracionSala()" class="btn-close"><span aria-hidden="true">❌</span></button>
     <h2>Configuración de la Sala</h2>
     <div class="config-body">
-      <div class="config-features" style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-bottom: 25px;">
+      <div class="config-features">
+        <button class="feature-btn" [class.active]="objetivoJuego === 'triqui_doble'" (click)="objetivoJuego = objetivoJuego === 'triqui_doble' ? 'mayoria' : 'triqui_doble'" [title]="'Objetivo: ' + (objetivoJuego === 'triqui_doble' ? 'Triqui Doble' : 'Mayoría de Triquis')">🎯</button>
+        <button class="feature-btn" [class.active]="objetivoJuego === 'mayoria'" (click)="objetivoJuego = objetivoJuego === 'triqui_doble' ? 'mayoria' : 'triqui_doble'" [title]="'Objetivo: ' + (objetivoJuego === 'triqui_doble' ? 'Triqui Doble' : 'Mayoría de Triquis')">🏆</button>
+        <button class="feature-btn" [class.active]="modoSeleccion === 'regla_oro'" (click)="modoSeleccion = modoSeleccion === 'regla_oro' ? 'Aleatorio' : 'regla_oro'" [title]="'Selección del Tablero: ' + (modoSeleccion === 'regla_oro' ? 'Regla de Oro' : 'Aleatorio')">✨</button>
+        <button class="feature-btn" [class.active]="modoSeleccion === 'Aleatorio'" (click)="modoSeleccion = modoSeleccion === 'Aleatorio' ? 'regla_oro' : 'Aleatorio'" [title]="'Selección del Tablero: ' + (modoSeleccion === 'regla_oro' ? 'Regla de Oro' : 'Aleatorio')">🎲</button>
+      </div>
+      <div class="config-features">
         <button class="feature-btn" [class.active]="habilitarTemporizador" (click)="habilitarTemporizador = !habilitarTemporizador" title="Habilitar Temporizador">⏱️</button>
-        <button class="feature-btn active" (click)="objetivoJuego = objetivoJuego === 'triqui_doble' ? 'mayoria' : 'triqui_doble'" [title]="'Objetivo: ' + (objetivoJuego === 'triqui_doble' ? 'Triqui Doble' : 'Mayoría de Triquis')">
-          {{ objetivoJuego === 'triqui_doble' ? '🎯' : '🏆' }}
-        </button>
-        <button class="feature-btn active" (click)="modoSeleccion = modoSeleccion === 'regla_oro' ? 'Aleatorio' : 'regla_oro'" [title]="'Selección del Tablero: ' + (modoSeleccion === 'regla_oro' ? 'Regla de Oro' : 'Aleatorio')">
-          {{ modoSeleccion === 'regla_oro' ? '✨' : '🎲' }}
-        </button>
         <button class="feature-btn" *ngIf="objetivoJuego === 'triqui_doble'" [class.active]="tablerosMoviles" (click)="tablerosMoviles = !tablerosMoviles" title="Tableros Móviles">🔄</button>
         <button class="feature-btn" [class.active]="robarTableros" (click)="robarTableros = !robarTableros" title="Robar Tableros">🥷</button>
         <button class="feature-btn" [class.active]="dosVsDos" (click)="dosVsDos = !dosVsDos" title="Juego 2 vs 2">👥</button>
