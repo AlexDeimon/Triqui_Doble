@@ -1,9 +1,9 @@
 import { Component, NgZone, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { WebsocketService } from '../../services/websocket';
 import Swal from 'sweetalert2';
-
 
 @Component({
   standalone: true,
@@ -34,14 +34,27 @@ export class LobbyComponent implements OnInit, OnDestroy {
   perfilTabActive: number = 0;
   ruletaAleatoria: boolean = false;
 
-  constructor(public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
+  constructor(private router: Router, public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
   ngOnInit() {
-    this.websocketService.identificar();
+    if(this.verificarUsuario()){
+      this.websocketService.identificar();
+    }
+    else{
+      this.router.navigate(['/login']);
+    }
   }
 
   ngOnDestroy() {
   }
+
+  verificarUsuario = ():boolean => {
+  const usuario = localStorage.getItem('triqui_username');
+  if (usuario) {
+    return true;
+  }
+  return false;
+}
 
   abrirPerfil() {
     this.mostrarPerfil = true;

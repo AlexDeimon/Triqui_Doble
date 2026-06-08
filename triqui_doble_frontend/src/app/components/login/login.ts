@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -12,12 +12,26 @@ import Swal from 'sweetalert2';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   username: string = '';
   password: string = '';
   usuarioRegistrado: boolean = true;
 
   constructor(private router: Router, private websocketService: WebsocketService) { }
+
+  ngOnInit() {
+    if(this.verificarUsuario()){
+      this.router.navigate(['/lobby']);
+    }
+  }
+
+  verificarUsuario = ():boolean => {
+  const usuario = localStorage.getItem('triqui_username');
+  if (usuario) {
+    return true;
+  }
+  return false;
+}
 
   onSubmit() {
     if (this.usuarioRegistrado) {
