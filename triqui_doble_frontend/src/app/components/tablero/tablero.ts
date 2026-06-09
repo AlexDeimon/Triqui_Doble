@@ -94,9 +94,13 @@ export class TableroComponent implements OnInit, OnDestroy {
         if (state?.ganador) {
           const isTie = state.ganador === GameRole.Empate;
           let title = '';
+          let puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X')}`;
+          let puntosO = `${this.getSkinIcon('O')}: ${this.getPuntos('O')}`;
           if (isTie) {
-            title = 'El juego ha terminado en empate';
+            title = 'El juego ha terminado en empate.';
           } else {
+            state.ganador === 'X' ? puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X') + 50}` : puntosO = `${this.getSkinIcon('O')}: ${this.getPuntos('O') + 50}`;
+
             if (state.configuracion?.dosVsDos) {
               const rol1 = `${state.ganador}1`;
               const rol2 = `${state.ganador}2`;
@@ -116,6 +120,7 @@ export class TableroComponent implements OnInit, OnDestroy {
           }
           Swal.fire({
             title: title,
+            text: `${puntosX} pts - ${puntosO} pts`,
             icon: isTie ? 'info' : 'success',
             background: '#16213e',
             color: '#fff',
