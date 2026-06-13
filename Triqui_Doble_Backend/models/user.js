@@ -13,7 +13,8 @@ const userSchema = new Schema({
         usuario: { type: Schema.Types.ObjectId, ref: 'usuario' },
         username: String,
         estado: { type: String, enum: ['solicitado', 'pendiente', 'aceptado'], default: 'pendiente' }
-    }]
+    }],
+    profileImage: { type: String, default: '👤' }
 });
 
 export const Usuario = model('usuario', userSchema);

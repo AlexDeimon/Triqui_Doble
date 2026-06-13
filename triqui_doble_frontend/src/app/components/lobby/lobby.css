@@ -648,18 +648,71 @@ h1 {
 
 .carousel-track {
   display: flex;
-  width: 200%;
+  width: 300%;
   height: 100%;
   transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .carousel-slide {
-  width: 50%;
+  width: 33.33%;
   height: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.profile-stats {
+  padding: 1rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.stat-row p {
+  margin: 0;
+}
+
+.stat-row div:nth-child(1) strong {
+  color: #28a745;
+}
+
+.stat-row div:nth-child(2) strong {
+  color: #e94560;
+}
+
+.stat-row div:nth-child(3) strong {
+  color: #ffb52a;
+}
+
+.icon-selector {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.skin-options {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.skin-btn.emoji-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: #0f3460;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: all 0.3s;
 }
 
 .search-container {

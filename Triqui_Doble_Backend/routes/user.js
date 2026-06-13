@@ -14,5 +14,7 @@ userRouter.post('/solicitud-amistad', asyncHandler(userController.enviarSolicitu
 userRouter.post('/aceptar-amistad', asyncHandler(userController.aceptarSolicitudAmistad));
 userRouter.post('/rechazar-amistad', asyncHandler(userController.rechazarSolicitudAmistad));
 userRouter.post('/eliminar-amigo', asyncHandler(userController.eliminarAmigo));
+userRouter.get('/perfil/:username', asyncHandler(userController.obtenerPerfil));
+userRouter.post('/perfil/actualizar', asyncHandler(userController.actualizarPerfil));
 
 export default userRouter;

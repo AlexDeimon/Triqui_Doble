@@ -436,6 +436,17 @@ export class WebsocketService {
     });
   }
 
+  obtenerPerfil(username: string): Observable<any> {
+    return this.http.get<any>(`${this.url}/perfil/${username}`);
+  }
+
+  actualizarPerfil(username: string, profileImage: string): Observable<any> {
+    return this.http.post(`${this.url}/perfil/actualizar`, {
+      username,
+      profileImage
+    });
+  }
+
   invitarAmigo(amigoUsername: string, roomId: string) {
     this.socket.emit('invitarAmigo', { friendUsername: amigoUsername, roomId });
   }

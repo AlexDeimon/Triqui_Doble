@@ -130,3 +130,67 @@ export const obtenerAmigos = async (req, res) => {
   if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
   res.json(user.amigos || []);
 };
+
+export const obtenerPerfil = async (req, res) => {
+  const { username } = req.params;
+  const user = await Usuario.findOne({ username });
+  if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+
+  const allUsers = await Usuario.find().sort({ 'estadisticas.puntaje': -1 });
+  const rank = allUsers.findIndex(u => u.username === username) + 1;
+
+  const regex = new RegExp(`(^|,)${username}(,|$)`);
+  const historial = await Partidas.find({
+    $or: [{ jugadorX: regex }, { jugadorO: regex }]
+  });
+
+  const opponents = {};
+  historial.forEach(p => {
+    let opponent;
+    if (p.jugadorX.includes(username)) {
+      opponent = p.jugadorO;
+    } else {
+      opponent = p.jugadorX;
+    }
+
+    const ops = opponent.split(',');
+    ops.forEach(op => {
+      if (op && op !== username) {
+        opponents[op] = (opponents[op] || 0) + 1;
+      }
+    });
+  });
+
+  let rival = 'Ninguno';
+  let maxGames = 0;
+  for (const [op, games] of Object.entries(opponents)) {
+    if (games > maxGames) {
+      maxGames = games;
+      rival = op;
+    }
+  }
+
+  const { partidasGanadas, partidasPerdidas, partidasEmpatadas } = user.estadisticas;
+  const total = partidasGanadas + partidasPerdidas + partidasEmpatadas;
+  const porcentajes = {
+    ganadas: total ? Math.round((partidasGanadas / total) * 100) : 0,
+    perdidas: total ? Math.round((partidasPerdidas / total) * 100) : 0,
+    empatadas: total ? Math.round((partidasEmpatadas / total) * 100) : 0
+  };
+
+  res.json({
+    username: user.username,
+    profileImage: user.profileImage,
+    fechaRegistro: user._id.getTimestamp().toString(),
+    rank,
+    porcentajes,
+    rival,
+    totalPartidas: total
+  });
+};
+
+export const actualizarPerfil = async (req, res) => {
+  const { username, profileImage } = req.body;
+  await Usuario.findOneAndUpdate({ username }, { profileImage });
+  res.json({ msg: 'Perfil actualizado' });
+};

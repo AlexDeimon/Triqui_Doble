@@ -33,6 +33,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
   resultadosBusqueda: any[] = [];
   perfilTabActive: number = 0;
   ruletaAleatoria: boolean = false;
+  perfilData: any = null;
+  iconosPerfil: string[] = ['🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '🥷'];
 
   constructor(private router: Router, public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
@@ -60,6 +62,15 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.mostrarPerfil = true;
     this.perfilTabActive = 0;
     this.websocketService.actualizarAmigos();
+
+    this.websocketService.obtenerPerfil(this.websocketService.username).subscribe({
+      next: (perfil) => {
+        this.perfilData = perfil;
+        this.cd.detectChanges();
+      },
+      error: (err) => console.error('Error obteniendo perfil:', err)
+    });
+
     this.websocketService.obtenerHistorial(this.websocketService.username).subscribe({
       next: (historial) => {
         this.historial = historial;
@@ -79,6 +90,17 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   setPerfilTab(index: number) {
     this.perfilTabActive = index;
+  }
+
+  cambiarIconoPerfil(icono: string) {
+    this.websocketService.actualizarPerfil(this.websocketService.username, icono).subscribe({
+      next: () => {
+        if (this.perfilData) {
+          this.perfilData.profileImage = icono;
+        }
+        this.cd.detectChanges();
+      }
+    });
   }
 
   buscarUsuarios() {
