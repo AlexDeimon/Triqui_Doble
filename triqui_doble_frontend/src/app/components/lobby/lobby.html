@@ -72,17 +72,24 @@
           <div class="carousel-slide">
             <div class="profile-stats" *ngIf="perfilData">
               <div class="stat-row">
-                 <p><strong>📅 Registro:</strong> {{ perfilData.fechaRegistro | date:'dd/MM/yyyy' }}</p>
-                 <p><strong>🏆 Ranking:</strong> #{{ perfilData.rank }} <span *ngIf="perfilData.rank === 1">🥇</span><span *ngIf="perfilData.rank === 2">🥈</span><span *ngIf="perfilData.rank === 3">🥉</span></p>
+                <p><strong>📅 Registro:</strong> {{ perfilData.fechaRegistro | date:'dd/MM/yyyy' }}</p>
               </div>
               <div class="stat-row">
-                 <p><strong>🕹️ Partidas:</strong> {{ perfilData.totalPartidas }}</p>
-                 <p><strong>⚔️ Rival:</strong> {{ perfilData.rival }}</p>
+                <p><strong>🏆 Ranking:</strong><span *ngIf="perfilData.rank !== 1 && perfilData.rank !== 2 && perfilData.rank !== 3"> # {{ perfilData.rank }}</span><span *ngIf="perfilData.rank === 1">🥇</span><span *ngIf="perfilData.rank === 2">🥈</span><span *ngIf="perfilData.rank === 3">🥉</span></p>
               </div>
               <div class="stat-row">
-                 <div><strong>Victorias</strong><br>{{ perfilData.porcentajes.ganadas }}%</div>
-                 <div><strong>Derrotas</strong><br>{{ perfilData.porcentajes.perdidas }}%</div>
-                 <div><strong>Empates</strong><br>{{ perfilData.porcentajes.empatadas }}%</div>
+                <p><strong>🌟 Puntos:</strong> {{ perfilData.puntaje }}</p>
+              </div>
+              <div class="stat-row">
+                <p><strong>🕹️ Partidas:</strong> {{ perfilData.totalPartidas }}</p>
+              </div>
+              <div class="stat-row">
+                <p><strong>⚔️ Rival:</strong> {{ perfilData.rival }}</p>
+              </div>
+              <div class="stat-row">
+                <div><strong>Victorias</strong><br>{{ perfilData.porcentajes.ganadas }}%</div>
+                <div><strong>Derrotas</strong><br>{{ perfilData.porcentajes.perdidas }}%</div>
+                <div><strong>Empates</strong><br>{{ perfilData.porcentajes.empatadas }}%</div>
               </div>
               <div class="icon-selector">
                  <p><strong>Escoge tu icono de perfil:</strong></p>

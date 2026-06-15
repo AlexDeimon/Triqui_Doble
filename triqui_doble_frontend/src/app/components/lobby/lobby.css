@@ -109,7 +109,6 @@ h1 {
 .table-wrapper {
   overflow-y: auto;
   overflow-x: auto;
-  margin: 1.5rem 0;
   scrollbar-width: thin;
   scrollbar-color: var(--primary, #e94560) rgba(255, 255, 255, 0.1);
 }
@@ -290,6 +289,12 @@ h1 {
   border-bottom: 1px solid var(--glass-border);
 }
 
+.profile-stats {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary, #e94560) rgba(255, 255, 255, 0.1);
+}
+
 .perfil-img {
   margin: 0 auto;
 }
@@ -307,7 +312,7 @@ h1 {
 .ranking-content h2 {
   text-align: center;
   margin-bottom: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 0rem;
   color: var(--primary, #e94560);
   font-size: 2rem;
   text-transform: uppercase;
@@ -583,13 +588,11 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 1.5rem;
 }
 
 .carousel-nav {
   display: flex;
   justify-content: center;
-  gap: 2rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
@@ -662,10 +665,6 @@ h1 {
   overflow: hidden;
 }
 
-.profile-stats {
-  padding: 1rem;
-}
-
 .stat-row {
   display: flex;
   justify-content: space-between;
@@ -695,9 +694,10 @@ h1 {
 
 .skin-options {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
-  flex-wrap: wrap;
+  overflow-x: auto;
 }
 
 .skin-btn.emoji-btn {

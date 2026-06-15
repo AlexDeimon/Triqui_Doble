@@ -178,6 +178,8 @@ export const obtenerPerfil = async (req, res) => {
     empatadas: total ? Math.round((partidasEmpatadas / total) * 100) : 0
   };
 
+  let puntos = user.estadisticas.puntaje;
+
   res.json({
     username: user.username,
     profileImage: user.profileImage,
@@ -185,7 +187,8 @@ export const obtenerPerfil = async (req, res) => {
     rank,
     porcentajes,
     rival,
-    totalPartidas: total
+    totalPartidas: total,
+    puntaje: puntos
   });
 };
 
