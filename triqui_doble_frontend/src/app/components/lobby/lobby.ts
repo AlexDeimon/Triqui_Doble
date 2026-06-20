@@ -5,10 +5,12 @@ import { Router } from '@angular/router';
 import { WebsocketService } from '../../services/websocket';
 import Swal from 'sweetalert2';
 
+import { ProfileModalComponent } from '../profile-modal/profile-modal';
+
 @Component({
   standalone: true,
   selector: 'app-lobby',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ProfileModalComponent],
   templateUrl: './lobby.html',
   styleUrl: './lobby.css',
 })
@@ -29,12 +31,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
   dosVsDos: boolean = false;
   salaPrivada: boolean = false;
   mostrarPerfil: boolean = false;
-  queryBusqueda: string = '';
-  resultadosBusqueda: any[] = [];
-  perfilTabActive: number = 0;
+  selectedProfileUser: string = '';
   ruletaAleatoria: boolean = false;
-  perfilData: any = null;
-  iconosPerfil: string[] = ['🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '🥷'];
 
   constructor(private router: Router, public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
@@ -58,116 +56,15 @@ export class LobbyComponent implements OnInit, OnDestroy {
   return false;
 }
 
-  abrirPerfil() {
+  abrirPerfil(username: string = this.websocketService.username) {
+    this.selectedProfileUser = username;
+    this.mostrarRanking = false;
     this.mostrarPerfil = true;
-    this.perfilTabActive = 0;
-    this.websocketService.actualizarAmigos();
-
-    this.websocketService.obtenerPerfil(this.websocketService.username).subscribe({
-      next: (perfil) => {
-        this.perfilData = perfil;
-        this.cd.detectChanges();
-      },
-      error: (err) => console.error('Error obteniendo perfil:', err)
-    });
-
-    this.websocketService.obtenerHistorial(this.websocketService.username).subscribe({
-      next: (historial) => {
-        this.historial = historial;
-        this.cd.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error obteniendo historial:', err);
-      }
-    });
   }
 
   cerrarPerfil() {
     this.mostrarPerfil = false;
-    this.queryBusqueda = '';
-    this.resultadosBusqueda = [];
-  }
-
-  setPerfilTab(index: number) {
-    this.perfilTabActive = index;
-  }
-
-  cambiarIconoPerfil(icono: string) {
-    this.websocketService.actualizarPerfil(this.websocketService.username, icono).subscribe({
-      next: () => {
-        if (this.perfilData) {
-          this.perfilData.profileImage = icono;
-        }
-        this.cd.detectChanges();
-      }
-    });
-  }
-
-  buscarUsuarios() {
-    if (this.queryBusqueda.length > 2) {
-      this.websocketService.buscarUsuarios(this.queryBusqueda, this.websocketService.username).subscribe(users => {
-        this.resultadosBusqueda = users;
-        this.cd.detectChanges();
-      });
-    } else {
-      this.resultadosBusqueda = [];
-    }
-  }
-
-  enviarSolicitud(username: string) {
-    this.websocketService.enviarSolicitud(username).subscribe({
-      next: () => {
-        this.websocketService.notificarSolicitudEnviada(username);
-        this.websocketService.actualizarAmigos();
-        this.queryBusqueda = '';
-        this.resultadosBusqueda = [];
-        const Toast = Swal.mixin({
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          timer: 3000,
-          background: '#16213e',
-          color: '#fff'
-        });
-        Toast.fire({ icon: 'success', title: 'Solicitud enviada' });
-      }
-    });
-  }
-
-  aceptarSolicitud(username: string) {
-    this.websocketService.aceptarSolicitud(username).subscribe({
-      next: () => {
-        this.websocketService.notificarSolicitudAceptada(username);
-        this.websocketService.actualizarAmigos();
-      }
-    });
-  }
-
-  rechazarSolicitud(username: string) {
-    this.websocketService.rechazarSolicitud(username).subscribe({
-      next: () => this.websocketService.actualizarAmigos()
-    });
-  }
-
-  eliminarAmigo(username: string) {
-    Swal.fire({
-      title: '¿Eliminar amigo?',
-      text: `¿Estás seguro de que quieres eliminar a ${username}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#e94560',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Eliminar',
-      cancelButtonText: 'Cancelar',
-      background: '#16213e',
-      color: '#fff'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.websocketService.eliminarAmigo(username).subscribe({
-          next: () => this.websocketService.actualizarAmigos()
-        });
-      }
-    });
+    this.selectedProfileUser = '';
   }
 
   abrirConfiguracionSala() {

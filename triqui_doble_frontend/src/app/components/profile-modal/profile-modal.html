@@ -1,0 +1,163 @@
+<div *ngIf="showModal" class="ranking-modal-container">
+  <div class="ranking-content profile-modal">
+    <button (click)="cerrar()" class="btn-close"><span aria-hidden="true">❌</span></button>
+    <div class="profile-header">
+      <div class="header-btn perfil-img" title="Usuario">{{ perfilData?.profileImage || '👤' }}</div>
+      <h2>{{ username }}</h2>
+    </div>
+    <ng-container *ngIf="isMyProfile; else otherProfileActions">
+      <div class="carousel-nav">
+        <button class="carousel-nav-btn" [class.active]="perfilTabActive === 0" (click)="setPerfilTab(0)">📊 PERFIL</button>
+        <button class="carousel-nav-btn" [class.active]="perfilTabActive === 1" (click)="setPerfilTab(1)">👥 AMIGOS</button>
+        <button class="carousel-nav-btn" [class.active]="perfilTabActive === 2" (click)="setPerfilTab(2)">📜 HISTORIAL</button>
+      </div>
+      <div class="carousel-wrapper">
+        <div class="carousel-viewport">
+          <div class="carousel-track" [style.transform]="'translateX(-' + (perfilTabActive * 33.33333333) + '%)'">
+            <div class="carousel-slide">
+              <div class="profile-stats">
+                <div class="stat-row">
+                  <p><strong>📅 Registro:</strong> {{ perfilData.fechaRegistro | date:'dd/MM/yyyy' }}</p>
+                </div>
+                <div class="stat-row">
+                  <p><strong>🏆 Ranking:</strong><span *ngIf="perfilData.rank !== 1 && perfilData.rank !== 2 && perfilData.rank !== 3"> # {{ perfilData.rank }}</span><span *ngIf="perfilData.rank === 1">🥇</span><span *ngIf="perfilData.rank === 2">🥈</span><span *ngIf="perfilData.rank === 3">🥉</span></p>
+                </div>
+                <div class="stat-row">
+                  <p><strong>🌟 Puntos:</strong> {{ perfilData.puntaje }}</p>
+                </div>
+                <div class="stat-row">
+                  <p><strong>🕹️ Partidas:</strong> {{ perfilData.totalPartidas }}</p>
+                </div>
+                <div class="stat-row">
+                  <p><strong>⚔️ Rival:</strong> {{ perfilData.rival }}</p>
+                </div>
+                <div class="stat-row">
+                  <div><strong>Victorias</strong><br>{{ perfilData.porcentajes.ganadas }}%</div>
+                  <div><strong>Derrotas</strong><br>{{ perfilData.porcentajes.perdidas }}%</div>
+                  <div><strong>Empates</strong><br>{{ perfilData.porcentajes.empatadas }}%</div>
+                </div>
+                <div class="icon-selector">
+                  <p><strong>Escoge tu icono de perfil:</strong></p>
+                  <div class="skin-options">
+                    <button *ngFor="let icono of iconosPerfil" class="skin-btn" [class.selected]="perfilData.profileImage === icono" (click)="cambiarIconoPerfil(icono)">{{ icono }}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="carousel-slide">
+              <div class="search-container">
+                <input type="text" [(ngModel)]="queryBusqueda" (input)="buscarUsuarios()" placeholder="Buscar jugadores por nombre..." class="custom-input" />
+                <div *ngIf="resultadosBusqueda.length > 0" class="search-results-inline">
+                  <div *ngFor="let res of resultadosBusqueda" class="search-item">
+                    <span>{{ res.username }}</span>
+                    <button (click)="enviarSolicitud(res.username)" class="btn-secondary">Solicitar ✅</button>
+                  </div>
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table class="ranking-table">
+                  <thead>
+                    <tr>
+                      <th>Estado</th>
+                      <th>Usuario</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let amigo of websocketService.amigos()">
+                      <td>
+                        <span class="status-dot" [class.online]="websocketService.amigosOnline().has(amigo.username)"></span>
+                        {{ websocketService.amigosOnline().has(amigo.username) ? 'Online' : 'Offline' }}
+                      </td>
+                      <td>
+                        {{ amigo.username }}
+                        <small *ngIf="amigo.estado !== 'aceptado'" class="text-muted">({{ amigo.estado }})</small>
+                      </td>
+                      <td>
+                        <div class="btn-group-sm">
+                          <button *ngIf="amigo.estado === 'pendiente'" (click)="aceptarSolicitud(amigo.username)" class="btn-secondary">✅</button>
+                          <button *ngIf="amigo.estado === 'pendiente'" (click)="rechazarSolicitud(amigo.username)" class="btn-secondary">❌</button>
+                          <button *ngIf="amigo.estado === 'aceptado'" (click)="eliminarAmigo(amigo.username)" class="btn-secondary">❌</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr *ngIf="websocketService.amigos().length === 0">
+                      <td colspan="3">Aún no tienes amigos. ¡Busca usuarios arriba!</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="carousel-slide">
+              <div class="table-wrapper">
+                <table class="ranking-table">
+                  <thead>
+                    <tr>
+                      <th>X</th>
+                      <th>O</th>
+                      <th>Ganador</th>
+                      <th>Turnos</th>
+                      <th>Fecha</th>
+                      <th>Hora</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let partida of historial">
+                      <td>{{ partida.jugadorX }}</td>
+                      <td>{{ partida.jugadorO }}</td>
+                      <td>{{ partida.ganador === 'E' ? 'EMPATE' : partida.ganador }}</td>
+                      <td>{{ partida.cantidadTurnos }}</td>
+                      <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
+                      <td>{{ partida.fecha | date:'HH:mm' }}</td>
+                    </tr>
+                    <tr *ngIf="historial.length === 0">
+                      <td colspan="6">No tienes partidas registradas en el historial.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="profile-footer">
+        <button (click)="websocketService.logout()" class="logout-btn">Cerrar Sesión</button>
+      </div>
+    </ng-container>
+    <ng-template #otherProfileActions>
+      <div class="profile-stats" *ngIf="perfilData">
+        <div class="stat-row">
+          <p><strong>📅 Registro:</strong> {{ perfilData.fechaRegistro | date:'dd/MM/yyyy' }}</p>
+        </div>
+        <div class="stat-row">
+          <p><strong>🏆 Ranking:</strong><span *ngIf="perfilData.rank !== 1 && perfilData.rank !== 2 && perfilData.rank !== 3"> # {{ perfilData.rank }}</span><span *ngIf="perfilData.rank === 1">🥇</span><span *ngIf="perfilData.rank === 2">🥈</span><span *ngIf="perfilData.rank === 3">🥉</span></p>
+        </div>
+        <div class="stat-row">
+          <p><strong>🌟 Puntos:</strong> {{ perfilData.puntaje }}</p>
+        </div>
+        <div class="stat-row">
+          <p><strong>🕹️ Partidas:</strong> {{ perfilData.totalPartidas }}</p>
+        </div>
+        <div class="stat-row">
+          <p><strong>⚔️ Rival:</strong> {{ perfilData.rival }}</p>
+        </div>
+        <div class="stat-row">
+          <div><strong>Victorias</strong><br>{{ perfilData.porcentajes.ganadas }}%</div>
+          <div><strong>Derrotas</strong><br>{{ perfilData.porcentajes.perdidas }}%</div>
+          <div><strong>Empates</strong><br>{{ perfilData.porcentajes.empatadas }}%</div>
+        </div>
+      </div>
+      <div class="profile-footer">
+        <ng-container [ngSwitch]="friendStatus">
+          <button *ngSwitchCase="'none'" (click)="enviarSolicitud(username)" class="btn-primary">Añadir Amigo</button>
+          <button *ngSwitchCase="'solicitado'" class="btn-secondary" disabled>Solicitud Enviada</button>
+          <div *ngSwitchCase="'pendiente'" class="btn-group-sm">
+            <button (click)="aceptarSolicitud(username)" class="btn-secondary">✅ Aceptar</button>
+            <button (click)="rechazarSolicitud(username)" class="btn-secondary">❌ Rechazar</button>
+          </div>
+          <button *ngSwitchCase="'aceptado'" (click)="eliminarAmigo(username)" class="logout-btn">Eliminar Amigo</button>
+        </ng-container>
+      </div>
+    </ng-template>
+  </div>
+</div>

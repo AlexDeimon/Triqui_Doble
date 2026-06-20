@@ -11,7 +11,7 @@
       <div class="player-icon" [style.color]="getSkinColor('X')" [style.text-shadow]="'0 0 20px ' + getSkinColor('X')"  >{{ getSkinIcon('X') }}</div>
       <div class="player-details">
         <div class="player-names">
-          <span *ngFor="let name of getUsernamesForTeam('X')" [style.color]="getSkinColor('X')" [class.current-turn]="isCurrentTurnPlayer('X', name)">{{ name }}</span>
+          <span *ngFor="let name of getUsernamesForTeam('X')" [style.color]="getSkinColor('X')" [class.current-turn]="isCurrentTurnPlayer('X', name)" (click)="abrirPerfil(name)" style="cursor: pointer;">{{ name }}</span>
         </div>
         <div class="player-score">{{ getPuntos('X') }} pts</div>
       </div>
@@ -23,31 +23,28 @@
       <div class="player-icon" [style.color]="getSkinColor('O')" [style.text-shadow]="'0 0 20px ' + getSkinColor('O')"  >{{ getSkinIcon('O') }}</div>
       <div class="player-details">
         <div class="player-names">
-          <span *ngFor="let name of getUsernamesForTeam('O')" [style.color]="getSkinColor('O')" [class.current-turn]="isCurrentTurnPlayer('O', name)">{{ name }}</span>
+          <span *ngFor="let name of getUsernamesForTeam('O')" [style.color]="getSkinColor('O')" [class.current-turn]="isCurrentTurnPlayer('O', name)" (click)="abrirPerfil(name)" style="cursor: pointer;">{{ name }}</span>
         </div>
         <div class="player-score">{{ getPuntos('O') }} pts</div>
       </div>
     </div>
   </div>
-    <div class="info-configuracion">
-      <div class="small-features-container" (click)="mostrarInfoConfiguracion()" style="cursor: pointer;">
-        <span class="feature-icon" [title]="'Objetivo: ' + (gameState()?.configuracion?.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble')">{{ gameState()?.configuracion?.objetivo === 'mayoria' ? '🏆' : '🎯' }}</span>
-        <span class="feature-icon" [title]="'Selección: ' + (gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro')">{{ gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? '🎲' : '✨' }}</span>
-        <span class="feature-icon" *ngIf="gameState()?.configuracion?.patronGanador !== 'Cualquiera'" [title]="'Patrón: ' + gameState()?.configuracion?.patronGanador">🧩</span>
-        <span class="feature-icon" *ngIf="gameState()?.configuracion?.tablerosMoviles" [title]="'Tableros Móviles: Faltan ' + turnosFaltantesParaMover + ' turnos'">
-          🔄 <small style="margin-left: 4px; font-weight: bold; font-family: monospace;">{{ turnosFaltantesParaMover }}</small>
-        </span>
-        <span class="feature-icon" *ngIf="gameState()?.configuracion?.robarTableros" title="Robar Tableros">🥷</span>
-        <span class="feature-icon" *ngIf="gameState()?.configuracion?.dosVsDos" title="Juego 2 vs 2">👥</span>
-        <span class="feature-icon" *ngIf="gameState()?.configuracion?.salaPrivada" title="Sala Privada">🔒</span>
-      </div>
+  <div class="info-configuracion">
+    <div class="small-features-container" (click)="mostrarInfoConfiguracion()" style="cursor: pointer;">
+      <span class="feature-icon" [title]="'Objetivo: ' + (gameState()?.configuracion?.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble')">{{ gameState()?.configuracion?.objetivo === 'mayoria' ? '🏆' : '🎯' }}</span>
+      <span class="feature-icon" [title]="'Selección: ' + (gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro')">{{ gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? '🎲' : '✨' }}</span>
+      <span class="feature-icon" *ngIf="gameState()?.configuracion?.patronGanador !== 'Cualquiera'" [title]="'Patrón: ' + gameState()?.configuracion?.patronGanador">🧩</span>
+      <span class="feature-icon" *ngIf="gameState()?.configuracion?.tablerosMoviles" [title]="'Tableros Móviles: Faltan ' + turnosFaltantesParaMover + ' turnos'"> 🔄 <small style="margin-left: 4px; font-weight: bold; font-family: monospace;">{{ turnosFaltantesParaMover }}</small></span>
+      <span class="feature-icon" *ngIf="gameState()?.configuracion?.robarTableros" title="Robar Tableros">🥷</span>
+      <span class="feature-icon" *ngIf="gameState()?.configuracion?.dosVsDos" title="Juego 2 vs 2">👥</span>
+      <span class="feature-icon" *ngIf="gameState()?.configuracion?.salaPrivada" title="Sala Privada">🔒</span>
     </div>
+  </div>
   <div class="tablero-grande" [class.bloqueado]="gameState()?.estado === 'esperando' || gameState()?.estado === 'seleccionando_skin'">
     <div class="esperando-overlay" *ngIf="gameState()?.estado === 'esperando'">
       <h3>{{ gameState()?.configuracion?.dosVsDos ? 'Esperando jugadores' : 'Esperando a oponente' }}</h3>
-      <button (click)="abrirInvitacionAmigos()" class="btn-primary mt-2">Invitar Amigos</button>
+      <button (click)="abrirInvitacionAmigos()" class="btn-primary">Invitar Amigos</button>
     </div>
-
     <div class="skin-overlay" *ngIf="gameState()?.estado === 'seleccionando_skin' && myRole() !== GameRole.Espectador">
       <h3>Elige tu Estilo</h3>
       <div class="skin-sections">
@@ -60,11 +57,11 @@
         <div class="skin-section">
           <h4>Íconos</h4>
           <div class="skin-options">
-            <button *ngFor="let emoji of ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐']" class="skin-btn emoji-btn" (click)="seleccionarSkin('emoji', emoji)" [class.disabled]="isSkinOptionDisabled('emoji', emoji)" [class.selected]="getSkinIcon(myRole()) === emoji">{{ emoji }}</button>
+            <button *ngFor="let emoji of ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐']" class="skin-btn" (click)="seleccionarSkin('emoji', emoji)" [class.disabled]="isSkinOptionDisabled('emoji', emoji)" [class.selected]="getSkinIcon(myRole()) === emoji">{{ emoji }}</button>
           </div>
         </div>
       </div>
-      <button class="btn-primary mt-3" (click)="toggleListo()" [class.ready]="gameState()?.jugadoresListos?.[myRole() || '']">{{ gameState()?.jugadoresListos?.[myRole() || ''] ? 'Esperando a los demás...' : '¡Estoy Listo!' }}</button>
+      <button class="btn-primary" (click)="toggleListo()" [class.ready]="gameState()?.jugadoresListos?.[myRole() || '']">{{ gameState()?.jugadoresListos?.[myRole() || ''] ? 'Esperando a los demás...' : '¡Estoy Listo!' }}</button>
       <div class="team-ready-status" *ngIf="gameState()?.configuracion?.dosVsDos">
         <small>Mismos cambios afectan a tu equipo.</small>
       </div>
@@ -84,3 +81,4 @@
   </div>
   <button (click)="rendirse()" class="btn-primary" *ngIf="gameState()!.tableroActivo !== null && myRole() !== GameRole.Espectador">Rendirse</button>
 </div>
+<app-profile-modal *ngIf="mostrarPerfil" [username]="selectedProfileUser" [showModal]="mostrarPerfil" (close)="cerrarPerfil()"></app-profile-modal>

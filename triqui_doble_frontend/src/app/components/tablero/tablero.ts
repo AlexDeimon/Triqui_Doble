@@ -5,11 +5,12 @@ import { estadoJuego, GameRole } from '../../models/game';
 import { WebsocketService } from '../../services/websocket';
 import { AudioService } from '../../services/audio';
 import Swal from 'sweetalert2';
+import { ProfileModalComponent } from '../profile-modal/profile-modal';
 
 @Component({
   selector: 'app-tablero',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ProfileModalComponent],
   templateUrl: './tablero.html',
   styleUrl: './tablero.css'
 })
@@ -25,6 +26,8 @@ export class TableroComponent implements OnInit, OnDestroy {
   animacionesGanador: { [id: number]: boolean } = {};
   private timerInterval: any;
   private yaAnimado: boolean = false;
+  mostrarPerfil: boolean = false;
+  selectedProfileUser: string = '';
 
   mapeoPatrones: any = {
     '1ra Fila': [0, 1, 2],
@@ -522,5 +525,17 @@ export class TableroComponent implements OnInit, OnDestroy {
         });
       }
     });
+  }
+
+  abrirPerfil(username: string) {
+    if (username) {
+      this.selectedProfileUser = username;
+      this.mostrarPerfil = true;
+    }
+  }
+
+  cerrarPerfil() {
+    this.mostrarPerfil = false;
+    this.selectedProfileUser = '';
   }
 }

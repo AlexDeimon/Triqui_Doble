@@ -54,132 +54,7 @@
     </div>
   </div>
 </div>
-<div *ngIf="mostrarPerfil" class="ranking-modal-container">
-  <div class="ranking-content profile-modal">
-    <button (click)="cerrarPerfil()" class="btn-close"><span aria-hidden="true">❌</span></button>
-    <div class="profile-header">
-      <div class="header-btn perfil-img" title="Usuario">{{ perfilData?.profileImage || '👤' }}</div>
-      <h2>{{ websocketService.username }}</h2>
-    </div>
-    <div class="carousel-nav">
-      <button class="carousel-nav-btn" [class.active]="perfilTabActive === 0" (click)="setPerfilTab(0)">📊 PERFIL</button>
-      <button class="carousel-nav-btn" [class.active]="perfilTabActive === 1" (click)="setPerfilTab(1)">👥 AMIGOS</button>
-      <button class="carousel-nav-btn" [class.active]="perfilTabActive === 2" (click)="setPerfilTab(2)">📜 HISTORIAL</button>
-    </div>
-    <div class="carousel-wrapper">
-      <div class="carousel-viewport">
-        <div class="carousel-track" [style.transform]="'translateX(-' + (perfilTabActive * 33.33333333) + '%)'">
-          <div class="carousel-slide">
-            <div class="profile-stats" *ngIf="perfilData">
-              <div class="stat-row">
-                <p><strong>📅 Registro:</strong> {{ perfilData.fechaRegistro | date:'dd/MM/yyyy' }}</p>
-              </div>
-              <div class="stat-row">
-                <p><strong>🏆 Ranking:</strong><span *ngIf="perfilData.rank !== 1 && perfilData.rank !== 2 && perfilData.rank !== 3"> # {{ perfilData.rank }}</span><span *ngIf="perfilData.rank === 1">🥇</span><span *ngIf="perfilData.rank === 2">🥈</span><span *ngIf="perfilData.rank === 3">🥉</span></p>
-              </div>
-              <div class="stat-row">
-                <p><strong>🌟 Puntos:</strong> {{ perfilData.puntaje }}</p>
-              </div>
-              <div class="stat-row">
-                <p><strong>🕹️ Partidas:</strong> {{ perfilData.totalPartidas }}</p>
-              </div>
-              <div class="stat-row">
-                <p><strong>⚔️ Rival:</strong> {{ perfilData.rival }}</p>
-              </div>
-              <div class="stat-row">
-                <div><strong>Victorias</strong><br>{{ perfilData.porcentajes.ganadas }}%</div>
-                <div><strong>Derrotas</strong><br>{{ perfilData.porcentajes.perdidas }}%</div>
-                <div><strong>Empates</strong><br>{{ perfilData.porcentajes.empatadas }}%</div>
-              </div>
-              <div class="icon-selector">
-                 <p><strong>Escoge tu icono de perfil:</strong></p>
-                 <div class="skin-options">
-                   <button *ngFor="let icono of iconosPerfil" class="skin-btn emoji-btn" [class.selected]="perfilData.profileImage === icono" (click)="cambiarIconoPerfil(icono)">{{ icono }}</button>
-                 </div>
-              </div>
-            </div>
-          </div>
-          <div class="carousel-slide">
-            <div class="search-container">
-              <input type="text" [(ngModel)]="queryBusqueda" (input)="buscarUsuarios()" placeholder="Buscar jugadores por nombre..." class="custom-input" />
-              <div *ngIf="resultadosBusqueda.length > 0" class="search-results-inline">
-                <div *ngFor="let res of resultadosBusqueda" class="search-item">
-                  <span>{{ res.username }}</span>
-                  <button (click)="enviarSolicitud(res.username)" class="btn-secondary">Solicitar ✅</button>
-                </div>
-              </div>
-            </div>
-            <div class="friends-list table-wrapper">
-              <table class="ranking-table">
-                <thead>
-                  <tr>
-                    <th>Estado</th>
-                    <th>Usuario</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let amigo of websocketService.amigos()">
-                    <td>
-                      <span class="status-dot" [class.online]="websocketService.amigosOnline().has(amigo.username)"></span>
-                      {{ websocketService.amigosOnline().has(amigo.username) ? 'Online' : 'Offline' }}
-                    </td>
-                    <td>
-                      {{ amigo.username }}
-                      <small *ngIf="amigo.estado !== 'aceptado'" class="text-muted">({{ amigo.estado }})</small>
-                    </td>
-                    <td class="friend-actions-cell">
-                      <div class="btn-group-sm">
-                        <button *ngIf="amigo.estado === 'pendiente'" (click)="aceptarSolicitud(amigo.username)" class="btn-secondary">✅</button>
-                        <button *ngIf="amigo.estado === 'pendiente'" (click)="rechazarSolicitud(amigo.username)" class="btn-secondary">❌</button>
-                        <button *ngIf="amigo.estado === 'aceptado'" (click)="eliminarAmigo(amigo.username)" class="btn-secondary">❌</button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr *ngIf="websocketService.amigos().length === 0">
-                    <td colspan="3">Aún no tienes amigos. ¡Busca usuarios arriba!</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="carousel-slide">
-            <div class="table-wrapper">
-              <table class="ranking-table">
-                <thead>
-                  <tr>
-                    <th>X</th>
-                    <th>O</th>
-                    <th>Ganador</th>
-                    <th>Turnos</th>
-                    <th>Fecha</th>
-                    <th>Hora</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let partida of historial">
-                    <td>{{ partida.jugadorX }}</td>
-                    <td>{{ partida.jugadorO }}</td>
-                    <td>{{ partida.ganador === 'E' ? 'EMPATE' : partida.ganador }}</td>
-                    <td>{{ partida.cantidadTurnos }}</td>
-                    <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
-                    <td>{{ partida.fecha | date:'HH:mm' }}</td>
-                  </tr>
-                  <tr *ngIf="historial.length === 0">
-                    <td colspan="6">No tienes partidas registradas en el historial.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="profile-footer">
-      <button (click)="websocketService.logout()" class="btn-secondary logout-btn">Cerrar Sesión</button>
-    </div>
-  </div>
-</div>
+<app-profile-modal *ngIf="mostrarPerfil" [username]="selectedProfileUser" [showModal]="mostrarPerfil" (close)="cerrarPerfil()"></app-profile-modal>
 <div *ngIf="mostrarRanking" class="ranking-modal-container">
   <div class="ranking-content">
     <button (click)="cerrarRanking()" class="btn-close"><span aria-hidden="true">❌</span></button>
@@ -189,20 +64,23 @@
         <thead>
           <tr>
             <th>Posición</th>
-            <th>Usuario</th>
-            <th class="centered-header">Puntaje</th>
+            <th style="min-width: 130px; text-align: left;">Usuario</th>
+            <th>Puntaje</th>
             <th>Victorias</th>
             <th>Derrotas</th>
             <th>Empates</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of ranking; let i = index">
+          <tr *ngFor="let user of ranking; let i = index" (click)="abrirPerfil(user.username)">
             <td *ngIf="i === 0">🥇</td>
             <td *ngIf="i === 1">🥈</td>
             <td *ngIf="i === 2">🥉</td>
             <td *ngIf="i > 2">{{ i + 1 }}</td>
-            <td>{{ user.username }}</td>
+            <td style="text-align: left;">
+              <span class="perfil-img-small">{{ user.profileImage || '👤' }}</span>
+              {{ user.username }}
+            </td>
             <td>{{ user.estadisticas.puntaje }}</td>
             <td>{{ user.estadisticas.partidasGanadas }}</td>
             <td>{{ user.estadisticas.partidasPerdidas }}</td>
@@ -227,7 +105,7 @@
         <p><strong>🎯 Triqui Doble: </strong>El objetivo es ganar el Tablero Principal ganando 3 Mini-Tableros en línea. Si se escoje un patrón ganador 🧩 diferente a <strong>cualquiera</strong>, gana el jugador que gane los 3 Mini-Tableros de ese patrón.</p>
         <p><strong>🏆 Triqui Mayoría: </strong>El objetivo es ganar la mayor cantidad de Mini-Tableros (5) antes que tu oponente.</p>
       </div>
-      <div class="tutorial-step highlight-step">
+      <div class="tutorial-step">
         <h3>3. La Regla de Oro ✨</h3>
         <p>Tu movimiento determina en qué Mini-Tablero debe jugar tu oponente.</p>
         <div class="visual-rule">
@@ -245,7 +123,6 @@
               <div class="d-cell"></div>
             </div>
           </div>
-          <div class="rule-arrow">➜</div>
           <div class="rule-part">
             <span>Tu oponente va al <br/><strong>Mini-Tablero Superior Derecho</strong></span>
             <div class="demo-board macro">
@@ -320,7 +197,7 @@
       </div>
       <div class="form-group-config" *ngIf="habilitarTemporizador && !ruletaAleatoria">
         <label for="timerValue" class="config-label">⏱️ Tiempo por turno:</label>
-        <select id="timerValue" [(ngModel)]="tiempoTemporizador" class="form-control config-select">
+        <select id="timerValue" [(ngModel)]="tiempoTemporizador" class="config-select">
           <option [ngValue]="15" class="config-option">15 segundos</option>
           <option [ngValue]="30" class="config-option">30 segundos</option>
           <option [ngValue]="60" class="config-option">1 minuto</option>
@@ -328,7 +205,7 @@
       </div>
       <div class="form-group-config" *ngIf="objetivoJuego === 'triqui_doble' && !ruletaAleatoria">
         <label for="winningPattern" class="config-label">🧩 Patrón Ganador:</label>
-        <select id="winningPattern" [(ngModel)]="patronGanador" class="form-control config-select">
+        <select id="winningPattern" [(ngModel)]="patronGanador" class="config-select">
           <option value="Cualquiera" class="config-option">Cualquiera</option>
           <option value="1ra Fila" class="config-option">1ra Fila</option>
           <option value="2da Fila" class="config-option">2da Fila</option>
