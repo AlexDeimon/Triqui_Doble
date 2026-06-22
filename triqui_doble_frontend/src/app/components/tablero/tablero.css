@@ -406,17 +406,6 @@ h2 {
   }
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 15px #ff3333;
-  }
-  100% {
-    transform: scale(1.1);
-    box-shadow: 0 0 30px #ff3333;
-  }
-}
-
 @keyframes pulseObjetivo {
   0% {
     box-shadow: 0 0 10px #ffffff;

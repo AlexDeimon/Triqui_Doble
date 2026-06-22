@@ -4,7 +4,7 @@
       <button class="header-btn" (click)="abrirPerfil()" title="Perfil">👤</button>
       <button class="header-btn play" (click)="abrirConfiguracionSala()" title="Crear Partida">🔺</button>
       <button class="header-btn" (click)="verRanking()" title="Ranking">🥇</button>
-      <button class="header-btn" (click)="verTutorial()" title="Como Jugar">❓</button>
+      <button class="header-btn" (click)="verTutorial()" title="Como Jugar" [class.primer-login]="primerLogin">❓</button>
     </div>
   </header>
   <div class="salas-container">

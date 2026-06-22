@@ -301,6 +301,17 @@ app-root {
   }
 }
 
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 15px #ff3333;
+  }
+  100% {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px #ff3333;
+  }
+}
+
 @media (max-width: 768px) {
   .ranking-content {
     padding: 1.5rem 1rem;

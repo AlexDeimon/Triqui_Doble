@@ -33,10 +33,23 @@ export class LobbyComponent implements OnInit, OnDestroy {
   mostrarPerfil: boolean = false;
   selectedProfileUser: string = '';
   ruletaAleatoria: boolean = false;
+  primerLogin: boolean = false;
+  urlParams = this.router.parseUrl(this.router.url).queryParams;
 
   constructor(private router: Router, public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
   ngOnInit() {
+    if(this.urlParams['primerLogin'] === 'true'){
+      this.primerLogin = true;
+      Swal.fire({
+        title: `Bienvenid@ ${this.websocketService.username} a Triqui Doble`,
+        text: 'Para comenzar, ve al tutorial para aprender las reglas del juego',
+        icon: 'success',
+        background: '#16213e',
+        color: '#fff',
+        confirmButtonColor: '#e94560'
+      });
+    }
     if(this.verificarUsuario()){
       this.websocketService.identificar();
     }
@@ -157,6 +170,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   cerrarTutorial() {
     this.mostrarTutorial = false;
+    this.primerLogin = false;
+    this.router.navigate(['/lobby']);
   }
 
 }

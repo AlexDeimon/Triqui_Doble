@@ -16,6 +16,7 @@ export class LoginComponent implements OnInit {
   username: string = '';
   password: string = '';
   usuarioRegistrado: boolean = true;
+  primerLogin: boolean = false;
 
   constructor(private router: Router, private websocketService: WebsocketService) { }
 
@@ -54,7 +55,8 @@ export class LoginComponent implements OnInit {
         next: () => {
           this.websocketService.login(this.username, this.password).subscribe({
             next: () => {
-              this.router.navigate(['/lobby']);
+              this.primerLogin = true;
+              this.router.navigate(['/lobby'], { queryParams: { primerLogin: this.primerLogin } });
             },
             error: (err) => {
               Swal.fire({
@@ -65,13 +67,6 @@ export class LoginComponent implements OnInit {
                 confirmButtonColor: '#e94560'
               });
             }
-          });
-          Swal.fire({
-            title: 'Usuario registrado exitosamente',
-            icon: 'success',
-            background: '#16213e',
-            color: '#fff',
-            confirmButtonColor: '#e94560'
           });
           this.usuarioRegistrado = true;
         },

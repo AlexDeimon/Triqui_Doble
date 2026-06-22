@@ -197,6 +197,12 @@ h1 {
   font-size: 2.3rem;
 }
 
+.header-btn.primer-login {
+  border-color: #ff3333;
+  box-shadow: 0 0 25px #ff3333;
+  animation: pulse 1s infinite alternate;
+}
+
 .tutorial-step:last-child {
   border-bottom: none;
 }
