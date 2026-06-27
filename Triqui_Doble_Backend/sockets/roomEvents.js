@@ -33,6 +33,15 @@ export const handleRoomEvents = (io, socket) => {
       estadojuego.configuracion.patronGanador = opcionesPatron[Math.floor(Math.random() * opcionesPatron.length)];
     }
     
+    if (estadojuego.configuracion.solitario) {
+      const botRol = is2v2 ? GameRole.O1 : GameRole.O;
+      estadojuego.jugadores[botRol] = 'BOT';
+      estadojuego.usernames[botRol] = 'Bot';
+      estadojuego.jugadoresListos[botRol] = true;
+      estadojuego.skins[botRol] = { emoji: '🤖', color: '#8dcaf5' };
+      estadojuego.estado = 'seleccionando_skin';
+    }
+
     estadojuego.ultimaActualizacionTurno = null;
     await redisClient.set(`juego:${roomId}`, JSON.stringify(estadojuego));
     socket.join(roomId);
@@ -216,7 +225,7 @@ export const handleRoomEvents = (io, socket) => {
       
       juego.jugadores[rol] = null;
 
-      const hayJugadoresConectados = Object.values(juego.jugadores).some(id => id !== null);
+      const hayJugadoresConectados = Object.values(juego.jugadores).some(id => id !== null && id !== 'BOT');
 
       if (!hayJugadoresConectados) {
         io.to(roomId).emit('jugadorDesconectado', 'La sala se eliminó por inactividad');

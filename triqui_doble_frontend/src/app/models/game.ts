@@ -35,7 +35,7 @@ export interface estadoJuego {
   ordenTurnos?: string[];
   indiceTurnoActual?: number;
   espectadores?: { username: string; socketId: string }[];
-  configuracion?: { temporizador: boolean; tiempo: number; objetivo?: string; modoSeleccion?: string; patronGanador?: string; tablerosMoviles?: boolean; robarTableros?: boolean; dosVsDos?: boolean; salaPrivada?: boolean };
+  configuracion?: { temporizador: boolean; tiempo: number; objetivo?: string; modoSeleccion?: string; patronGanador?: string; tablerosMoviles?: boolean; robarTableros?: boolean; dosVsDos?: boolean; salaPrivada?: boolean; solitario?: boolean };
   ultimaActualizacionTurno?: number;
   skins?: { [key: string]: { emoji: string; color: string; [key: string]: string } };
   jugadoresListos?: { [key: string]: boolean };

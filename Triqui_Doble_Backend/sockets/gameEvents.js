@@ -1,12 +1,9 @@
 import { redisClient } from '../config/db.js';
 import * as gameController from '../controllers/game.js';
 import { socketWrapper } from '../utils/socketWrapper.js';
-import {
-  turnTimeouts,
-  resetearTimeoutInactividad,
-  iniciarTimeoutTurno,
-  emitirSalasDisponibles
-} from '../services/roomService.js';
+import { GameRole } from '../utils/constants.js';
+import { turnTimeouts, resetearTimeoutInactividad, iniciarTimeoutTurno, emitirSalasDisponibles } from '../services/roomService.js';
+import { jugarTurnoBot } from '../services/botService.js';
 
 export const handleGameEvents = (io, socket) => {
   socket.on('Movimiento', socketWrapper(socket, async ({ roomId, tableroId, celdaId }) => {
@@ -40,6 +37,14 @@ export const handleGameEvents = (io, socket) => {
 
       io.to(roomId).emit('actualizarJuego', movimientoJuego);
       resetearTimeoutInactividad(roomId, io);
+
+      if (!movimientoJuego.ganador) {
+        const nuevoTurno = movimientoJuego.turnoActual;
+        const nuevoRolLargo = movimientoJuego.ordenTurnos ? movimientoJuego.ordenTurnos[movimientoJuego.indiceTurnoActual] : nuevoTurno;
+        if (movimientoJuego.jugadores[nuevoRolLargo] === 'BOT') {
+            jugarTurnoBot(roomId, io);
+        }
+      }
     }
   }));
 
@@ -67,6 +72,12 @@ export const handleGameEvents = (io, socket) => {
         nuevoJuego.jugadoresListos[r] = false;
       }
       nuevoJuego.skins = juego.skins || { X: { emoji: 'X', color: '#e94560' }, O: { emoji: 'O', color: '#4597e9' } };
+      
+      if (nuevoJuego.configuracion?.solitario) {
+        const botRol = nuevoJuego.configuracion.dosVsDos ? GameRole.O1 : GameRole.O;
+        nuevoJuego.jugadoresListos[botRol] = true;
+        nuevoJuego.skins[botRol] = { emoji: '🤖', color: '#8dcaf5' };
+      }
     }
 
     if (turnTimeouts.has(roomId)) {

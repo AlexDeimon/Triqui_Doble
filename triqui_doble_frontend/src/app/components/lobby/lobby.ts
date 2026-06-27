@@ -35,6 +35,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   ruletaAleatoria: boolean = false;
   primerLogin: boolean = false;
   urlParams = this.router.parseUrl(this.router.url).queryParams;
+  solitario: boolean = false;
 
   constructor(private router: Router, public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
@@ -96,6 +97,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.dosVsDos = false;
     this.salaPrivada = false;
     this.ruletaAleatoria = false;
+    this.solitario = false;
   }
 
   crearSala() {
@@ -129,7 +131,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
       tablerosMoviles: this.tablerosMoviles,
       robarTableros: this.robarTableros,
       dosVsDos: this.dosVsDos,
-      salaPrivada: this.salaPrivada
+      salaPrivada: this.salaPrivada,
+      solitario: this.solitario
     });
     this.cerrarConfiguracionSala();
   }

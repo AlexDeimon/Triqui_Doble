@@ -528,6 +528,7 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   abrirPerfil(username: string) {
+    if (username === 'Bot') return;
     if (username) {
       this.selectedProfileUser = username;
       this.mostrarPerfil = true;

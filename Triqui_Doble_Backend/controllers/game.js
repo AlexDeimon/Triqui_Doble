@@ -234,9 +234,10 @@ export const guardarPartida = async (roomId, juego, puntajeX, puntajeO) => {
     await nuevaPartida.save();
 
     const aplicarPuntos = async (rolLargo, puntaje, resultado) => {
+       if (juego.configuracion?.solitario) return;
        const u = juego.usernames[rolLargo];
        const s = juego.jugadores[rolLargo];
-       if (u && s) await actualizarEstadisticas(u, resultado, puntaje);
+       if (u && s && s !== 'BOT') await actualizarEstadisticas(u, resultado, puntaje);
     };
 
     const rolesX = is2v2 ? ['X1', 'X2'] : ['X'];

@@ -1,5 +1,6 @@
 import { redisClient } from '../config/db.js';
 import { GameRole } from '../utils/constants.js';
+import { jugarTurnoBot } from './botService.js';
 
 export const turnTimeouts = new Map();
 export const timeoutsInactividad = new Map();
@@ -102,7 +103,13 @@ export const iniciarTimeoutTurno = async (roomId, io) => {
       await redisClient.set(`juego:${roomId}`, JSON.stringify(obj));
       io.to(roomId).emit('actualizarJuego', obj);
       io.to(roomId).emit('tiempoAgotado', 'El tiempo de turno se ha agotado. Cambio de turno.');
-      iniciarTimeoutTurno(roomId, io);
+      
+      const nuevoRolLargo = obj.ordenTurnos ? obj.ordenTurnos[obj.indiceTurnoActual] : obj.turnoActual;
+      if (obj.jugadores[nuevoRolLargo] === 'BOT') {
+          jugarTurnoBot(roomId, io);
+      } else {
+          iniciarTimeoutTurno(roomId, io);
+      }
     } catch (error) {
       console.error(`[Error Redis] Timeout de turno ${roomId}:`, error.message);
     }
