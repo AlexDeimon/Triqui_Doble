@@ -38,6 +38,7 @@
       <span class="feature-icon" *ngIf="gameState()?.configuracion?.robarTableros" title="Robar Tableros">🥷</span>
       <span class="feature-icon" *ngIf="gameState()?.configuracion?.dosVsDos" title="Juego 2 vs 2">👥</span>
       <span class="feature-icon" *ngIf="gameState()?.configuracion?.salaPrivada" title="Sala Privada">🔒</span>
+      <span class="feature-icon" *ngIf="gameState()?.configuracion?.dificultadBot" [title]="'Dificultad: ' + gameState()?.configuracion?.dificultadBot">🤖</span>
     </div>
   </div>
   <div class="tablero-grande" [class.bloqueado]="gameState()?.estado === 'esperando' || gameState()?.estado === 'seleccionando_skin'">

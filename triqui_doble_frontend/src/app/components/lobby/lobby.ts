@@ -36,6 +36,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   primerLogin: boolean = false;
   urlParams = this.router.parseUrl(this.router.url).queryParams;
   solitario: boolean = false;
+  dificultadBot: string = 'facil';
 
   constructor(private router: Router, public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
 
@@ -98,6 +99,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.salaPrivada = false;
     this.ruletaAleatoria = false;
     this.solitario = false;
+    this.dificultadBot = 'facil';
   }
 
   crearSala() {
@@ -114,6 +116,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
       this.habilitarTemporizador = Math.random() < 0.5;
       if (this.habilitarTemporizador) {
         this.tiempoTemporizador = [15, 30, 60][Math.floor(Math.random() * 3)];
+      }
+      if (this.solitario){
+        this.dificultadBot = ['facil', 'intermedio'][Math.floor(Math.random() * 2)];
       }
       this.ruletaAleatoria = false;
     }
@@ -132,7 +137,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
       robarTableros: this.robarTableros,
       dosVsDos: this.dosVsDos,
       salaPrivada: this.salaPrivada,
-      solitario: this.solitario
+      solitario: this.solitario,
+      dificultadBot: this.dificultadBot
     });
     this.cerrarConfiguracionSala();
   }

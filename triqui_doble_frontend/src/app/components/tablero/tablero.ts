@@ -372,6 +372,11 @@ export class TableroComponent implements OnInit, OnDestroy {
       htmlContent += `<p>🔒 <strong>Privacidad:</strong> Sala Privada</p>`;
     }
 
+    if (config.dificultadBot) {
+      const dificultadTexto = config.dificultadBot.charAt(0).toUpperCase() + config.dificultadBot.slice(1);
+      htmlContent += `<p>🤖 <strong>Dificultad:</strong> ${dificultadTexto}</p>`;
+    }
+
     htmlContent += `</div>`;
 
     Swal.fire({

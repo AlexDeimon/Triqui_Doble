@@ -166,8 +166,8 @@
         <p>Si se habilita esta opción, todas las reglas del juego seran seleccionadas al azar.</p>
       </div>
       <div class="tutorial-step">
-        <h3>10. Iniciar Partida</h3>
-        <p>Al crear la sala, el jugador empieza con la ficha <strong>X</strong>. Se genera un código de sala que se muestra en la pantalla, este se comparte con el otro jugador el cual tendrá la ficha <strong>O</strong>.</p>
+        <h3>10. 1 vs bot 🤖</h3>
+        <p>En este modo el jugador juagará contra un bot el cual tendrá una dificultad seleccionable por el jugador. Útil para practicar.</p>
       </div>
       <div class="tutorial-step">
         <h3>11. Puntaje</h3>
@@ -217,6 +217,13 @@
           <option value="Diagonal Principal" class="config-option">Diagonal Principal</option>
           <option value="Diagonal Secundaria" class="config-option">Diagonal Secundaria</option>
           <option value="Aleatorio" class="config-option">Aleatorio</option>
+        </select>
+      </div>
+      <div class="form-group-config" *ngIf="solitario && !ruletaAleatoria">
+        <label for="botDifficulty" class="config-label">🤖 Dificultad del Bot:</label>
+        <select id="botDifficulty" [(ngModel)]="dificultadBot" class="config-select">
+          <option value="facil" class="config-option">Fácil</option>
+          <option value="intermedio" class="config-option">Intermedio</option>
         </select>
       </div>
       <button (click)="crearSala()" class="btn-primary config-btn">Crear Sala</button>
