@@ -192,7 +192,7 @@
         <button class="feature-btn" *ngIf="!ruletaAleatoria" [class.active]="habilitarTemporizador" (click)="habilitarTemporizador = !habilitarTemporizador" title="Habilitar Temporizador">⏱️</button>
         <button class="feature-btn" *ngIf="objetivoJuego === 'triqui_doble' && !ruletaAleatoria" [class.active]="tablerosMoviles && !ruletaAleatoria" (click)="tablerosMoviles = !tablerosMoviles" title="Tableros Móviles">🔄</button>
         <button class="feature-btn" *ngIf="!ruletaAleatoria" [class.active]="robarTableros && !ruletaAleatoria" (click)="robarTableros = !robarTableros" title="Robar Tableros">🥷</button>
-        <button class="feature-btn" *ngIf="!solitario" [class.active]="dosVsDos" (click)="dosVsDos = !dosVsDos" title="Juego 2 vs 2">👥</button>
+        <button class="feature-btn" [class.active]="dosVsDos" (click)="dosVsDos = !dosVsDos" title="Juego 2 vs 2">👥</button>
         <button class="feature-btn" *ngIf="!solitario" [class.active]="salaPrivada" (click)="salaPrivada = !salaPrivada" title="Sala Privada">🔒</button>
         <button class="feature-btn" [class.active]="solitario" (click)="solitario = !solitario" title="Solitario">🤖</button>
       </div>

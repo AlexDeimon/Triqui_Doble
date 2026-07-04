@@ -138,7 +138,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
       dosVsDos: this.dosVsDos,
       salaPrivada: this.salaPrivada,
       solitario: this.solitario,
-      dificultadBot: this.dificultadBot
+      ...(this.solitario ? { dificultadBot: this.dificultadBot } : {})
     });
     this.cerrarConfiguracionSala();
   }

@@ -74,9 +74,12 @@ export const handleGameEvents = (io, socket) => {
       nuevoJuego.skins = juego.skins || { X: { emoji: 'X', color: '#e94560' }, O: { emoji: 'O', color: '#4597e9' } };
       
       if (nuevoJuego.configuracion?.solitario) {
-        const botRol = nuevoJuego.configuracion.dosVsDos ? GameRole.O1 : GameRole.O;
-        nuevoJuego.jugadoresListos[botRol] = true;
-        nuevoJuego.skins[botRol] = { emoji: '🤖', color: '#8dcaf5' };
+        if (nuevoJuego.configuracion.dosVsDos) {
+          nuevoJuego.jugadoresListos[GameRole.O1] = true;
+          nuevoJuego.jugadoresListos[GameRole.O2] = true;
+        } else {
+          nuevoJuego.jugadoresListos[GameRole.O] = true;
+        }
       }
     }
 

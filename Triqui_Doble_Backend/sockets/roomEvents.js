@@ -34,12 +34,21 @@ export const handleRoomEvents = (io, socket) => {
     }
     
     if (estadojuego.configuracion.solitario) {
-      const botRol = is2v2 ? GameRole.O1 : GameRole.O;
-      estadojuego.jugadores[botRol] = 'BOT';
-      estadojuego.usernames[botRol] = 'Bot';
-      estadojuego.jugadoresListos[botRol] = true;
-      estadojuego.skins[botRol] = { emoji: '🤖', color: '#8dcaf5' };
-      estadojuego.estado = 'seleccionando_skin';
+      if (is2v2) {
+        estadojuego.jugadores[GameRole.O1] = 'BOT';
+        estadojuego.usernames[GameRole.O1] = 'Bot 1';
+        estadojuego.jugadoresListos[GameRole.O1] = true;
+        estadojuego.jugadores[GameRole.O2] = 'BOT';
+        estadojuego.usernames[GameRole.O2] = 'Bot 2';
+        estadojuego.jugadoresListos[GameRole.O2] = true;
+        estadojuego.skins['O'] = { emoji: '🤖', color: '#8dcaf5' };
+      } else {
+        estadojuego.jugadores[GameRole.O] = 'BOT';
+        estadojuego.usernames[GameRole.O] = 'Bot';
+        estadojuego.jugadoresListos[GameRole.O] = true;
+        estadojuego.skins['O'] = { emoji: '🤖', color: '#8dcaf5' };
+        estadojuego.estado = 'seleccionando_skin';
+      }
     }
 
     estadojuego.ultimaActualizacionTurno = null;

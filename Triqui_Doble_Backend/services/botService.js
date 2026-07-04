@@ -26,11 +26,11 @@ export const jugarTurnoBot = async (roomId, io) => {
 
       const juego = JSON.parse(juegoJson);
 
-      const botRolLargo = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === 'BOT');
-      if (!botRolLargo || juego.ganador || juego.estado !== 'jugando') return;
+      let currentRolLargo = juego.ordenTurnos ? juego.ordenTurnos[juego.indiceTurnoActual] : juego.turnoActual;
+      if (juego.jugadores[currentRolLargo] !== 'BOT' || juego.ganador || juego.estado !== 'jugando') return;
       
+      const botRolLargo = currentRolLargo;
       const botRol = botRolLargo.charAt(0);
-      if (juego.turnoActual !== botRol) return;
 
       let tableroId = juego.tableroActivo !== null ? juego.tableros[juego.tableroActivo].id : null;
       

@@ -209,6 +209,8 @@ export const rendirse = (juego, socketId) => {
 }
 
 export const guardarPartida = async (roomId, juego, puntajeX, puntajeO) => {
+  if (juego.configuracion?.solitario) return;
+
   try {
     const is2v2 = juego.ordenTurnos && juego.ordenTurnos.length === 4;
     
