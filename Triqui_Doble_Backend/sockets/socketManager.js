@@ -8,6 +8,11 @@ export const initializeSockets = (io) => {
   io.on('connection', (socket) => {
     console.log(`Jugador conectado: ${socket.id}`);
     socket.emit('syncTime', Date.now());
+    
+    socket.on('pingTime', (clientSentAt) => {
+      socket.emit('pongTime', { clientSentAt, serverTime: Date.now() });
+    });
+    
     obtenerSalasDisponibles().then(salas => {
       socket.emit('salasDisponibles', salas);
     });

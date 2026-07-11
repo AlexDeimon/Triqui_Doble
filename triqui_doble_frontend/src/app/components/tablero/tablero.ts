@@ -162,8 +162,15 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   iniciarTemporizadorLocal(state: estadoJuego) {
-    this.detenerTemporizadorLocal();
+    if (this.timerInterval) {
+      cancelAnimationFrame(this.timerInterval);
+      this.timerInterval = null;
+    }
     if (!state.configuracion || !state.ultimaActualizacionTurno) return;
+
+    this.tiempoRestante.set(state.configuracion.tiempo);
+
+    let lastDisplayed = state.configuracion.tiempo;
 
     const tick = () => {
       const serverTimeNow = Date.now() - this.websocketService.timeOffset;
@@ -172,18 +179,25 @@ export class TableroComponent implements OnInit, OnDestroy {
       let rest = state.configuracion!.tiempo - Math.floor(msPasados / 1000);
       if (rest < 0) rest = 0;
       if (rest > state.configuracion!.tiempo) rest = state.configuracion!.tiempo;
-      this.ngZone.run(() => {
-         this.tiempoRestante.set(rest);
-      });
+
+      if (rest !== lastDisplayed) {
+        lastDisplayed = rest;
+        this.ngZone.run(() => {
+          this.tiempoRestante.set(rest);
+        });
+      }
+
+      if (this.timerInterval) {
+        this.timerInterval = requestAnimationFrame(tick);
+      }
     };
 
-    tick();
-    this.timerInterval = setInterval(tick, 1000);
+    this.timerInterval = requestAnimationFrame(tick);
   }
 
   detenerTemporizadorLocal() {
     if (this.timerInterval) {
-      clearInterval(this.timerInterval);
+      cancelAnimationFrame(this.timerInterval);
       this.timerInterval = null;
     }
     this.tiempoRestante.set(0);

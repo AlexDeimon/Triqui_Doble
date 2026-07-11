@@ -122,18 +122,20 @@ export const jugarTurnoBot = async (roomId, io) => {
           await redisClient.expire(`juego:${roomId}`, 60);
           console.log(`Juego ${roomId} terminado (Bot). Se eliminará en 1 minuto si no se reinicia.`);
           await emitirSalasDisponibles(io);
-        } else {
-          iniciarTimeoutTurno(roomId, io);
         }
 
         io.to(roomId).emit('actualizarJuego', movimientoJuego);
         resetearTimeoutInactividad(roomId, io);
         
-        const nuevoTurno = movimientoJuego.turnoActual;
-        const nuevoRolLargo = movimientoJuego.ordenTurnos ? 
-            movimientoJuego.ordenTurnos[movimientoJuego.indiceTurnoActual] : nuevoTurno;
-        if (movimientoJuego.jugadores[nuevoRolLargo] === 'BOT') {
+        if (!movimientoJuego.ganador) {
+          const nuevoTurno = movimientoJuego.turnoActual;
+          const nuevoRolLargo = movimientoJuego.ordenTurnos ? 
+              movimientoJuego.ordenTurnos[movimientoJuego.indiceTurnoActual] : nuevoTurno;
+          if (movimientoJuego.jugadores[nuevoRolLargo] === 'BOT') {
             jugarTurnoBot(roomId, io);
+          } else {
+            iniciarTimeoutTurno(roomId, io);
+          }
         }
       }
     } catch (error) {

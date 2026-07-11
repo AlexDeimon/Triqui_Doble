@@ -45,6 +45,8 @@ export class WebsocketService {
         console.log('Conectado al servidor');
         this.loading.set(false);
 
+        this.sincronizarReloj();
+
         if (this.username) {
           this.identificar();
         }
@@ -58,7 +60,20 @@ export class WebsocketService {
     });
 
     this.socket.on('syncTime', (serverTime: number) => {
-      this.timeOffset = Date.now() - serverTime;
+      if (this.timeOffset === 0) {
+        this.timeOffset = Date.now() - serverTime;
+      }
+    });
+
+    this.socket.on('pongTime', ({ clientSentAt, serverTime }: { clientSentAt: number, serverTime: number }) => {
+      const now = Date.now();
+      const rtt = now - clientSentAt;
+      const estimatedServerTime = serverTime + rtt / 2;
+      const newOffset = now - estimatedServerTime;
+      if (rtt < 1000) {
+        this.timeOffset = newOffset;
+        console.log(`[TimeSync] RTT=${rtt}ms offset=${Math.round(newOffset)}ms`);
+      }
     });
 
     this.socket.on('disconnect', () => {
@@ -453,6 +468,19 @@ export class WebsocketService {
 
   notificarSolicitudEnviada(toUsername: string) {
     this.socket.emit('enviarSolicitudRealtime', { toUsername });
+  }
+
+  sincronizarReloj(intentos: number = 3) {
+    let remaining = intentos;
+    const doPing = () => {
+      if (remaining <= 0) return;
+      remaining--;
+      this.socket.emit('pingTime', Date.now());
+      if (remaining > 0) {
+        setTimeout(doPing, 500);
+      }
+    };
+    doPing();
   }
 
   logout() {

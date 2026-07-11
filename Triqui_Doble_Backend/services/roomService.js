@@ -80,8 +80,12 @@ export const iniciarTimeoutTurno = async (roomId, io) => {
 
   const juego = JSON.parse(juegoJson);
   if (!juego.configuracion || !juego.configuracion.temporizador || juego.ganador) return;
-  const inPlayingCondition = juego.estado === 'jugando' || (juego.jugadores.X && juego.jugadores.O);
+  const inPlayingCondition = juego.estado === 'jugando';
   if (!inPlayingCondition) return;
+
+  const tiempoTotal = juego.configuracion.tiempo * 1000;
+  const msPasados = juego.ultimaActualizacionTurno ? Math.max(0, Date.now() - juego.ultimaActualizacionTurno) : 0;
+  const msRestantes = Math.max(100, tiempoTotal - msPasados);
 
   const timer = setTimeout(async () => {
     try {
@@ -89,8 +93,13 @@ export const iniciarTimeoutTurno = async (roomId, io) => {
       if (!objJson) return;
       const obj = JSON.parse(objJson);
       
-      const currentPlaying = obj.estado === 'jugando' || (obj.jugadores.X && obj.jugadores.O);
-      if (obj.ganador || !currentPlaying) return;
+      if (obj.ganador || obj.estado !== 'jugando') return;
+
+      const msPasadosNow = obj.ultimaActualizacionTurno ? Date.now() - obj.ultimaActualizacionTurno : tiempoTotal;
+      if (msPasadosNow < tiempoTotal - 500) {
+        iniciarTimeoutTurno(roomId, io);
+        return;
+      }
 
       if (obj.ordenTurnos) {
         obj.indiceTurnoActual = (obj.indiceTurnoActual + 1) % obj.ordenTurnos.length;
@@ -113,7 +122,7 @@ export const iniciarTimeoutTurno = async (roomId, io) => {
     } catch (error) {
       console.error(`[Error Redis] Timeout de turno ${roomId}:`, error.message);
     }
-  }, juego.configuracion.tiempo * 1000);
+  }, msRestantes);
 
   turnTimeouts.set(roomId, timer);
 };

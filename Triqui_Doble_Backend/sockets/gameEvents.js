@@ -31,8 +31,6 @@ export const handleGameEvents = (io, socket) => {
         await redisClient.expire(`juego:${roomId}`, 60);
         console.log(`Juego ${roomId} terminado. Se eliminará en 1 minuto si no se reinicia.`);
         await emitirSalasDisponibles(io);
-      } else {
-        iniciarTimeoutTurno(roomId, io);
       }
 
       io.to(roomId).emit('actualizarJuego', movimientoJuego);
@@ -42,7 +40,9 @@ export const handleGameEvents = (io, socket) => {
         const nuevoTurno = movimientoJuego.turnoActual;
         const nuevoRolLargo = movimientoJuego.ordenTurnos ? movimientoJuego.ordenTurnos[movimientoJuego.indiceTurnoActual] : nuevoTurno;
         if (movimientoJuego.jugadores[nuevoRolLargo] === 'BOT') {
-            jugarTurnoBot(roomId, io);
+          jugarTurnoBot(roomId, io);
+        } else {
+          iniciarTimeoutTurno(roomId, io);
         }
       }
     }
