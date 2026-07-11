@@ -118,7 +118,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
         this.tiempoTemporizador = [15, 30, 60][Math.floor(Math.random() * 3)];
       }
       if (this.solitario){
-        this.dificultadBot = ['facil', 'intermedio'][Math.floor(Math.random() * 2)];
+        this.dificultadBot = ['facil', 'intermedio', 'dificil'][Math.floor(Math.random() * 3)];
       }
       this.ruletaAleatoria = false;
     }

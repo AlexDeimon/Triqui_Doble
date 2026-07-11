@@ -104,10 +104,10 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
       }
       tablero.ganador = rolJugador;
       juego.puntajes[rolJugador] += 10;
-      console.log(`Tablero ${tableroId} ganado/robado por ${rolJugador}`);
+      if (!juego.isSimulation) console.log(`Tablero ${tableroId} ganado/robado por ${rolJugador}`);
     } else if (!ganadorOriginal && tablero.celdas.every(c => c.valor !== null)) {
       tablero.ganador = GameRole.EMPATE;
-      console.log(`Tablero ${tableroId} terminado en empate`);
+      if (!juego.isSimulation) console.log(`Tablero ${tableroId} terminado en empate`);
     }
   }
 
@@ -133,13 +133,13 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
   if (ganadorGeneral) {
     juego.ganador = ganadorGeneral;
     juego.puntajes[ganadorGeneral] += 50;
-    console.log(`Juego ganado por ${ganadorGeneral}`);
+    if (!juego.isSimulation) console.log(`Juego ganado por ${ganadorGeneral}`);
     guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
   } else {
     const todosTablerosTerminados = juego.tableros.every(t => t.ganador !== null);
     if (todosTablerosTerminados) {
       juego.ganador = GameRole.EMPATE;
-      console.log("Juego terminado en empate");
+      if (!juego.isSimulation) console.log("Juego terminado en empate");
       guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
     }
   }
@@ -209,6 +209,7 @@ export const rendirse = (juego, socketId) => {
 }
 
 export const guardarPartida = async (roomId, juego, puntajeX, puntajeO) => {
+  if (juego.isSimulation) return;
   if (juego.configuracion?.solitario) return;
 
   try {
