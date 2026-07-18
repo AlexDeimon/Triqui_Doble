@@ -7,7 +7,9 @@ const userSchema = new Schema({
         partidasGanadas: {type: Number, default: 0},
         partidasPerdidas: {type: Number, default: 0},
         partidasEmpatadas: {type: Number, default: 0},
-        puntaje: {type: Number, default: 0}
+        puntaje: {type: Number, default: 0},
+        rachaActual: {type: Number, default: 0},
+        recordRacha: {type: Number, default: 0}
     },
     amigos: [{
         usuario: { type: Schema.Types.ObjectId, ref: 'usuario' },

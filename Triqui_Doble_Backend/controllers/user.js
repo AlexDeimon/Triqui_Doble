@@ -24,19 +24,27 @@ export const login = async (req, res) => {
 };
 
 export const actualizarEstadisticas = async (username, resultado, puntaje) => {
-  const update = {};
-  if (resultado === 'G') update['estadisticas.partidasGanadas'] = 1;
-  if (resultado === 'P') update['estadisticas.partidasPerdidas'] = 1;
-  if (resultado === 'E') update['estadisticas.partidasEmpatadas'] = 1;
+  const user = await Usuario.findOne({ username });
+  if (!user) return;
 
-  if (puntaje > 0) {
-    update['estadisticas.puntaje'] = puntaje;
+  if (resultado === 'G') {
+    user.estadisticas.partidasGanadas = (user.estadisticas.partidasGanadas || 0) + 1;
+    user.estadisticas.rachaActual = (user.estadisticas.rachaActual || 0) + 1;
+    if (user.estadisticas.rachaActual > (user.estadisticas.recordRacha || 0)) {
+      user.estadisticas.recordRacha = user.estadisticas.rachaActual;
+    }
+  } else if (resultado === 'P') {
+    user.estadisticas.partidasPerdidas = (user.estadisticas.partidasPerdidas || 0) + 1;
+    user.estadisticas.rachaActual = 0;
+  } else if (resultado === 'E') {
+    user.estadisticas.partidasEmpatadas = (user.estadisticas.partidasEmpatadas || 0) + 1;
   }
 
-  await Usuario.findOneAndUpdate(
-    { username },
-    { $inc: update }
-  );
+  if (puntaje > 0) {
+    user.estadisticas.puntaje = (user.estadisticas.puntaje || 0) + puntaje;
+  }
+
+  await user.save();
 };
 
 export const ranking = async (req, res) => {
@@ -170,7 +178,7 @@ export const obtenerPerfil = async (req, res) => {
     }
   }
 
-  const { partidasGanadas, partidasPerdidas, partidasEmpatadas } = user.estadisticas;
+  const { partidasGanadas, partidasPerdidas, partidasEmpatadas, rachaActual = 0, recordRacha = 0 } = user.estadisticas;
   const total = partidasGanadas + partidasPerdidas + partidasEmpatadas;
   const porcentajes = {
     ganadas: total ? Math.round((partidasGanadas / total) * 100) : 0,
@@ -188,7 +196,9 @@ export const obtenerPerfil = async (req, res) => {
     porcentajes,
     rival,
     totalPartidas: total,
-    puntaje: puntos
+    puntaje: puntos,
+    rachaActual,
+    recordRacha
   });
 };
 
