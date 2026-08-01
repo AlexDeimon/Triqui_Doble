@@ -16,5 +16,6 @@ userRouter.post('/rechazar-amistad', asyncHandler(userController.rechazarSolicit
 userRouter.post('/eliminar-amigo', asyncHandler(userController.eliminarAmigo));
 userRouter.get('/perfil/:username', asyncHandler(userController.obtenerPerfil));
 userRouter.post('/perfil/actualizar', asyncHandler(userController.actualizarPerfil));
+userRouter.get('/replay/:partidaId', asyncHandler(userController.obtenerReplay));
 
 export default userRouter;

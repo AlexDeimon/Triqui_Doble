@@ -207,3 +207,13 @@ export const actualizarPerfil = async (req, res) => {
   await Usuario.findOneAndUpdate({ username }, { profileImage });
   res.json({ msg: 'Perfil actualizado' });
 };
+
+export const obtenerReplay = async (req, res) => {
+  const { partidaId } = req.params;
+  const partida = await Partidas.findById(partidaId);
+  if (!partida) return res.status(404).json({ msg: 'Partida no encontrada' });
+  if (!partida.movimientos || partida.movimientos.length === 0) {
+    return res.status(404).json({ msg: 'Esta partida no tiene datos de replay' });
+  }
+  res.json(partida);
+};

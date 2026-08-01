@@ -1,0 +1,48 @@
+<div *ngIf="showModal" class="replay-overlay" (click)="close.emit()">
+  <div class="replay-modal" (click)="$event.stopPropagation()">
+    <div class="replay-header">
+      <h2>REPETICIÓN</h2>
+      <button class="btn-close-replay" (click)="close.emit()">❌</button>
+    </div>
+    <div *ngIf="loading" class="replay-loading">
+      <div class="spinner"></div>
+      <p>Cargando repetición...</p>
+    </div>
+    <div *ngIf="error && !loading" class="replay-error">
+      <p>⚠️ {{ error }}</p>
+      <button class="btn-retry" (click)="cargarReplay()">Reintentar</button>
+    </div>
+    <ng-container *ngIf="!loading && !error && partida">
+      <div class="replay-players">
+        <div *ngFor="let j of jugadoresInfo" class="replay-player" [style.--player-color]="j.color">
+          <span class="player-emoji">{{ j.emoji }}</span>
+          <span class="player-name">{{ j.username }}</span>
+        </div>
+      </div>
+      <div class="replay-step-info">
+        <span class="step-label">{{ lastMoveInfo }}</span>
+        <span class="step-counter">{{ stepIndex }} / {{ totalMoves }}</span>
+      </div>
+      <div class="replay-board-grid" *ngIf="currentState">
+        <div *ngFor="let tablero of currentState.tableros; let ti = index" class="replay-mini-board" [class.is-active]="tableroActivoEnEstado(ti)" [style.--active-color]="getSkinColor(currentState.turnoActual)">
+          <div *ngFor="let celda of tablero.celdas" class="replay-celda" [class.last-move]="stepIndex > 0 && tablero.id === currentState.tableroId && celda.id === currentState.celdaId" [style.--cell-bg]="getCellBackground(tablero.ganador)">
+            <span *ngIf="celda.valor" class="celda-icon" [style.--icon-color]="getSkinColor(celda.valor)">{{ getSkinEmoji(celda.valor) }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="replay-controls">
+        <button class="replay-btn" (click)="goToStart()" [disabled]="stepIndex === 0" title="Inicio">⏮</button>
+        <button class="replay-btn" (click)="prev()" [disabled]="stepIndex === 0" title="Anterior">◀</button>
+        <div class="replay-progress-wrap">
+          <div class="replay-progress-bar" [style.width.%]="totalMoves > 0 ? (stepIndex / totalMoves * 100) : 0"></div>
+        </div>
+        <button class="replay-btn" (click)="next()" [disabled]="stepIndex === totalMoves" title="Siguiente">▶</button>
+        <button class="replay-btn" (click)="goToEnd()" [disabled]="stepIndex === totalMoves" title="Final">⏭</button>
+      </div>
+      <div class="replay-result">
+        <span>🏆 Ganador: <strong>{{ partida.ganador === 'E' ? 'Empate' : partida.ganador }}</strong></span>
+        <span>Turnos: <strong>{{ totalMoves }}</strong></span>
+      </div>
+    </ng-container>
+  </div>
+</div>

@@ -235,3 +235,25 @@
 .stat-row div:nth-child(3) strong {
   color: #ffb52a;
 }
+
+.btn-replay {
+  background: rgba(233, 69, 96, 0.2);
+  border: 1px solid rgba(233, 69, 96, 0.5);
+  color: #e94560;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.2s, transform 0.15s;
+}
+
+.btn-replay:hover {
+  background: #e94560;
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.no-replay {
+  color: #555;
+  font-size: 0.9rem;
+}

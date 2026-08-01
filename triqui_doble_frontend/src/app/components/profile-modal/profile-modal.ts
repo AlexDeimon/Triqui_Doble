@@ -2,12 +2,13 @@ import { Component, Input, Output, EventEmitter, ChangeDetectorRef, OnChanges, S
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from '../../services/websocket';
+import { ReplayModalComponent } from '../replay-modal/replay-modal';
 import Swal from 'sweetalert2';
 
 @Component({
   standalone: true,
   selector: 'app-profile-modal',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReplayModalComponent],
   templateUrl: './profile-modal.html',
   styleUrl: './profile-modal.css',
 })
@@ -23,6 +24,8 @@ export class ProfileModalComponent implements OnChanges {
   resultadosBusqueda: any[] = [];
   perfilTabActive: number = 0;
   iconosPerfil: string[] = ['🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '🥷'];
+  showReplay: boolean = false;
+  replayPartidaId: string = '';
 
   constructor(public websocketService: WebsocketService, private cd: ChangeDetectorRef) {}
 
@@ -151,5 +154,15 @@ export class ProfileModalComponent implements OnChanges {
   get friendStatus(): string {
     const amigo = this.websocketService.amigos().find(a => a.username === this.username);
     return amigo ? amigo.estado : 'none';
+  }
+
+  abrirReplay(partidaId: string) {
+    this.replayPartidaId = partidaId;
+    this.showReplay = true;
+  }
+
+  cerrarReplay() {
+    this.showReplay = false;
+    this.replayPartidaId = '';
   }
 }

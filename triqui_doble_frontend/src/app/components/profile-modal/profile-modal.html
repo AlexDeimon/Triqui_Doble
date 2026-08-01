@@ -104,7 +104,7 @@
                       <th>Ganador</th>
                       <th>Turnos</th>
                       <th>Fecha</th>
-                      <th>Hora</th>
+                      <th>🎬</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -113,8 +113,11 @@
                       <td>{{ partida.jugadorO }}</td>
                       <td>{{ partida.ganador === 'E' ? 'EMPATE' : partida.ganador }}</td>
                       <td>{{ partida.cantidadTurnos }}</td>
-                      <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
-                      <td>{{ partida.fecha | date:'HH:mm' }}</td>
+                      <td>{{ partida.fecha | date:'dd/MM/yy HH:mm' }}</td>
+                      <td>
+                        <button *ngIf="partida.movimientos?.length > 0" class="btn-replay" (click)="abrirReplay(partida._id)" title="Ver repetición">▶</button>
+                        <span *ngIf="!partida.movimientos?.length" class="no-replay">—</span>
+                      </td>
                     </tr>
                     <tr *ngIf="historial.length === 0">
                       <td colspan="6">No tienes partidas registradas en el historial.</td>
@@ -171,5 +174,5 @@
         </ng-container>
       </div>
     </ng-template>
-  </div>
 </div>
+<app-replay-modal [showModal]="showReplay" [partidaId]="replayPartidaId" (close)="cerrarReplay()"></app-replay-modal>

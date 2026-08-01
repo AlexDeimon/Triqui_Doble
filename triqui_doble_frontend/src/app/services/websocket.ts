@@ -362,6 +362,10 @@ export class WebsocketService {
     return this.http.get<any[]>(`${this.url}/historial/${username}`);
   }
 
+  obtenerReplay(partidaId: string): Observable<any> {
+    return this.http.get<any>(`${this.url}/replay/${partidaId}`);
+  }
+
   emitMove(tableroId: number, celdaId: number) {
     this.socket.emit('Movimiento', {
       roomId: this.roomId,

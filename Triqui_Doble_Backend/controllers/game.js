@@ -59,7 +59,8 @@ export const iniciarEstadoJuego = (roomId, is2v2) => {
     jugadoresListos: is2v2 ? { X1: false, O1: false, X2: false, O2: false } : { X: false, O: false },
     indiceTurnoActual: 0,
     cantidadTurnos: 0,
-    puntajes: { X: 0, O: 0 }
+    puntajes: { X: 0, O: 0 },
+    movimientos: []
   };
 };
 
@@ -91,6 +92,16 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
 
   celda.valor = rolJugador;
   juego.cantidadTurnos++;
+
+  if (!juego.isSimulation) {
+    if (!juego.movimientos) juego.movimientos = [];
+    juego.movimientos.push({
+      turno: juego.cantidadTurnos,
+      rolJugador: miRolLargo,
+      tableroId,
+      celdaId
+    });
+  }
 
   const ganadorOriginal = tablero.ganador;
   if (juego.configuracion?.robarTableros || !ganadorOriginal) {
@@ -157,6 +168,9 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
       const isWinner = verificarGanador(propuestos, 'ganador', juego.configuracion?.patronGanador || 'Cualquiera');
       if (!isWinner) {
         juego.tableros = propuestos;
+        if (!juego.isSimulation && juego.movimientos?.length > 0) {
+          juego.movimientos[juego.movimientos.length - 1].ordenTableros = juego.tableros.map(t => t.id);
+        }
         break;
       }
     }
@@ -182,7 +196,9 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     }
   }
 
-
+  if (!juego.isSimulation && juego.movimientos?.length > 0) {
+    juego.movimientos[juego.movimientos.length - 1].tableroActivoResultante = juego.tableroActivo;
+  }
 
   if (juego.ordenTurnos) {
     juego.indiceTurnoActual = (juego.indiceTurnoActual + 1) % juego.ordenTurnos.length;
@@ -232,7 +248,11 @@ export const guardarPartida = async (roomId, juego, puntajeX, puntajeO) => {
       jugadorX: jugadoresXCompleto,
       jugadorO: jugadoresOCompleto,
       ganador: textGanador,
-      cantidadTurnos: juego.cantidadTurnos
+      cantidadTurnos: juego.cantidadTurnos,
+      movimientos: juego.movimientos || [],
+      skins: juego.skins || null,
+      configuracion: juego.configuracion || null,
+      usernames: juego.usernames || null
     });
     await nuevaPartida.save();
 
