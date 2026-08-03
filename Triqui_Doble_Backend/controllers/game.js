@@ -9,9 +9,9 @@ export const patronesGanadores = [
 ];
 
 export const mapeoPatrones = {
-  '1ra Fila': 0, '2da Fila': 1, '3ra Fila': 2,
-  '1ra Columna': 3, '2da Columna': 4, '3ra Columna': 5,
-  'Diagonal Principal': 6, 'Diagonal Secundaria': 7
+  'Fila Superior': 0, 'Fila Central': 1, 'Fila Inferior': 2,
+  'Columna Izquierda': 3, 'Columna Central': 4, 'Columna Derecha': 5,
+  'Diagonal 1-9': 6, 'Diagonal 3-7': 7
 };
 
 export const verificarGanador = (elementos, propiedad, patronEspecifico = 'Cualquiera') => {

@@ -48,7 +48,8 @@ export const actualizarEstadisticas = async (username, resultado, puntaje) => {
 };
 
 export const ranking = async (req, res) => {
-  const users = await Usuario.find().sort({ 'estadisticas.puntaje': -1 });
+  let users = await Usuario.find().sort({ 'estadisticas.puntaje': -1 });
+  users = users.filter(user => user.estadisticas.puntaje !== 0);
   res.json(users);
 };
 
@@ -144,8 +145,11 @@ export const obtenerPerfil = async (req, res) => {
   const user = await Usuario.findOne({ username });
   if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
 
-  const allUsers = await Usuario.find().sort({ 'estadisticas.puntaje': -1 });
-  const rank = allUsers.findIndex(u => u.username === username) + 1;
+  let allUsers = await Usuario.find().sort({ 'estadisticas.puntaje': -1 });
+  allUsers = allUsers.filter(user => user.estadisticas.puntaje !== 0);
+  let rank = 'Sin clasificar';
+  if (allUsers.findIndex(u => u.username === username) != -1)
+    rank = allUsers.findIndex(u => u.username === username) + 1;
 
   const regex = new RegExp(`(^|,)${username}(,|$)`);
   const historial = await Partidas.find({

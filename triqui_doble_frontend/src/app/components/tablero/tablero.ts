@@ -17,9 +17,7 @@ import { ProfileModalComponent } from '../profile-modal/profile-modal';
 
 export class TableroComponent implements OnInit, OnDestroy {
   public GameRole = GameRole;
-
   animarPatron = signal<boolean>(false);
-
   gameState = signal<estadoJuego | null>(null);
   myRole = this.websocketService.myRole;
   tiempoRestante = signal<number>(0);
@@ -28,17 +26,6 @@ export class TableroComponent implements OnInit, OnDestroy {
   private yaAnimado: boolean = false;
   mostrarPerfil: boolean = false;
   selectedProfileUser: string = '';
-
-  mapeoPatrones: any = {
-    '1ra Fila': [0, 1, 2],
-    '2da Fila': [3, 4, 5],
-    '3ra Fila': [6, 7, 8],
-    '1ra Columna': [0, 3, 6],
-    '2da Columna': [1, 4, 7],
-    '3ra Columna': [2, 5, 8],
-    'Diagonal Principal': [0, 4, 8],
-    'Diagonal Secundaria': [2, 4, 6]
-  };
 
   constructor(
     public websocketService: WebsocketService,
@@ -241,9 +228,9 @@ export class TableroComponent implements OnInit, OnDestroy {
 
     const patron = state.configuracion.patronGanador;
     const mapeoPatrones: { [key: string]: number } = {
-      '1ra Fila': 0, '2da Fila': 1, '3ra Fila': 2,
-      '1ra Columna': 3, '2da Columna': 4, '3ra Columna': 5,
-      'Diagonal Principal': 6, 'Diagonal Secundaria': 7
+      'Fila Superior': 0, 'Fila Central': 1, 'Fila Inferior': 2,
+      'Columna Izquierda': 3, 'Columna Central': 4, 'Columna Derecha': 5,
+      'Diagonal 1-9': 6, 'Diagonal 3-7': 7
     };
     const patronesGanadores = [
       [0, 1, 2], [3, 4, 5], [6, 7, 8],

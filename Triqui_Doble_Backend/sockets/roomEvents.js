@@ -29,7 +29,7 @@ export const handleRoomEvents = (io, socket) => {
     estadojuego.configuracion = configuracion || { temporizador: false, tiempo: 15, objetivo: 'triqui_doble', modoSeleccion: 'regla_oro', patronGanador: 'Cualquiera', tablerosMoviles: false, robarTableros: false, dosVsDos: false };
     
     if (estadojuego.configuracion.objetivo === 'triqui_doble' && estadojuego.configuracion.patronGanador === 'Aleatorio') {
-      const opcionesPatron = ['1ra Fila', '2da Fila', '3ra Fila', '1ra Columna', '2da Columna', '3ra Columna', 'Diagonal Principal', 'Diagonal Secundaria'];
+      const opcionesPatron = ['Fila Superior', 'Fila Central', 'Fila Inferior', 'Columna Izquierda', 'Columna Central', 'Columna Derecha', 'Diagonal 1-9', 'Diagonal 3-7'];
       estadojuego.configuracion.patronGanador = opcionesPatron[Math.floor(Math.random() * opcionesPatron.length)];
     }
     

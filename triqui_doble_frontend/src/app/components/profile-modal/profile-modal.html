@@ -20,7 +20,8 @@
                   <p><strong>📅 Registro:</strong> {{ perfilData.fechaRegistro | date:'dd/MM/yyyy' }}</p>
                 </div>
                 <div class="stat-row">
-                  <p><strong>🏆 Ranking:</strong><span *ngIf="perfilData.rank !== 1 && perfilData.rank !== 2 && perfilData.rank !== 3"> # {{ perfilData.rank }}</span><span *ngIf="perfilData.rank === 1">🥇</span><span *ngIf="perfilData.rank === 2">🥈</span><span *ngIf="perfilData.rank === 3">🥉</span></p>
+                  <p><strong>🏆 Ranking:</strong><span *ngIf="perfilData.rank !== 1 && perfilData.rank !== 2 && perfilData.rank !== 3 && perfilData.rank !== 'Sin clasificar'"> # {{ perfilData.rank }}</span><span *ngIf="perfilData.rank === 1">🥇</span><span *ngIf="perfilData.rank === 2">🥈</span><span *ngIf="perfilData.rank === 3">🥉</span><span *ngIf="perfilData.rank === 'Sin clasificar'"> Sin clasificar</span>
+                  </p>
                 </div>
                 <div class="stat-row">
                   <p><strong>🌟 Puntos:</strong> {{ perfilData.puntaje }}</p>
