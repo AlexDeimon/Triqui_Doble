@@ -2,12 +2,7 @@ import { redisClient } from '../config/db.js';
 import * as gameController from '../controllers/game.js';
 import { GameRole } from '../utils/constants.js';
 import { socketWrapper } from '../utils/socketWrapper.js';
-import {
-  turnTimeouts,
-  resetearTimeoutInactividad,
-  iniciarTimeoutTurno,
-  emitirSalasDisponibles
-} from '../services/roomService.js';
+import { turnTimeouts, resetearTimeoutInactividad, iniciarTimeoutTurno, emitirSalasDisponibles } from '../services/roomService.js';
 
 export const handleRoomEvents = (io, socket) => {
   socket.on('crearSala', socketWrapper(socket, async ({ roomId, username, configuracion }) => {
@@ -272,5 +267,9 @@ export const handleRoomEvents = (io, socket) => {
       io.to(roomId).emit('actualizarJuego', juego);
 
     }
+  }));
+
+  socket.on('enviarMensajeChat', socketWrapper(socket, async ({ roomId, username, mensaje }) => {
+    io.to(roomId).emit('nuevoMensajeChat', { username, mensaje, time: Date.now() });
   }));
 };

@@ -82,4 +82,24 @@
   </div>
   <button (click)="rendirse()" class="btn-primary" *ngIf="gameState()!.tableroActivo !== null && myRole() !== GameRole.Espectador">Rendirse</button>
 </div>
+<div class="chat-container" *ngIf="isChatEnabled" [class.open]="mostrarChat">
+  <button class="chat-toggle-btn" (click)="toggleChat()">💬<span class="badge" *ngIf="mensajesNoLeidos > 0 && !mostrarChat">{{ mensajesNoLeidos }}</span></button>
+  <div class="chat-panel" *ngIf="mostrarChat">
+    <div class="chat-header">
+      <h4>Chat de la sala</h4>
+      <button class="close-chat" (click)="toggleChat()">×</button>
+    </div>
+    <div class="chat-messages" #chatScroll>
+      <div class="message" *ngFor="let msg of chatMessages" [class.my-message]="msg.username === websocketService.username">
+        <span class="sender">{{ msg.username }}</span>
+        <div class="text">{{ msg.mensaje }}</div>
+      </div>
+      <div *ngIf="chatMessages.length === 0" class="no-messages">Aún no hay mensajes</div>
+    </div>
+    <div class="chat-input-area">
+      <input type="text" [(ngModel)]="nuevoMensajeText" (keyup.enter)="enviarMensaje()" placeholder="Escribe un mensaje..." maxlength="150" />
+      <button (click)="enviarMensaje()" [disabled]="!nuevoMensajeText.trim()">➤</button>
+    </div>
+  </div>
+</div>
 <app-profile-modal *ngIf="mostrarPerfil" [username]="selectedProfileUser" [showModal]="mostrarPerfil" (close)="cerrarPerfil()"></app-profile-modal>

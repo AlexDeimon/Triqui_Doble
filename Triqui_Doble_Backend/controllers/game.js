@@ -210,8 +210,6 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
   return juego;
 }
 
-
-
 export const rendirse = (juego, socketId) => {
   const miRolLargo = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socketId);
   if (!miRolLargo) return juego;

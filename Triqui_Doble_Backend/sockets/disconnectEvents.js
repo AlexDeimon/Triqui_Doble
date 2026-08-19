@@ -1,10 +1,6 @@
 import { redisClient } from '../config/db.js';
 import { socketWrapper } from '../utils/socketWrapper.js';
-import { GameRole } from '../utils/constants.js';
-import {
-  turnTimeouts,
-  emitirSalasDisponibles
-} from '../services/roomService.js';
+import { turnTimeouts, emitirSalasDisponibles } from '../services/roomService.js';
 
 export const handleDisconnectEvents = (io, socket) => {
   socket.on('disconnecting', socketWrapper(socket, async () => {

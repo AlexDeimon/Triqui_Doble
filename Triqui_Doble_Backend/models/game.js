@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 const movimientoSchema = new Schema({
   turno: { type: Number, required: true },

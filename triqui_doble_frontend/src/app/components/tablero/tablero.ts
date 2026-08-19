@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone, signal, effect, untracked, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, signal, effect, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { estadoJuego, GameRole } from '../../models/game';
@@ -6,11 +6,13 @@ import { WebsocketService } from '../../services/websocket';
 import { AudioService } from '../../services/audio';
 import Swal from 'sweetalert2';
 import { ProfileModalComponent } from '../profile-modal/profile-modal';
+import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-tablero',
   standalone: true,
-  imports: [CommonModule, ProfileModalComponent],
+  imports: [CommonModule, ProfileModalComponent, FormsModule],
   templateUrl: './tablero.html',
   styleUrl: './tablero.css'
 })
@@ -26,6 +28,12 @@ export class TableroComponent implements OnInit, OnDestroy {
   private yaAnimado: boolean = false;
   mostrarPerfil: boolean = false;
   selectedProfileUser: string = '';
+  chatMessages: { username: string, mensaje: string }[] = [];
+  nuevoMensajeText: string = '';
+  mostrarChat: boolean = false;
+  chatSubscription?: Subscription;
+  mensajesNoLeidos: number = 0;
+  @ViewChild('chatScroll') private chatScrollContainer!: ElementRef;
 
   constructor(
     public websocketService: WebsocketService,
@@ -136,6 +144,14 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.websocketService.actualizarAmigos();
+    this.chatSubscription = this.websocketService.escucharChat().subscribe(msg => {
+      this.chatMessages.push(msg);
+      if (!this.mostrarChat) {
+        this.mensajesNoLeidos++;
+      } else {
+        this.scrollToBottom();
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -145,6 +161,9 @@ export class TableroComponent implements OnInit, OnDestroy {
     }
     if (Swal.isVisible()) {
       Swal.close();
+    }
+    if (this.chatSubscription) {
+      this.chatSubscription.unsubscribe();
     }
   }
 
@@ -544,5 +563,39 @@ export class TableroComponent implements OnInit, OnDestroy {
   cerrarPerfil() {
     this.mostrarPerfil = false;
     this.selectedProfileUser = '';
+  }
+
+  get isChatEnabled(): boolean {
+    const state = this.gameState();
+    if (!state?.configuracion) return false;
+    if (state.configuracion.solitario && !state.configuracion.dosVsDos) return false;
+    return true;
+  }
+
+  toggleChat() {
+    this.mostrarChat = !this.mostrarChat;
+    if (this.mostrarChat) {
+      this.mensajesNoLeidos = 0;
+      this.scrollToBottom();
+    }
+  }
+
+  scrollToBottom(): void {
+    try {
+      setTimeout(() => {
+        if (this.chatScrollContainer) {
+          this.chatScrollContainer.nativeElement.scrollTop = this.chatScrollContainer.nativeElement.scrollHeight;
+        }
+      }, 50);
+    } catch(err) { }
+  }
+
+  enviarMensaje() {
+    if (!this.nuevoMensajeText.trim()) return;
+    const roomId = localStorage.getItem('triqui_roomId') || '';
+    if (roomId) {
+      this.websocketService.enviarMensajeChat(roomId, this.websocketService.username, this.nuevoMensajeText.trim());
+      this.nuevoMensajeText = '';
+    }
   }
 }

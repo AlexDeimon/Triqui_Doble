@@ -498,4 +498,16 @@ export class WebsocketService {
   notificarSolicitudAceptada(toUsername: string) {
     this.socket.emit('aceptarSolicitudRealtime', { toUsername });
   }
+
+  escucharChat(): Observable<{ username: string, mensaje: string, time: number }> {
+    return new Observable(observer => {
+      this.socket.on('nuevoMensajeChat', (msg) => {
+        this.ngZone.run(() => observer.next(msg));
+      });
+    });
+  }
+
+  enviarMensajeChat(roomId: string, username: string, mensaje: string) {
+    this.socket.emit('enviarMensajeChat', { roomId, username, mensaje });
+  }
 }
