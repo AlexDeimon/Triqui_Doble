@@ -1,12 +1,16 @@
 import { Usuario } from '../models/user.js';
 import { Partidas } from '../models/game.js';
+import bcrypt from 'bcryptjs';
 
 export const registrar = async (req, res) => {
   const { username, password } = req.body;
   let user = await Usuario.findOne({ username });
   if (user) return res.status(400).json({ msg: 'El usuario ya existe' });
 
-  user = new Usuario({ username, password });
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  user = new Usuario({ username, password: hashedPassword });
   await user.save();
   res.json({ msg: 'Usuario creado', userId: user._id });
 };
@@ -16,7 +20,8 @@ export const login = async (req, res) => {
   const user = await Usuario.findOne({ username });
   if (!user) return res.status(400).json({ msg: 'Usuario no encontrado' });
 
-  if (user.password !== password) {
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
     return res.status(400).json({ msg: 'Contraseña incorrecta' });
   }
 
