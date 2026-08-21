@@ -1,9 +1,32 @@
 import { Usuario } from '../models/user.js';
 import { Partidas } from '../models/game.js';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
+
+const registroSchema = z.object({
+  username: z.string({
+    required_error: "El nombre de usuario es requerido",
+    invalid_type_error: "El nombre de usuario no es valido"
+  })
+    .min(3, "El usuario debe tener al menos 3 caracteres")
+    .max(10, "El usuario no debe superar los 10 caracteres")
+    .regex(/^[a-zA-Z0-9_]+$/, "El usuario solo puede contener letras, números y guion bajo")
+    .trim(),
+  password: z.string({
+    required_error: "La contraseña es requerida",
+    invalid_type_error: "La contraseña no es valida"
+  })
+    .min(6, "La contraseña debe tener al menos 6 caracteres")
+    .max(30, "La contraseña no debe superar los 30 caracteres")
+});
 
 export const registrar = async (req, res) => {
-  const { username, password } = req.body;
+  const parseResult = registroSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ msg: parseResult.error.errors[0].message });
+  }
+
+  const { username, password } = parseResult.data;
   let user = await Usuario.findOne({ username });
   if (user) return res.status(400).json({ msg: 'El usuario ya existe' });
 
