@@ -1,0 +1,123 @@
+<div *ngIf="showModal" class="ranking-modal-container">
+  <div class="ranking-content">
+    <div class="tutorial-modal-header">
+      <h2>Cómo Jugar Triqui Doble</h2>
+      <button (click)="cerrar()" class="btn-close">❌</button>
+    </div>
+    <div class="stepper-container">
+      <div *ngFor="let step of [1,2,3,4]" class="step-dot" [class.active]="currentStep === step" [class.completed]="currentStep > step">{{ step }}</div>
+    </div>
+    <div class="tutorial-modal-body">
+      <div *ngIf="currentStep === 1" class="step-content animate-fade">
+        <h3>1. La Estructura del Tablero</h3>
+        <p class="intro-text">Triqui Doble lleva el clásico tres en línea a un nivel estratégico superior.</p>
+        <div class="step-split">
+          <div class="text-block">
+            <p>El juego consta de un <strong>Tablero Principal</strong> de 3x3 celdas.</p>
+            <p>Dentro de cada una de esas 9 celdas hay un <strong>Mini-Tablero</strong> tambien de 3x3.</p>
+          </div>
+          <div class="visual-block">
+            <div class="board-preview">
+              <div class="preview-macro-cell" *ngFor="let i of [0,1,2,3,4,5,6,7,8]" [class.center-highlight]="i === 4">
+                <div class="preview-mini-grid" *ngIf="i === 4">
+                  <div class="preview-mini-cell" *ngFor="let j of [0,1,2,3,4,5,6,7,8]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="currentStep === 2" class="step-content animate-fade">
+        <h3>2. La Regla de Oro ✨</h3>
+        <p class="intro-text">Esta es la regla más importante: <strong>Tu movimiento determina dónde jugará tu oponente en su turno.</strong></p>
+        <div class="simulator-wrapper">
+          <div class="simulator-panel">
+            <span class="panel-title">1. Tu Jugada (Mini-Tablero)</span>
+            <p class="panel-desc">Selecciona cualquier casilla de este mini-tablero:</p>
+            <div class="demo-grid-mini">
+              <div *ngFor="let idx of [0,1,2,3,4,5,6,7,8]" class="demo-cell-mini" [class.selected]="celdaSeleccionada === idx" (click)="seleccionarCelda(idx)">{{ celdaSeleccionada === idx ? 'X' : '' }}</div>
+            </div>
+          </div>
+          <div class="simulator-panel">
+            <span class="panel-title">2. Oponente (Tablero Grande)</span>
+            <p class="panel-desc">El oponente jugará en este mini-tablero:</p>
+            <div class="demo-grid-macro">
+              <div *ngFor="let idx of [0,1,2,3,4,5,6,7,8]" class="demo-cell-macro" [class.active-target]="celdaSeleccionada === idx">
+                <div class="preview-mini-grid" *ngIf="celdaSeleccionada === idx">
+                  <div class="preview-mini-cell" *ngFor="let j of [0,1,2,3,4,5,6,7,8]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p>Tambien puedes establecer que tu oponente juegue en una posicion aleatoria 🎲 en lugar de la regla de oro.</p>
+      </div>
+      <div *ngIf="currentStep === 3" class="step-content animate-fade">
+        <h3>3. Reglas Especiales y Variantes</h3>
+        <p class="intro-text">Puedes configurar la sala con opciones avanzadas para cambiar la dinámica del juego:</p>
+        <div class="rules-accordion">
+          <div class="accordion-item" [class.expanded]="reglaAbierta === 'objetivos'">
+            <button class="accordion-header" (click)="toggleRegla('objetivos')"><span>✅ Objetivo: Triqui Doble vs Triqui Mayoría</span><span class="arrow-icon">▼</span></button>
+            <div class="accordion-content">
+              <p><strong>🎯 Triqui Doble:</strong> Alinea 3 mini-tableros ganados en línea recta (o sigue el patrón personalizado configurado por el creador de la sala 🧩).</p>
+              <p><strong>🏆 Triqui Mayoría:</strong> En lugar de hacer una línea, gana el primer jugador en dominar la mayoría de tableros (5 de 9).</p>
+            </div>
+          </div>
+          <div class="accordion-item" [class.expanded]="reglaAbierta === 'puntos'">
+            <button class="accordion-header" (click)="toggleRegla('puntos')"><span>💯 Puntaje</span><span class="arrow-icon">▼</span></button>
+            <div class="accordion-content">
+              <p>Por cada Mini-Tablero ganado obtendrás 10 puntos. El jugador que complete el objetivo obtiene 50 puntos.</p>
+            </div>
+          </div>
+          <div class="accordion-item" [class.expanded]="reglaAbierta === 'moviles'">
+            <button class="accordion-header" (click)="toggleRegla('moviles')"><span>🔄 Tableros Móviles</span><span class="arrow-icon">▼</span></button>
+            <div class="accordion-content">
+              <p>Los tableros cambian de posición aleatoriamente cada 10 turnos. ¡Tu estrategia debe adaptarse sobre la marcha ya que las líneas ganadoras pueden reordenarse!</p>
+            </div>
+          </div>
+          <div class="accordion-item" [class.expanded]="reglaAbierta === 'robar'">
+            <button class="accordion-header" (click)="toggleRegla('robar')"><span>🥷 Robar Tableros</span><span class="arrow-icon">▼</span></button>
+            <div class="accordion-content">
+              <p>¿Tu oponente ganó un mini-tablero? Si logras alinear 3 de tus fichas en ese mismo tablero que ya ganó, se lo robarás, quitándole los puntos a él y sumándotelos a ti.</p>
+            </div>
+          </div>
+          <div class="accordion-item" [class.expanded]="reglaAbierta === 'dosvsdos'">
+            <button class="accordion-header" (click)="toggleRegla('dosvsdos')"><span>👥 Partida 2 vs 2</span><span class="arrow-icon">▼</span></button>
+            <div class="accordion-content">
+              <p>Juega en parejas. Los dos miembros de cada equipo comparten las mismas fichas y skins, alternándose el turno para colocar cada ficha.</p>
+            </div>
+          </div>
+          <div class="accordion-item" [class.expanded]="reglaAbierta === 'otros'">
+            <button class="accordion-header" (click)="toggleRegla('otros')"><span>⏰ Temporizador y Libertad</span><span class="arrow-icon">▼</span></button>
+            <div class="accordion-content">
+              <p><strong>Temporizador:</strong> Limita el tiempo de respuesta. Si no se juega en el tiempo establecido, el jugador pierde su turno. Si ningun jugador juega en 2 minutos, la partida termina.</p>
+              <p><strong>Libertad de Movimiento:</strong> Si te mandan a jugar a un mini-tablero que ya está lleno o empatado, ¡el juego te da pase libre! Puedes colocar tu ficha en cualquier casilla libre de cualquier mini-tablero.</p>
+            </div>
+          </div>
+          <div class="accordion-item" [class.expanded]="reglaAbierta === 'ruleta_aleatoria'">
+            <button class="accordion-header" (click)="toggleRegla('ruleta_aleatoria')"><span>🎰 Ruleta Aleatoria</span><span class="arrow-icon">▼</span></button>
+            <div class="accordion-content">
+              <p>Las reglas mencionadas anteriormente se configuran aleatoriamente al crear la sala. Disfruta de la variedad y adapta tu estrategia a cada desafío que te presente la ruleta.</p>
+            </div>
+          </div>
+          <div class="accordion-item" [class.expanded]="reglaAbierta === 'bot'">
+            <button class="accordion-header" (click)="toggleRegla('bot')"><span>🤖 Partida contra Bot</span><span class="arrow-icon">▼</span></button>
+            <div class="accordion-content">
+              <p>Puedes jugar contra un bot en la dificultad que prefieras. Pero estas partidas no se guardaran en tu historial ni te sumaran puntos ni racha.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="currentStep === 4" class="step-content animate-fade step-finish">
+        <h3>¡Ya estás listo para jugar!</h3>
+        <p class="finish-icon">🚀</p>
+        <p class="finish-text">Has aprendido cómo funciona el tablero, la Regla de Oro y las variaciones estratégicas. Ahora es el momento de ponerlo en práctica.</p>
+        <button (click)="iniciarPractica()" class="btn-primary">Jugar Partida de Práctica 🤖</button>
+      </div>
+    </div>
+    <div class="tutorial-modal-footer">
+      <button (click)="prevStep()" class="btn-secondary">⬅️</button>
+      <button (click)="nextStep()" class="btn-secondary">➡️</button>
+    </div>
+  </div>
+</div>

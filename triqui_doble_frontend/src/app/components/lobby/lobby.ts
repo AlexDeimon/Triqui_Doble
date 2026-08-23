@@ -6,11 +6,12 @@ import { WebsocketService } from '../../services/websocket';
 import Swal from 'sweetalert2';
 
 import { ProfileModalComponent } from '../profile-modal/profile-modal';
+import { TutorialModalComponent } from '../tutorial-modal/tutorial-modal';
 
 @Component({
   standalone: true,
   selector: 'app-lobby',
-  imports: [CommonModule, FormsModule, ProfileModalComponent],
+  imports: [CommonModule, FormsModule, ProfileModalComponent, TutorialModalComponent],
   templateUrl: './lobby.html',
   styleUrl: './lobby.css',
 })
@@ -183,4 +184,17 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.router.navigate(['/lobby']);
   }
 
+  iniciarPartidaPractica() {
+    this.solitario = true;
+    this.dificultadBot = 'facil';
+    this.objetivoJuego = 'triqui_doble';
+    this.modoSeleccion = 'regla_oro';
+    this.patronGanador = 'Cualquiera';
+    this.tablerosMoviles = false;
+    this.robarTableros = false;
+    this.dosVsDos = false;
+    this.habilitarTemporizador = false;
+    this.salaPrivada = true;
+    this.crearSala();
+  }
 }

@@ -58,7 +58,7 @@
         <div class="skin-section">
           <h4>Íconos</h4>
           <div class="skin-options">
-            <button *ngFor="let emoji of ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐']" class="skin-btn" (click)="seleccionarSkin('emoji', emoji)" [class.disabled]="isSkinOptionDisabled('emoji', emoji)" [class.selected]="getSkinIcon(myRole()) === emoji">{{ emoji }}</button>
+            <button *ngFor="let emoji of ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '♥️', '♦️', '♣️', '♠️']" class="skin-btn" (click)="seleccionarSkin('emoji', emoji)" [class.disabled]="isSkinOptionDisabled('emoji', emoji)" [class.selected]="getSkinIcon(myRole()) === emoji">{{ emoji }}</button>
           </div>
         </div>
       </div>

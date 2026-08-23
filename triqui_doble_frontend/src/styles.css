@@ -178,6 +178,16 @@ app-root {
   margin: 0 auto;
 }
 
+.btn-secondary {
+  background-color: transparent;
+  color: white;
+  padding: 8px 18px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
 .ranking-content h2 {
   text-align: center;
   margin-bottom: 0.5rem;
