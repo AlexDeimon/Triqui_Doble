@@ -562,12 +562,6 @@ h2 {
   }
 }
 
-.tablero-pequeno.activoX .tablero-ganador,
-.tablero-pequeno.activoO .tablero-ganador {
-  z-index: -10;
-  opacity: 0.3;
-}
-
 .timer-circle.danger .timer-text {
   color: #ff3333;
 }

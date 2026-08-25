@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { ProfileModalComponent } from '../profile-modal/profile-modal';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import confetti from 'canvas-confetti';
 
 @Component({
   selector: 'app-tablero',
@@ -33,6 +34,9 @@ export class TableroComponent implements OnInit, OnDestroy {
   mostrarChat: boolean = false;
   chatSubscription?: Subscription;
   mensajesNoLeidos: number = 0;
+  mostrarModalVictoria: boolean = false;
+  private timerVictoriaTimeout: any = null;
+  private ultimoGanadorProcesado: string | null = null;
   @ViewChild('chatScroll') private chatScrollContainer!: ElementRef;
 
   constructor(
@@ -89,41 +93,66 @@ export class TableroComponent implements OnInit, OnDestroy {
           this.detenerTemporizadorLocal();
         }
 
-        if (state?.ganador) {
-          const isTie = state.ganador === GameRole.Empate;
-          let title = '';
-          let puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X')}`;
-          let puntosO = `${this.getSkinIcon('O')}: ${this.getPuntos('O')}`;
-          if (isTie) {
-            title = 'El juego ha terminado en empate.';
-          } else {
-            state.ganador === 'X' ? puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X') + 50}` : puntosO = `${this.getSkinIcon('O')}: ${this.getPuntos('O') + 50}`;
+        if (state?.ganador && this.ultimoGanadorProcesado !== state.ganador) {
+          this.ultimoGanadorProcesado = state.ganador;
+          this.mostrarModalVictoria = false;
 
-            if (state.configuracion?.dosVsDos) {
-              const rol1 = `${state.ganador}1`;
-              const rol2 = `${state.ganador}2`;
-              const u1 = state.jugadores[rol1] !== null ? state.usernames[rol1] : null;
-              const u2 = state.jugadores[rol2] !== null ? state.usernames[rol2] : null;
-
-              if (u1 && u2) {
-                title = `Los jugadores ${u1} y ${u2} ${this.getSkinIcon(state.ganador)} han ganado la partida`;
-              } else if (u1 || u2) {
-                title = `El jugador ${u1 || u2} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
-              } else {
-                title = `El equipo ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
-              }
-            } else {
-              title = `El jugador ${state.usernames[state.ganador as string]} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
-            }
+          if (this.timerVictoriaTimeout) {
+            clearTimeout(this.timerVictoriaTimeout);
           }
-          Swal.fire({
-            title: title,
-            text: `${puntosX} pts - ${puntosO} pts`,
-            icon: isTie ? 'info' : 'success',
-            background: '#16213e',
-            color: '#fff',
-            confirmButtonColor: '#e94560'
-          });
+
+          this.timerVictoriaTimeout = setTimeout(() => {
+            this.mostrarModalVictoria = true;
+            const isTie = state.ganador === GameRole.Empate;
+            let title = '';
+            let puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X')}`;
+            let puntosO = `${this.getSkinIcon('O')}: ${this.getPuntos('O')}`;
+            if (isTie) {
+              title = 'El juego ha terminado en empate.';
+            } else {
+              state.ganador === 'X' ? puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X') + 50}` : puntosO = `${this.getSkinIcon('O')}: ${this.getPuntos('O') + 50}`;
+
+              if (state.configuracion?.dosVsDos) {
+                const rol1 = `${state.ganador}1`;
+                const rol2 = `${state.ganador}2`;
+                const u1 = state.jugadores[rol1] !== null ? state.usernames[rol1] : null;
+                const u2 = state.jugadores[rol2] !== null ? state.usernames[rol2] : null;
+
+                if (u1 && u2) {
+                  title = `Los jugadores ${u1} y ${u2} ${this.getSkinIcon(state.ganador)} han ganado la partida`;
+                } else if (u1 || u2) {
+                  title = `El jugador ${u1 || u2} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
+                } else {
+                  title = `El equipo ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
+                }
+              } else {
+                title = `El jugador ${state.usernames[state.ganador as string]} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
+              }
+            }
+
+            const miRol = this.myRole();
+            const esGanador = miRol && miRol !== GameRole.Espectador && miRol.charAt(0) === state.ganador;
+
+            if (!isTie && esGanador) {
+              this.lanzarConfeti();
+            }
+
+            Swal.fire({
+              title: title,
+              text: `${puntosX} pts - ${puntosO} pts`,
+              icon: isTie ? 'info' : 'success',
+              background: '#16213e',
+              color: '#fff',
+              confirmButtonColor: '#e94560'
+            });
+            this.cd.detectChanges();
+          }, 2000);
+        } else if (!state?.ganador) {
+          this.mostrarModalVictoria = false;
+          this.ultimoGanadorProcesado = null;
+          if (this.timerVictoriaTimeout) {
+            clearTimeout(this.timerVictoriaTimeout);
+          }
         }
 
         const isMajorChange = state?.estado !== previousState?.estado || prevCount !== newCount || state?.tableroActivo !== previousState?.tableroActivo;
@@ -156,6 +185,9 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.detenerTemporizadorLocal();
+    if (this.timerVictoriaTimeout) {
+      clearTimeout(this.timerVictoriaTimeout);
+    }
     if (this.websocketService.roomId) {
       this.websocketService.abandonarSalaLocal();
     }
@@ -596,6 +628,35 @@ export class TableroComponent implements OnInit, OnDestroy {
     if (roomId) {
       this.websocketService.enviarMensajeChat(roomId, this.websocketService.username, this.nuevoMensajeText.trim());
       this.nuevoMensajeText = '';
+    }
+  }
+
+  lanzarConfeti() {
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        zIndex: 99999
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          zIndex: 99999
+        });
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          zIndex: 99999
+        });
+      }, 250);
+    } catch (e) {
+      console.error('Error lanzando confeti:', e);
     }
   }
 }

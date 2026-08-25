@@ -1,4 +1,4 @@
-<div *ngIf="gameState()?.ganador" class="pantalla-victoria">
+<div *ngIf="mostrarModalVictoria" class="pantalla-victoria">
   <ng-container *ngIf="myRole() !== GameRole.Espectador">
     <button (click)="reiniciarJuego()" class="btn-primary">Reiniciar Juego</button>
     <button (click)="volverAlMenu()" class="btn-primary">Volver al Menu</button>
