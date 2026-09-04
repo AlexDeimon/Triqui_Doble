@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { estadoJuego, GameRole } from '../../models/game';
 import { WebsocketService } from '../../services/websocket';
 import { AudioService } from '../../services/audio';
+import { ModalHistoryService } from '../../services/modal-history';
 import Swal from 'sweetalert2';
 import { ProfileModalComponent } from '../profile-modal/profile-modal';
 import { FormsModule } from '@angular/forms';
@@ -38,13 +39,17 @@ export class TableroComponent implements OnInit, OnDestroy {
   private timerVictoriaTimeout: any = null;
   private ultimoGanadorProcesado: string | null = null;
   @ViewChild('chatScroll') private chatScrollContainer!: ElementRef;
+  private closePerfilHandler: (() => void) | null = null;
+  private closeChatHandler: (() => void) | null = null;
+  private closeVictoriaHandler: (() => void) | null = null;
 
   constructor(
     public websocketService: WebsocketService,
     private ngZone: NgZone,
     private audioService: AudioService,
     private router: Router,
-    private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef,
+    private modalHistory: ModalHistoryService
   ) {
     let lastState: estadoJuego | null = null;
 
@@ -96,6 +101,10 @@ export class TableroComponent implements OnInit, OnDestroy {
         if (state?.ganador && this.ultimoGanadorProcesado !== state.ganador) {
           this.ultimoGanadorProcesado = state.ganador;
           this.mostrarModalVictoria = false;
+          if (this.closeVictoriaHandler) {
+            this.closeVictoriaHandler();
+            this.closeVictoriaHandler = null;
+          }
 
           if (this.timerVictoriaTimeout) {
             clearTimeout(this.timerVictoriaTimeout);
@@ -103,6 +112,11 @@ export class TableroComponent implements OnInit, OnDestroy {
 
           this.timerVictoriaTimeout = setTimeout(() => {
             this.mostrarModalVictoria = true;
+            this.closeVictoriaHandler = this.modalHistory.pushModal(() => {
+              this.mostrarModalVictoria = false;
+              this.cd.detectChanges();
+            });
+
             const isTie = state.ganador === GameRole.Empate;
             let title = '';
             let puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X')}`;
@@ -137,18 +151,27 @@ export class TableroComponent implements OnInit, OnDestroy {
               this.lanzarConfeti();
             }
 
+            const unregisterSwal = this.modalHistory.pushModal(() => {
+              if (Swal.isVisible()) Swal.close();
+            });
+
             Swal.fire({
               title: title,
               text: `${puntosX} pts - ${puntosO} pts`,
               icon: isTie ? 'info' : 'success',
               background: '#16213e',
               color: '#fff',
-              confirmButtonColor: '#e94560'
+              confirmButtonColor: '#e94560',
+              didClose: () => unregisterSwal()
             });
             this.cd.detectChanges();
           }, 2000);
         } else if (!state?.ganador) {
           this.mostrarModalVictoria = false;
+          if (this.closeVictoriaHandler) {
+            this.closeVictoriaHandler();
+            this.closeVictoriaHandler = null;
+          }
           this.ultimoGanadorProcesado = null;
           if (this.timerVictoriaTimeout) {
             clearTimeout(this.timerVictoriaTimeout);
@@ -172,6 +195,10 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    if (!this.websocketService.roomId && !this.websocketService.gameState()) {
+      this.router.navigate(['/lobby'], { replaceUrl: true });
+      return;
+    }
     this.websocketService.actualizarAmigos();
     this.chatSubscription = this.websocketService.escucharChat().subscribe(msg => {
       this.chatMessages.push(msg);
@@ -431,6 +458,10 @@ export class TableroComponent implements OnInit, OnDestroy {
 
     htmlContent += `</div>`;
 
+    const unregisterSwal = this.modalHistory.pushModal(() => {
+      if (Swal.isVisible()) Swal.close();
+    });
+
     Swal.fire({
       title: 'Configuración de la Partida',
       html: htmlContent,
@@ -440,11 +471,16 @@ export class TableroComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Entendido',
       customClass: {
         popup: 'glass-modal'
-      }
+      },
+      didClose: () => unregisterSwal()
     });
   }
 
   rendirse() {
+    const unregisterSwal = this.modalHistory.pushModal(() => {
+      if (Swal.isVisible()) Swal.close();
+    });
+
     Swal.fire({
       title: '¿Estás seguro de que quieres rendirte?',
       icon: 'warning',
@@ -454,7 +490,8 @@ export class TableroComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Sí, rendirme',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      didClose: () => unregisterSwal()
     }).then((result) => {
       if (result.isConfirmed) {
         this.websocketService.emitRendirse();
@@ -463,6 +500,10 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   volverAlMenu() {
+    if (this.closeVictoriaHandler) {
+      this.closeVictoriaHandler();
+      this.closeVictoriaHandler = null;
+    }
     this.websocketService.leaveRoom();
   }
 
@@ -522,15 +563,23 @@ export class TableroComponent implements OnInit, OnDestroy {
     const todosLosAmigos = this.websocketService.amigos().filter(a => a.estado === 'aceptado');
 
     if (todosLosAmigos.length === 0) {
+      const unregisterEmpty = this.modalHistory.pushModal(() => {
+        if (Swal.isVisible()) Swal.close();
+      });
       Swal.fire({
         title: 'No tienes amigos',
         text: 'Agrega amigos desde el lobby para poder invitarlos a jugar.',
         icon: 'info',
         background: '#16213e',
-        color: '#fff'
+        color: '#fff',
+        didClose: () => unregisterEmpty()
       });
       return;
     }
+
+    const unregisterSwal = this.modalHistory.pushModal(() => {
+      if (Swal.isVisible()) Swal.close();
+    });
 
     Swal.fire({
       title: 'Invitar Amigo',
@@ -558,6 +607,7 @@ export class TableroComponent implements OnInit, OnDestroy {
         </div>
       `,
       showConfirmButton: false,
+      didClose: () => unregisterSwal(),
       didOpen: () => {
         todosLosAmigos.forEach(a => {
           const isOnline = this.websocketService.amigosOnline().has(a.username);
@@ -588,13 +638,25 @@ export class TableroComponent implements OnInit, OnDestroy {
     if (username === 'Bot') return;
     if (username) {
       this.selectedProfileUser = username;
-      this.mostrarPerfil = true;
+      if (!this.mostrarPerfil) {
+        this.mostrarPerfil = true;
+        this.closePerfilHandler = this.modalHistory.pushModal(() => {
+          this.mostrarPerfil = false;
+          this.selectedProfileUser = '';
+          this.cd.detectChanges();
+        });
+      }
     }
   }
 
   cerrarPerfil() {
     this.mostrarPerfil = false;
     this.selectedProfileUser = '';
+    if (this.closePerfilHandler) {
+      this.closePerfilHandler();
+      this.closePerfilHandler = null;
+    }
+    this.cd.detectChanges();
   }
 
   get isChatEnabled(): boolean {
@@ -605,11 +667,22 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   toggleChat() {
-    this.mostrarChat = !this.mostrarChat;
-    if (this.mostrarChat) {
+    if (!this.mostrarChat) {
+      this.mostrarChat = true;
       this.mensajesNoLeidos = 0;
       this.scrollToBottom();
+      this.closeChatHandler = this.modalHistory.pushModal(() => {
+        this.mostrarChat = false;
+        this.cd.detectChanges();
+      });
+    } else {
+      this.mostrarChat = false;
+      if (this.closeChatHandler) {
+        this.closeChatHandler();
+        this.closeChatHandler = null;
+      }
     }
+    this.cd.detectChanges();
   }
 
   scrollToBottom(): void {

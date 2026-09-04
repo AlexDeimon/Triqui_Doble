@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, ChangeDetectorRef, OnChanges, S
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from '../../services/websocket';
+import { ModalHistoryService } from '../../services/modal-history';
 import { ReplayModalComponent } from '../replay-modal/replay-modal';
 import Swal from 'sweetalert2';
 
@@ -26,8 +27,9 @@ export class ProfileModalComponent implements OnChanges {
   iconosPerfil: string[] = ['🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '🥷', '♥️', '♦️', '♣️', '♠️'];
   showReplay: boolean = false;
   replayPartidaId: string = '';
+  private closeReplayHandler: (() => void) | null = null;
 
-  constructor(public websocketService: WebsocketService, private cd: ChangeDetectorRef) {}
+  constructor(public websocketService: WebsocketService, private cd: ChangeDetectorRef, private modalHistory: ModalHistoryService) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['showModal'] && changes['showModal'].currentValue) {
@@ -131,6 +133,10 @@ export class ProfileModalComponent implements OnChanges {
   }
 
   eliminarAmigo(username: string) {
+    const unregisterSwal = this.modalHistory.pushModal(() => {
+      if (Swal.isVisible()) Swal.close();
+    });
+
     Swal.fire({
       title: '¿Eliminar amigo?',
       text: `¿Estás seguro de que quieres eliminar a ${username}?`,
@@ -141,7 +147,8 @@ export class ProfileModalComponent implements OnChanges {
       confirmButtonText: 'Eliminar',
       cancelButtonText: 'Cancelar',
       background: '#16213e',
-      color: '#fff'
+      color: '#fff',
+      didClose: () => unregisterSwal()
     }).then((result) => {
       if (result.isConfirmed) {
         this.websocketService.eliminarAmigo(username).subscribe({
@@ -158,11 +165,21 @@ export class ProfileModalComponent implements OnChanges {
 
   abrirReplay(partidaId: string) {
     this.replayPartidaId = partidaId;
-    this.showReplay = true;
+    if (!this.showReplay) {
+      this.showReplay = true;
+      this.closeReplayHandler = this.modalHistory.pushModal(() => {
+        this.showReplay = false;
+        this.replayPartidaId = '';
+      });
+    }
   }
 
   cerrarReplay() {
     this.showReplay = false;
     this.replayPartidaId = '';
+    if (this.closeReplayHandler) {
+      this.closeReplayHandler();
+      this.closeReplayHandler = null;
+    }
   }
 }

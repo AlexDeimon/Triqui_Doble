@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { WebsocketService } from '../../services/websocket';
+import { ModalHistoryService } from '../../services/modal-history';
 import Swal from 'sweetalert2';
 
 import { ProfileModalComponent } from '../profile-modal/profile-modal';
@@ -39,18 +40,27 @@ export class LobbyComponent implements OnInit, OnDestroy {
   solitario: boolean = false;
   dificultadBot: string = 'facil';
 
-  constructor(private router: Router, public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef) { }
+  private closePerfilHandler: (() => void) | null = null;
+  private closeRankingHandler: (() => void) | null = null;
+  private closeTutorialHandler: (() => void) | null = null;
+  private closeConfigHandler: (() => void) | null = null;
+
+  constructor(private router: Router, public websocketService: WebsocketService, private ngZone: NgZone, private cd: ChangeDetectorRef, private modalHistory: ModalHistoryService) { }
 
   ngOnInit() {
     if(this.urlParams['primerLogin'] === 'true'){
       this.primerLogin = true;
+      const unregisterSwal = this.modalHistory.pushModal(() => {
+        if (Swal.isVisible()) Swal.close();
+      });
       Swal.fire({
         title: `Bienvenid@ ${this.websocketService.username} a Triqui Doble`,
         text: 'Para comenzar, ve al tutorial para aprender las reglas del juego',
         icon: 'success',
         background: '#16213e',
         color: '#fff',
-        confirmButtonColor: '#e94560'
+        confirmButtonColor: '#e94560',
+        didClose: () => unregisterSwal()
       });
     }
     if(this.verificarUsuario()){
@@ -65,30 +75,60 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   verificarUsuario = ():boolean => {
-  const usuario = localStorage.getItem('triqui_username');
-  if (usuario) {
-    return true;
+    const usuario = localStorage.getItem('triqui_username');
+    if (usuario) {
+      return true;
+    }
+    return false;
   }
-  return false;
-}
 
   abrirPerfil(username: string = this.websocketService.username) {
     this.selectedProfileUser = username;
-    this.mostrarRanking = false;
-    this.mostrarPerfil = true;
+    if (this.mostrarRanking) {
+      this.cerrarRanking();
+    }
+    if (!this.mostrarPerfil) {
+      this.mostrarPerfil = true;
+      this.closePerfilHandler = this.modalHistory.pushModal(() => {
+        this.mostrarPerfil = false;
+        this.selectedProfileUser = '';
+        this.cd.detectChanges();
+      });
+    }
   }
 
   cerrarPerfil() {
     this.mostrarPerfil = false;
     this.selectedProfileUser = '';
+    if (this.closePerfilHandler) {
+      this.closePerfilHandler();
+      this.closePerfilHandler = null;
+    }
+    this.cd.detectChanges();
   }
 
   abrirConfiguracionSala() {
-    this.mostrarConfiguracionSala = true;
+    if (!this.mostrarConfiguracionSala) {
+      this.mostrarConfiguracionSala = true;
+      this.closeConfigHandler = this.modalHistory.pushModal(() => {
+        this.mostrarConfiguracionSala = false;
+        this.resetConfigFields();
+        this.cd.detectChanges();
+      });
+    }
   }
 
   cerrarConfiguracionSala() {
     this.mostrarConfiguracionSala = false;
+    this.resetConfigFields();
+    if (this.closeConfigHandler) {
+      this.closeConfigHandler();
+      this.closeConfigHandler = null;
+    }
+    this.cd.detectChanges();
+  }
+
+  private resetConfigFields() {
     this.habilitarTemporizador = false;
     this.tiempoTemporizador = 15;
     this.objetivoJuego = 'triqui_doble';
@@ -161,7 +201,13 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.websocketService.obtenerRanking().subscribe({
       next: (ranking) => {
         this.ranking = ranking;
-        this.mostrarRanking = true;
+        if (!this.mostrarRanking) {
+          this.mostrarRanking = true;
+          this.closeRankingHandler = this.modalHistory.pushModal(() => {
+            this.mostrarRanking = false;
+            this.cd.detectChanges();
+          });
+        }
         this.cd.detectChanges();
       },
       error: (err) => {
@@ -172,16 +218,33 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   cerrarRanking() {
     this.mostrarRanking = false;
+    if (this.closeRankingHandler) {
+      this.closeRankingHandler();
+      this.closeRankingHandler = null;
+    }
+    this.cd.detectChanges();
   }
 
   verTutorial() {
-    this.mostrarTutorial = true;
+    if (!this.mostrarTutorial) {
+      this.mostrarTutorial = true;
+      this.closeTutorialHandler = this.modalHistory.pushModal(() => {
+        this.mostrarTutorial = false;
+        this.primerLogin = false;
+        this.cd.detectChanges();
+      });
+    }
   }
 
   cerrarTutorial() {
     this.mostrarTutorial = false;
     this.primerLogin = false;
-    this.router.navigate(['/lobby']);
+    if (this.closeTutorialHandler) {
+      this.closeTutorialHandler();
+      this.closeTutorialHandler = null;
+    }
+    this.cd.detectChanges();
+    this.router.navigate(['/lobby'], { replaceUrl: true });
   }
 
   iniciarPartidaPractica() {

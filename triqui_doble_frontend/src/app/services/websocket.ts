@@ -140,7 +140,7 @@ export class WebsocketService {
         this.roomId = '';
         localStorage.removeItem('triqui_roomId');
         this.gameState.set(null);
-        this.router.navigate(['/lobby']).then(() => {
+        this.router.navigate(['/lobby'], { replaceUrl: true }).then(() => {
           Swal.fire({
             title: msg,
             icon: 'warning',
@@ -199,7 +199,7 @@ export class WebsocketService {
           this.roomId = '';
           localStorage.removeItem('triqui_roomId');
           this.isReconnecting = false;
-          this.router.navigate(['/lobby']).then(() => {
+          this.router.navigate(['/lobby'], { replaceUrl: true }).then(() => {
             Swal.fire({
               title: 'Partida no encontrada',
               text: 'Te desconectaste de tu ultima partida, la cual ya finalizo',
@@ -400,7 +400,7 @@ export class WebsocketService {
   leaveRoom() {
     if (this.roomId) {
       this.abandonarSalaLocal();
-      this.router.navigate(['/lobby']);
+      this.router.navigate(['/lobby'], { replaceUrl: true });
     }
   }
 
