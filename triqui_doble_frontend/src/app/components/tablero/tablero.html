@@ -1,12 +1,6 @@
-<div *ngIf="mostrarModalVictoria" class="pantalla-victoria">
-  <ng-container *ngIf="myRole() !== GameRole.Espectador">
-    <button (click)="reiniciarJuego()" class="btn-primary">Reiniciar Juego</button>
-    <button (click)="volverAlMenu()" class="btn-primary">Volver al Menu</button>
-  </ng-container>
-</div>
 <div class="contenedor" *ngIf="gameState()">
   <h2 *ngIf="myRole() === GameRole.Espectador">{{ getNombreRol() }}</h2>
-  <div class="match-info-container" *ngIf="gameState()?.estado === 'jugando' && !gameState()?.ganador">
+  <div class="match-info-container" *ngIf="gameState()?.estado === 'jugando'">
     <div class="player-info player-x" [class.active-turn]="gameState()?.turnoActual?.startsWith('X')">
       <div class="player-icon" [style.color]="getSkinColor('X')" [style.text-shadow]="'0 0 20px ' + getSkinColor('X')"  >{{ getSkinIcon('X') }}</div>
       <div class="player-details">
@@ -16,7 +10,7 @@
         <div class="player-score">{{ getPuntos('X') }} pts</div>
       </div>
     </div>
-    <div class="timer-circle" *ngIf="gameState()?.configuracion?.temporizador && gameState()?.ultimaActualizacionTurno" [class.danger]="tiempoRestante() <= 10">
+    <div class="timer-circle" *ngIf="gameState()?.configuracion?.temporizador && gameState()?.ultimaActualizacionTurno && !gameState()?.ganador" [class.danger]="tiempoRestante() <= 10">
       <span class="timer-text">{{ tiempoRestante() }}</span>
     </div>
     <div class="player-info player-o" [class.active-turn]="gameState()?.turnoActual?.startsWith('O')">
@@ -29,8 +23,8 @@
       </div>
     </div>
   </div>
-  <div class="info-configuracion">
-    <div class="small-features-container" (click)="mostrarInfoConfiguracion()" style="cursor: pointer;">
+  <div class="info-configuracion" *ngIf="!gameState()?.ganador">
+    <div class="small-features-container" (click)="mostrarInfoConfiguracion()">
       <span class="feature-icon" [title]="'Objetivo: ' + (gameState()?.configuracion?.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble')">{{ gameState()?.configuracion?.objetivo === 'mayoria' ? '🏆' : '🎯' }}</span>
       <span class="feature-icon" [title]="'Selección: ' + (gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro')">{{ gameState()?.configuracion?.modoSeleccion === 'Aleatorio' ? '🎲' : '✨' }}</span>
       <span class="feature-icon" *ngIf="gameState()?.configuracion?.patronGanador !== 'Cualquiera'" [title]="'Patrón: ' + gameState()?.configuracion?.patronGanador">🧩</span>
@@ -80,7 +74,9 @@
       </div>
     </div>
   </div>
-  <button (click)="rendirse()" class="btn-primary" *ngIf="gameState()!.tableroActivo !== null && myRole() !== GameRole.Espectador">Rendirse</button>
+  <button (click)="rendirse()" class="btn-primary" *ngIf="gameState()!.tableroActivo !== null && myRole() !== GameRole.Espectador && !gameState()?.ganador">Rendirse</button>
+  <button *ngIf="gameState()?.ganador" class="btn-primary" (click)="reiniciarJuego()">Jugar de nuevo</button>
+  <button *ngIf="gameState()?.ganador" class="btn-primary" (click)="volverAlMenu()">Volver al menú</button>
 </div>
 <div class="chat-container" *ngIf="isChatEnabled" [class.open]="mostrarChat">
   <button class="chat-toggle-btn" (click)="toggleChat()">💬<span class="badge" *ngIf="mensajesNoLeidos > 0 && !mostrarChat">{{ mensajesNoLeidos }}</span></button>

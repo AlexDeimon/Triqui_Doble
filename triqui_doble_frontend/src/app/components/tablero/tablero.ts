@@ -36,7 +36,7 @@ export class TableroComponent implements OnInit, OnDestroy {
   chatSubscription?: Subscription;
   mensajesNoLeidos: number = 0;
   mostrarModalVictoria: boolean = false;
-  private timerVictoriaTimeout: any = null;
+
   private ultimoGanadorProcesado: string | null = null;
   @ViewChild('chatScroll') private chatScrollContainer!: ElementRef;
   private closePerfilHandler: (() => void) | null = null;
@@ -106,66 +106,56 @@ export class TableroComponent implements OnInit, OnDestroy {
             this.closeVictoriaHandler = null;
           }
 
-          if (this.timerVictoriaTimeout) {
-            clearTimeout(this.timerVictoriaTimeout);
+          this.closeVictoriaHandler = this.modalHistory.pushModal(() => {
+            this.mostrarModalVictoria = false;
+            this.cd.detectChanges();
+          });
+
+          const isTie = state.ganador === GameRole.Empate;
+          let title = '';
+
+          if (isTie) {
+            title = 'El juego ha terminado en empate.';
+          } else {
+            if (state.configuracion?.dosVsDos) {
+              const rol1 = `${state.ganador}1`;
+              const rol2 = `${state.ganador}2`;
+              const u1 = state.jugadores[rol1] !== null ? state.usernames[rol1] : null;
+              const u2 = state.jugadores[rol2] !== null ? state.usernames[rol2] : null;
+
+              if (u1 && u2) {
+                title = `Los jugadores ${u1} y ${u2} ${this.getSkinIcon(state.ganador)} han ganado la partida`;
+              } else if (u1 || u2) {
+                title = `El jugador ${u1 || u2} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
+              } else {
+                title = `El equipo ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
+              }
+            } else {
+              title = `El jugador ${state.usernames[state.ganador as string]} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
+            }
           }
 
-          this.timerVictoriaTimeout = setTimeout(() => {
-            this.mostrarModalVictoria = true;
-            this.closeVictoriaHandler = this.modalHistory.pushModal(() => {
-              this.mostrarModalVictoria = false;
-              this.cd.detectChanges();
-            });
+          const miRol = this.myRole();
+          const esGanador = miRol && miRol !== GameRole.Espectador && miRol.charAt(0) === state.ganador;
 
-            const isTie = state.ganador === GameRole.Empate;
-            let title = '';
-            let puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X')}`;
-            let puntosO = `${this.getSkinIcon('O')}: ${this.getPuntos('O')}`;
-            if (isTie) {
-              title = 'El juego ha terminado en empate.';
-            } else {
-              state.ganador === 'X' ? puntosX = `${this.getSkinIcon('X')}: ${this.getPuntos('X') + 50}` : puntosO = `${this.getSkinIcon('O')}: ${this.getPuntos('O') + 50}`;
+          if (!isTie && esGanador) {
+            this.lanzarConfeti();
+          }
 
-              if (state.configuracion?.dosVsDos) {
-                const rol1 = `${state.ganador}1`;
-                const rol2 = `${state.ganador}2`;
-                const u1 = state.jugadores[rol1] !== null ? state.usernames[rol1] : null;
-                const u2 = state.jugadores[rol2] !== null ? state.usernames[rol2] : null;
+          const unregisterSwal = this.modalHistory.pushModal(() => {
+            if (Swal.isVisible()) Swal.close();
+          });
 
-                if (u1 && u2) {
-                  title = `Los jugadores ${u1} y ${u2} ${this.getSkinIcon(state.ganador)} han ganado la partida`;
-                } else if (u1 || u2) {
-                  title = `El jugador ${u1 || u2} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
-                } else {
-                  title = `El equipo ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
-                }
-              } else {
-                title = `El jugador ${state.usernames[state.ganador as string]} ${this.getSkinIcon(state.ganador)} ha ganado la partida`;
-              }
-            }
+          Swal.fire({
+            title: title,
+            icon: isTie ? 'info' : 'success',
+            background: '#16213e',
+            color: '#fff',
+            confirmButtonColor: '#e94560',
+            didClose: () => unregisterSwal()
+          });
+          this.cd.detectChanges();
 
-            const miRol = this.myRole();
-            const esGanador = miRol && miRol !== GameRole.Espectador && miRol.charAt(0) === state.ganador;
-
-            if (!isTie && esGanador) {
-              this.lanzarConfeti();
-            }
-
-            const unregisterSwal = this.modalHistory.pushModal(() => {
-              if (Swal.isVisible()) Swal.close();
-            });
-
-            Swal.fire({
-              title: title,
-              text: `${puntosX} pts - ${puntosO} pts`,
-              icon: isTie ? 'info' : 'success',
-              background: '#16213e',
-              color: '#fff',
-              confirmButtonColor: '#e94560',
-              didClose: () => unregisterSwal()
-            });
-            this.cd.detectChanges();
-          }, 2000);
         } else if (!state?.ganador) {
           this.mostrarModalVictoria = false;
           if (this.closeVictoriaHandler) {
@@ -173,9 +163,6 @@ export class TableroComponent implements OnInit, OnDestroy {
             this.closeVictoriaHandler = null;
           }
           this.ultimoGanadorProcesado = null;
-          if (this.timerVictoriaTimeout) {
-            clearTimeout(this.timerVictoriaTimeout);
-          }
         }
 
         const isMajorChange = state?.estado !== previousState?.estado || prevCount !== newCount || state?.tableroActivo !== previousState?.tableroActivo;
@@ -212,9 +199,7 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.detenerTemporizadorLocal();
-    if (this.timerVictoriaTimeout) {
-      clearTimeout(this.timerVictoriaTimeout);
-    }
+
     if (this.websocketService.roomId) {
       this.websocketService.abandonarSalaLocal();
     }
@@ -397,7 +382,9 @@ export class TableroComponent implements OnInit, OnDestroy {
   getPuntos(team: string): number {
     const state = this.gameState();
     if (!state) return 0;
-    return state.tableros.filter(t => t.ganador === team).length * 10;
+    let result = state.tableros.filter(t => t.ganador === team).length * 10;
+    if (state?.ganador === team) result = result + 50;
+    return result;
   }
 
   get turnosFaltantesParaMover(): number {
@@ -500,10 +487,6 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   volverAlMenu() {
-    if (this.closeVictoriaHandler) {
-      this.closeVictoriaHandler();
-      this.closeVictoriaHandler = null;
-    }
     this.websocketService.leaveRoom();
   }
 
@@ -568,7 +551,7 @@ export class TableroComponent implements OnInit, OnDestroy {
       });
       Swal.fire({
         title: 'No tienes amigos',
-        text: 'Agrega amigos desde el lobby para poder invitarlos a jugar.',
+        text: 'Agrega amigos para poder invitarlos a jugar.',
         icon: 'info',
         background: '#16213e',
         color: '#fff',
