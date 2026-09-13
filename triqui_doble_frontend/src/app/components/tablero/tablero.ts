@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, NgZone, signal, effect, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { estadoJuego, GameRole } from '../../models/game';
+import { estadoJuego, GameRole, PATRONES_GANADORES, MAPEO_PATRONES, calcularIndicesTablerosGanadores, obtenerSkinEmoji, obtenerSkinColor, obtenerFondoGanador, esTableroDisponible, calcularTableroBorderColor, calcularTableroBoxShadow } from '../../models/game';
 import { WebsocketService } from '../../services/websocket';
 import { AudioService } from '../../services/audio';
 import { ModalHistoryService } from '../../services/modal-history';
@@ -290,24 +290,13 @@ export class TableroComponent implements OnInit, OnDestroy {
     if (!state || state.configuracion?.objetivo === 'mayoria' || !state.configuracion?.patronGanador || state.ganador) return false;
 
     const patron = state.configuracion.patronGanador;
-    const mapeoPatrones: { [key: string]: number } = {
-      'Fila Superior': 0, 'Fila Central': 1, 'Fila Inferior': 2,
-      'Columna Izquierda': 3, 'Columna Central': 4, 'Columna Derecha': 5,
-      'Diagonal 1-9': 6, 'Diagonal 3-7': 7
-    };
-    const patronesGanadores = [
-      [0, 1, 2], [3, 4, 5], [6, 7, 8],
-      [0, 3, 6], [1, 4, 7], [2, 5, 8],
-      [0, 4, 8], [2, 4, 6]
-    ];
-
     if (patron === 'Cualquiera') {
       return true;
     }
 
-    if (mapeoPatrones[patron] !== undefined) {
-      const index = mapeoPatrones[patron];
-      const celdasObjetivo = patronesGanadores[index];
+    if (MAPEO_PATRONES[patron] !== undefined) {
+      const index = MAPEO_PATRONES[patron];
+      const celdasObjetivo = PATRONES_GANADORES[index];
       const pos = state.tableros.findIndex(t => t.id === tableroId);
       return celdasObjetivo.includes(pos);
     }
@@ -316,15 +305,50 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   tableroActivo(tableroId: number): boolean {
     const state = this.gameState();
-    if (!state) return false;
+    if (!state || state.ganador) return false;
 
     if (state.tableroActivo === null) {
       const tablero = state.tableros.find(t => t.id === tableroId);
-      return tablero ? !tablero.celdas.every(c => c.valor !== null) : false;
+      return esTableroDisponible(tablero);
     }
 
     const pos = state.tableros.findIndex(t => t.id === tableroId);
     return state.tableroActivo === pos;
+  }
+
+  getTablerosGanadoresFinales(): Set<number> {
+    const state = this.gameState();
+    if (!state || !state.ganador || state.ganador === GameRole.Empate) return new Set();
+
+    const winningIndices = calcularIndicesTablerosGanadores(state.tableros, state.ganador, state.configuracion);
+    const winningBoardIds = new Set<number>();
+    winningIndices.forEach(idx => {
+      if (state.tableros[idx]) winningBoardIds.add(state.tableros[idx].id);
+    });
+
+    return winningBoardIds;
+  }
+
+  esTableroGanadorFinal(tableroId: number): boolean {
+    return this.getTablerosGanadoresFinales().has(tableroId);
+  }
+
+  getTableroBorderColor(tableroId: number): string {
+    const state = this.gameState();
+    if (!state) return '';
+    if (state.ganador && state.ganador !== GameRole.Empate) {
+      return calcularTableroBorderColor(this.esTableroGanadorFinal(tableroId), this.getSkinColor(state.ganador));
+    }
+    return calcularTableroBorderColor(this.tableroActivo(tableroId), this.getSkinColor(state.turnoActual));
+  }
+
+  getTableroBoxShadow(tableroId: number): string {
+    const state = this.gameState();
+    if (!state) return '';
+    if (state.ganador && state.ganador !== GameRole.Empate) {
+      return calcularTableroBoxShadow(this.esTableroGanadorFinal(tableroId), this.getSkinColor(state.ganador), 18);
+    }
+    return calcularTableroBoxShadow(this.tableroActivo(tableroId), this.getSkinColor(state.turnoActual), 15);
   }
 
   getNombreTurno(): string {
@@ -499,27 +523,15 @@ export class TableroComponent implements OnInit, OnDestroy {
   }
 
   getSkinIcon(valor: string | null): string {
-    if (!valor || valor === 'E') return valor || '';
-    const state = this.gameState();
-    if (!state || !state.skins) return valor.charAt(0);
-    const equipo = valor.charAt(0);
-    return state.skins[equipo]?.emoji || equipo;
+    return obtenerSkinEmoji(valor, this.gameState()?.skins);
   }
 
   getSkinColor(valor: string | null): string {
-    if (!valor || valor === 'E') return '';
-    const state = this.gameState();
-    if (!state || !state.skins) return '';
-    const equipo = valor.charAt(0);
-    return state.skins[equipo]?.color || '';
+    return obtenerSkinColor(valor, this.gameState()?.skins);
   }
 
   getCellBackground(ganador: string | null): string {
-    if (!ganador) return '';
-    if (ganador === 'E') return 'rgba(100, 100, 100, 0.3)';
-    const color = this.getSkinColor(ganador);
-    if (!color) return '';
-    return color + '99';
+    return obtenerFondoGanador(ganador, this.getSkinColor(ganador), '99');
   }
 
   isSkinOptionDisabled(tipo: 'emoji' | 'color', valor: string): boolean {

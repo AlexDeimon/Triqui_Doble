@@ -13,10 +13,30 @@
       <button class="btn-retry" (click)="cargarReplay()">Reintentar</button>
     </div>
     <ng-container *ngIf="!loading && !error && partida">
-      <div class="replay-players">
-        <div *ngFor="let j of jugadoresInfo" class="replay-player" [style.--player-color]="j.color">
+      <div class="replay-config-section">
+        <div *ngFor="let j of jugadoresInfo" class="replay-player replay-config-badge" [style.--player-color]="j.color">
           <span class="player-emoji">{{ j.emoji }}</span>
           <span class="player-name">{{ j.username }}</span>
+        </div>
+        <div class="replay-config-badge" [title]="partida.configuracion?.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble'">
+          <span class="badge-icon">{{ partida.configuracion?.objetivo === 'mayoria' ? '🏆' : '🎯' }}</span>
+          <span class="badge-text">{{ partida.configuracion?.objetivo === 'mayoria' ? 'Mayoría de Triquis' : 'Triqui Doble' }}</span>
+        </div>
+        <div class="replay-config-badge" *ngIf="partida.configuracion?.modoSeleccion">
+          <span class="badge-icon">{{ partida.configuracion.modoSeleccion === 'Aleatorio' ? '🎲' : '✨' }}</span>
+          <span class="badge-text">{{ partida.configuracion.modoSeleccion === 'Aleatorio' ? 'Aleatorio' : 'Regla de Oro' }}</span>
+        </div>
+        <div class="replay-config-badge" *ngIf="partida.configuracion?.patronGanador && partida.configuracion.patronGanador !== 'Cualquiera'">
+          <span class="badge-icon">🧩</span>
+          <span class="badge-text">{{ partida.configuracion.patronGanador }}</span>
+        </div>
+        <div class="replay-config-badge" *ngIf="partida.configuracion?.tablerosMoviles">
+          <span class="badge-icon">🔄</span>
+          <span class="badge-text">Tableros Móviles</span>
+        </div>
+        <div class="replay-config-badge" *ngIf="partida.configuracion?.robarTableros">
+          <span class="badge-icon">🥷</span>
+          <span class="badge-text">Robar Tableros</span>
         </div>
       </div>
       <div class="replay-step-info">
@@ -24,7 +44,7 @@
         <span class="step-counter">{{ stepIndex }} / {{ totalMoves }}</span>
       </div>
       <div class="replay-board-grid" *ngIf="currentState">
-        <div *ngFor="let tablero of currentState.tableros; let ti = index" class="replay-mini-board" [class.is-active]="tableroActivoEnEstado(ti)" [style.--active-color]="getSkinColor(currentState.turnoActual)">
+        <div *ngFor="let tablero of currentState.tableros; let ti = index" class="replay-mini-board" [class.is-active]="tableroActivoEnEstado(ti)" [class.is-winning-board]="esTableroGanadorEnReplay(ti)" [style.border-color]="getTableroBorderColor(ti)" [style.box-shadow]="getTableroBoxShadow(ti)">
           <div *ngFor="let celda of tablero.celdas" class="replay-celda" [class.last-move]="stepIndex > 0 && tablero.id === currentState.tableroId && celda.id === currentState.celdaId" [style.--cell-bg]="getCellBackground(tablero.ganador)">
             <span *ngIf="celda.valor" class="celda-icon" [style.--icon-color]="getSkinColor(celda.valor)">{{ getSkinEmoji(celda.valor) }}</span>
           </div>

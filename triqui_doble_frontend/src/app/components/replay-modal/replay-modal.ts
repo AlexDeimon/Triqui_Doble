@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WebsocketService } from '../../services/websocket';
+import { PATRONES_GANADORES, calcularIndicesTablerosGanadores, obtenerSkinEmoji, obtenerSkinColor, obtenerFondoGanador, esTableroDisponible, calcularTableroBorderColor, calcularTableroBoxShadow } from '../../models/game';
 
 interface Celda { id: number; valor: string | null; }
 interface Tablero { id: number; ganador: string | null; celdas: Celda[]; }
@@ -32,12 +33,6 @@ export class ReplayModalComponent implements OnChanges {
 
   states: BoardState[] = [];
   stepIndex: number = 0;
-
-  readonly patronesGanadores = [
-    [0,1,2],[3,4,5],[6,7,8],
-    [0,3,6],[1,4,7],[2,5,8],
-    [0,4,8],[2,4,6]
-  ];
 
   constructor(
     private websocketService: WebsocketService,
@@ -122,7 +117,7 @@ export class ReplayModalComponent implements OnChanges {
         const ganadorOriginal = tableros[tableroIndex].ganador;
         if (data.configuracion?.robarTableros || !ganadorOriginal) {
           const celdas = tableros[tableroIndex].celdas;
-          const marcoLinea = this.patronesGanadores
+          const marcoLinea = PATRONES_GANADORES
             .filter(patron => patron.includes(mov.celdaId))
             .some(patron => patron.every(idx => celdas[idx].valor === rol));
 
@@ -181,32 +176,105 @@ export class ReplayModalComponent implements OnChanges {
   goToEnd() { this.stepIndex = this.states.length - 1; }
 
   getSkinEmoji(rol: string | null): string {
-    if (!rol || rol === 'E') return '';
-    const equipo = rol.charAt(0);
-    return this.partida?.skins?.[equipo]?.emoji || equipo;
+    return obtenerSkinEmoji(rol, this.partida?.skins);
   }
 
   getSkinColor(rol: string | null): string {
-    if (!rol || rol === 'E') return '';
-    const equipo = rol.charAt(0);
-    return this.partida?.skins?.[equipo]?.color || (equipo === 'X' ? '#e94560' : '#4597e9');
+    return obtenerSkinColor(rol, this.partida?.skins, true);
   }
 
   getCellBackground(ganador: string | null): string {
-    if (!ganador) return '';
-    if (ganador === 'E') return 'rgba(100,100,100,0.3)';
-    const color = this.getSkinColor(ganador);
-    return color + '55';
+    return obtenerFondoGanador(ganador, this.getSkinColor(ganador), '55');
+  }
+
+  get winnerRole(): string | null {
+    if (!this.partida || !this.partida.ganador) return null;
+    const g = this.partida.ganador;
+    if (g === 'E' || g === 'Empate') return 'E';
+    if (g === 'X' || g === 'O') return g;
+
+    const u = this.partida.usernames;
+    if (u) {
+      if (u.X === g || u.X1 === g || u.X2 === g) return 'X';
+      if (u.O === g || u.O1 === g || u.O2 === g) return 'O';
+    }
+
+    if (this.partida.jugadorX && (this.partida.jugadorX === g || this.partida.jugadorX.split(',').includes(g))) return 'X';
+    if (this.partida.jugadorO && (this.partida.jugadorO === g || this.partida.jugadorO.split(',').includes(g))) return 'O';
+
+    const finalState = this.states[this.states.length - 1];
+    if (finalState) {
+      const tableros = finalState.tableros;
+      const countX = tableros.filter(t => t.ganador === 'X').length;
+      const countO = tableros.filter(t => t.ganador === 'O').length;
+      if (this.partida.configuracion?.objetivo === 'mayoria') {
+        if (countX >= 5 || countX > countO) return 'X';
+        if (countO >= 5 || countO > countX) return 'O';
+      }
+      for (const [a, b, c] of PATRONES_GANADORES) {
+        if (tableros[a]?.ganador && tableros[a].ganador === tableros[b]?.ganador && tableros[a].ganador === tableros[c]?.ganador) {
+          if (tableros[a].ganador !== 'E') return tableros[a].ganador;
+        }
+      }
+      if (countX > countO) return 'X';
+      if (countO > countX) return 'O';
+    }
+
+    return null;
+  }
+
+  getTablerosGanadoresFinales(): Set<number> {
+    const rolGanador = this.winnerRole;
+    if (!rolGanador || rolGanador === 'E') return new Set();
+
+    const finalState = this.states[this.states.length - 1];
+    if (!finalState) return new Set();
+
+    return calcularIndicesTablerosGanadores(finalState.tableros, rolGanador, this.partida?.configuracion);
+  }
+
+  esTableroGanadorEnReplay(tableroIndex: number): boolean {
+    if (this.stepIndex !== this.totalMoves) return false;
+    return this.getTablerosGanadoresFinales().has(tableroIndex);
   }
 
   tableroActivoEnEstado(tableroIndex: number): boolean {
-    if (this.stepIndex === this.totalMoves) return false;
+    if (this.stepIndex === this.totalMoves) {
+      return this.esTableroGanadorEnReplay(tableroIndex);
+    }
     const state = this.currentState;
     if (!state) return false;
     if (state.tableroActivo === null) {
-      return !state.tableros[tableroIndex].celdas.every(c => c.valor !== null);
+      return esTableroDisponible(state.tableros[tableroIndex]);
     }
     return state.tableroActivo === tableroIndex;
+  }
+
+  getTableroActiveColor(tableroIndex: number): string {
+    if (this.stepIndex === this.totalMoves && this.winnerRole && this.winnerRole !== 'E') {
+      return this.getSkinColor(this.winnerRole);
+    }
+    return this.currentState ? this.getSkinColor(this.currentState.turnoActual) : '';
+  }
+
+  getTableroBoxShadow(tableroIndex: number): string {
+    if (this.stepIndex === this.totalMoves) {
+      const isWinnerBoard = this.esTableroGanadorEnReplay(tableroIndex);
+      return calcularTableroBoxShadow(isWinnerBoard, this.getSkinColor(this.winnerRole), 15);
+    }
+    const isActive = this.tableroActivoEnEstado(tableroIndex);
+    const currentColor = this.currentState ? this.getSkinColor(this.currentState.turnoActual) : '';
+    return calcularTableroBoxShadow(isActive, currentColor, 15);
+  }
+
+  getTableroBorderColor(tableroIndex: number): string {
+    if (this.stepIndex === this.totalMoves) {
+      const isWinnerBoard = this.esTableroGanadorEnReplay(tableroIndex);
+      return calcularTableroBorderColor(isWinnerBoard, this.getSkinColor(this.winnerRole));
+    }
+    const isActive = this.tableroActivoEnEstado(tableroIndex);
+    const currentColor = this.currentState ? this.getSkinColor(this.currentState.turnoActual) : '';
+    return calcularTableroBorderColor(isActive, currentColor);
   }
 
   getUsername(rolLargo: string): string {
