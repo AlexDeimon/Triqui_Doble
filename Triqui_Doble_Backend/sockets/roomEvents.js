@@ -270,6 +270,18 @@ export const handleRoomEvents = (io, socket) => {
   }));
 
   socket.on('enviarMensajeChat', socketWrapper(socket, async ({ roomId, username, mensaje }) => {
-    io.to(roomId).emit('nuevoMensajeChat', { username, mensaje, time: Date.now() });
+    if (!roomId || !mensaje || !mensaje.trim()) return;
+    const msgObj = { username, mensaje: mensaje.trim(), time: Date.now() };
+    
+    const juegoJson = await redisClient.get(`juego:${roomId}`);
+    if (juegoJson) {
+      const juego = JSON.parse(juegoJson);
+      if (!juego.mensajesChat) juego.mensajesChat = [];
+      juego.mensajesChat.push(msgObj);
+      await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
+      resetearTimeoutInactividad(roomId, io);
+    }
+
+    io.to(roomId).emit('nuevoMensajeChat', msgObj);
   }));
 };

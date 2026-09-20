@@ -60,7 +60,8 @@ export const iniciarEstadoJuego = (roomId, is2v2) => {
     indiceTurnoActual: 0,
     cantidadTurnos: 0,
     puntajes: { X: 0, O: 0 },
-    movimientos: []
+    movimientos: [],
+    mensajesChat: []
   };
 };
 

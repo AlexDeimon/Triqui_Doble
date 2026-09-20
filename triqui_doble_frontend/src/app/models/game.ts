@@ -40,6 +40,7 @@ export interface estadoJuego {
   skins?: { [key: string]: { emoji: string; color: string; [key: string]: string } };
   jugadoresListos?: { [key: string]: boolean };
   salaPrivada?: boolean;
+  mensajesChat?: { username: string; mensaje: string; time: number }[];
 }
 
 export const PATRONES_GANADORES: readonly [number, number, number][] = [

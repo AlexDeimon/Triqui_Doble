@@ -167,6 +167,15 @@ export class TableroComponent implements OnInit, OnDestroy {
 
         const isMajorChange = state?.estado !== previousState?.estado || prevCount !== newCount || state?.tableroActivo !== previousState?.tableroActivo;
 
+        if (state?.mensajesChat && state.mensajesChat.length > 0) {
+          if (this.chatMessages.length === 0 || state.mensajesChat.length > this.chatMessages.length) {
+            this.chatMessages = [...state.mensajesChat];
+            if (this.mostrarChat) {
+              this.scrollToBottom();
+            }
+          }
+        }
+
         if (state && previousState && isMajorChange && 'startViewTransition' in document) {
           (document as any).startViewTransition(() => {
             this.gameState.set(state);
@@ -186,13 +195,22 @@ export class TableroComponent implements OnInit, OnDestroy {
       this.router.navigate(['/lobby'], { replaceUrl: true });
       return;
     }
+    const currentMsgs = this.websocketService.gameState()?.mensajesChat;
+    if (currentMsgs && currentMsgs.length > 0) {
+      this.chatMessages = [...currentMsgs];
+    }
+
     this.websocketService.actualizarAmigos();
     this.chatSubscription = this.websocketService.escucharChat().subscribe(msg => {
-      this.chatMessages.push(msg);
-      if (!this.mostrarChat) {
-        this.mensajesNoLeidos++;
-      } else {
-        this.scrollToBottom();
+      const alreadyInList = this.chatMessages.some(m => m.username === msg.username && m.mensaje === msg.mensaje && (m as any).time === (msg as any).time);
+      if (!alreadyInList) {
+        this.chatMessages.push(msg);
+        if (!this.mostrarChat) {
+          this.mensajesNoLeidos++;
+        } else {
+          this.scrollToBottom();
+        }
+        this.cd.detectChanges();
       }
     });
   }

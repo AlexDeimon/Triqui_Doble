@@ -60,6 +60,7 @@ export const handleGameEvents = (io, socket) => {
     nuevoJuego.jugadores = jugadoresRef;
     nuevoJuego.usernames = usernamesRef;
     nuevoJuego.configuracion = juego.configuracion;
+    nuevoJuego.mensajesChat = juego.mensajesChat || [];
     nuevoJuego.ultimaActualizacionTurno = null;
     if (nuevoJuego.ordenTurnos) {
       nuevoJuego.ordenTurnos = juego.ordenTurnos;
