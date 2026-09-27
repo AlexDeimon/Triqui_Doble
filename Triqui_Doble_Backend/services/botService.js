@@ -2,7 +2,9 @@ import { redisClient } from '../config/db.js';
 import * as gameController from '../controllers/game.js';
 import { turnTimeouts, resetearTimeoutInactividad, iniciarTimeoutTurno, emitirSalasDisponibles } from './roomService.js';
 
-const obtenerCeldaGanadora = (tablero, rol) => {
+const PESOS_TABLEROS = [3, 2, 3, 2, 4, 2, 3, 2, 3]; // Centro (4) vale 4, Esquinas valen 3, Bordes valen 2
+
+export const obtenerCeldaGanadora = (tablero, rol) => {
   for (const patron of gameController.patronesGanadores) {
     const [a, b, c] = patron;
     const celdas = [tablero.celdas[a], tablero.celdas[b], tablero.celdas[c]];
@@ -16,13 +18,394 @@ const obtenerCeldaGanadora = (tablero, rol) => {
   return null;
 };
 
-// --- Algoritmo Monte Carlo Tree Search (MCTS) para Dificultad Difícil ---
+// =========================================================================
+// MOTOR MINIMAX CON PODA ALFA-BETA PARA DIFICULTAD EXPERTO
+// =========================================================================
+
+// Clonación ultra-rápida de los tableros sin overhead de JSON
+const clonarTableros = (tableros) => {
+  return tableros.map(t => ({
+    id: t.id,
+    ganador: t.ganador,
+    celdas: t.celdas.map(c => ({ id: c.id, valor: c.valor }))
+  }));
+};
+
+// Aplica un movimiento en la simulación y retorna el nuevo estado ligero
+const aplicarMovimientoSimulado = (tableros, tableroActivo, tableroId, celdaId, rol, configuracion) => {
+  const nuevosTableros = tableros.map(t => {
+    if (t.id !== tableroId) return t;
+
+    const nuevasCeldas = t.celdas.map(c => c.id === celdaId ? { ...c, valor: rol } : c);
+    let nuevoGanador = t.ganador;
+
+    if (configuracion?.robarTableros || !nuevoGanador) {
+      const marcoLinea = gameController.patronesGanadores
+        .filter(patron => patron.includes(celdaId))
+        .some(patron => patron.every(idx => nuevasCeldas[idx].valor === rol));
+
+      if (marcoLinea && nuevoGanador !== rol) {
+        nuevoGanador = rol;
+      } else if (!nuevoGanador && nuevasCeldas.every(c => c.valor !== null)) {
+        nuevoGanador = 'EMPATE';
+      }
+    }
+
+    return {
+      id: t.id,
+      ganador: nuevoGanador,
+      celdas: nuevasCeldas
+    };
+  });
+
+  // Verificar ganador global
+  let ganadorGlobal = null;
+  if (configuracion?.objetivo === 'mayoria') {
+    const victX = nuevosTableros.filter(t => t.ganador === 'X').length;
+    const victO = nuevosTableros.filter(t => t.ganador === 'O').length;
+    if (victX >= 5) ganadorGlobal = 'X';
+    else if (victO >= 5) ganadorGlobal = 'O';
+    else if (nuevosTableros.every(t => t.ganador !== null)) {
+      if (victX > victO) ganadorGlobal = 'X';
+      else if (victO > victX) ganadorGlobal = 'O';
+      else ganadorGlobal = 'EMPATE';
+    }
+  } else {
+    const patron = configuracion?.patronGanador || 'Cualquiera';
+    ganadorGlobal = gameController.verificarGanador(nuevosTableros, 'ganador', patron);
+    if (!ganadorGlobal && nuevosTableros.every(t => t.ganador !== null)) {
+      ganadorGlobal = 'EMPATE';
+    }
+  }
+
+  // Calcular siguiente tablero activo siguiendo la regla del juego
+  let siguienteTableroActivo = null;
+  if (configuracion?.modoSeleccion === 'Aleatorio') {
+    siguienteTableroActivo = null;
+  } else {
+    const nextTablero = nuevosTableros[celdaId];
+    const isNextFull = nextTablero.celdas.every(c => c.valor !== null);
+
+    if (isNextFull) {
+      siguienteTableroActivo = null; // Tiro libre cuando el siguiente tablero está lleno
+    } else {
+      siguienteTableroActivo = celdaId;
+    }
+  }
+
+  return {
+    tableros: nuevosTableros,
+    tableroActivo: siguienteTableroActivo,
+    ganadorGlobal
+  };
+};
+
+// Obtener movimientos legales válidos para la simulación
+const obtenerMovimientosValidosSim = (tableros, tableroActivo, configuracion) => {
+  const movimientos = [];
+  if (tableroActivo !== null && tableros[tableroActivo]) {
+    const t = tableros[tableroActivo];
+    const estaLleno = t.celdas.every(c => c.valor !== null);
+
+    if (!estaLleno) {
+      for (const c of t.celdas) {
+        if (c.valor === null) {
+          movimientos.push({ tableroId: t.id, celdaId: c.id });
+        }
+      }
+      return movimientos;
+    }
+  }
+
+  for (const t of tableros) {
+    const estaLleno = t.celdas.every(c => c.valor !== null);
+    if (!estaLleno) {
+      for (const c of t.celdas) {
+        if (c.valor === null) {
+          movimientos.push({ tableroId: t.id, celdaId: c.id });
+        }
+      }
+    }
+  }
+  return movimientos;
+};
+
+// Función de Evaluación Heurística Multi-Modo
+const evaluarEstado = (tableros, tableroActivo, botRol, oponenteRol, configuracion) => {
+  let score = 0;
+
+  // 1. Objetivo: Mayoría de Triquis
+  if (configuracion?.objetivo === 'mayoria') {
+    let victBot = 0;
+    let victOponente = 0;
+    for (let i = 0; i < 9; i++) {
+      if (tableros[i].ganador === botRol) victBot++;
+      else if (tableros[i].ganador === oponenteRol) victOponente++;
+    }
+
+    score += (victBot - victOponente) * 1000;
+    if (victBot >= 5) return 100000;
+    if (victOponente >= 5) return -100000;
+    if (victBot === 4) score += 2500;
+    if (victOponente === 4) score -= 3500;
+  } else {
+    // 2. Objetivo: Triqui Doble Estándar o Patrón Específico
+    const patron = configuracion?.patronGanador || 'Cualquiera';
+    const lineasAEvaluar = (patron === 'Cualquiera' || !gameController.mapeoPatrones.hasOwnProperty(patron))
+      ? gameController.patronesGanadores
+      : [gameController.patronesGanadores[gameController.mapeoPatrones[patron]]];
+
+    for (const [a, b, c] of lineasAEvaluar) {
+      const gA = tableros[a].ganador;
+      const gB = tableros[b].ganador;
+      const gC = tableros[c].ganador;
+      const ganadores = [gA, gB, gC];
+
+      const countBot = ganadores.filter(g => g === botRol).length;
+      const countOponente = ganadores.filter(g => g === oponenteRol).length;
+      const countLibre = ganadores.filter(g => g === null).length;
+
+      if (countBot === 3) return 100000;
+      if (countOponente === 3) return -100000;
+
+      if (countBot === 2 && countLibre === 1) score += 2000;
+      if (countOponente === 2 && countLibre === 1) score -= 2500;
+      if (countBot === 1 && countLibre === 2) score += 250;
+      if (countOponente === 1 && countLibre === 2) score -= 250;
+    }
+
+    // Ponderación por control posicional de macro-tableros
+    for (let i = 0; i < 9; i++) {
+      if (tableros[i].ganador === botRol) {
+        score += 400 * PESOS_TABLEROS[i];
+      } else if (tableros[i].ganador === oponenteRol) {
+        score -= 400 * PESOS_TABLEROS[i];
+      }
+    }
+  }
+
+  // 3. Evaluación Micro (Celdas y líneas dentro de cada subtablero)
+  for (let i = 0; i < 9; i++) {
+    const t = tableros[i];
+    const estaLleno = t.celdas.every(c => c.valor !== null);
+    if (estaLleno) continue;
+
+    if (t.ganador !== null && !configuracion?.robarTableros) continue;
+
+    for (const [a, b, c] of gameController.patronesGanadores) {
+      const vA = t.celdas[a].valor;
+      const vB = t.celdas[b].valor;
+      const vC = t.celdas[c].valor;
+      const vals = [vA, vB, vC];
+
+      const cBot = vals.filter(v => v === botRol).length;
+      const cOponente = vals.filter(v => v === oponenteRol).length;
+      const cVacias = vals.filter(v => v === null).length;
+
+      if (cBot === 2 && cVacias === 1) {
+        score += (t.ganador === oponenteRol && configuracion?.robarTableros) ? 350 : 60;
+      }
+      if (cOponente === 2 && cVacias === 1) {
+        score -= (t.ganador === botRol && configuracion?.robarTableros) ? 400 : 80;
+      }
+      if (cBot === 1 && cVacias === 2) score += 10;
+      if (cOponente === 1 && cVacias === 2) score -= 10;
+    }
+
+    // Centro y esquinas locales
+    if (t.celdas[4].valor === botRol) score += 15;
+    else if (t.celdas[4].valor === oponenteRol) score -= 15;
+
+    for (const corner of [0, 2, 6, 8]) {
+      if (t.celdas[corner].valor === botRol) score += 6;
+      else if (t.celdas[corner].valor === oponenteRol) score -= 6;
+    }
+  }
+
+  // 4. Redirección y Control de Tablero Activo (solo si no es modo aleatorio)
+  if (configuracion?.modoSeleccion !== 'Aleatorio') {
+    if (tableroActivo === null) {
+      score -= 200; // Penalización por regalar tiro libre al oponente
+    } else if (tableros[tableroActivo]) {
+      const nextTab = tableros[tableroActivo];
+      const celdaGanadoraOponente = obtenerCeldaGanadora(nextTab, oponenteRol);
+      if (celdaGanadoraOponente !== null) {
+        score -= 450; // Penalización por enviar al oponente a un subtablero donde gana de inmediato
+      }
+    }
+  }
+
+  return score;
+};
+
+// Ordenamiento de jugadas para maximizar cortes en la Poda Alfa-Beta
+const ordenarMovimientos = (movimientos, tableros, rolActivo, rolRival, configuracion) => {
+  movimientos.sort((a, b) => {
+    let scoreA = 0;
+    let scoreB = 0;
+
+    const tabA = tableros.find(t => t.id === a.tableroId);
+    const tabB = tableros.find(t => t.id === b.tableroId);
+
+    if (tabA) {
+      if (obtenerCeldaGanadora(tabA, rolActivo) === a.celdaId) scoreA += 500;
+      if (obtenerCeldaGanadora(tabA, rolRival) === a.celdaId) scoreA += 300;
+      if (a.celdaId === 4) scoreA += 50;
+      else if ([0, 2, 6, 8].includes(a.celdaId)) scoreA += 20;
+    }
+
+    if (tabB) {
+      if (obtenerCeldaGanadora(tabB, rolActivo) === b.celdaId) scoreB += 500;
+      if (obtenerCeldaGanadora(tabB, rolRival) === b.celdaId) scoreB += 300;
+      if (b.celdaId === 4) scoreB += 50;
+      else if ([0, 2, 6, 8].includes(b.celdaId)) scoreB += 20;
+    }
+
+    return scoreB - scoreA;
+  });
+};
+
+// Algoritmo Minimax con Poda Alfa-Beta y control estricto de presupuesto de nodos
+const minimax = (tableros, tableroActivo, depth, isMaximizing, alpha, beta, botRol, oponenteRol, configuracion, tracker) => {
+  if (tracker.nodes++ > 10000) {
+    return evaluarEstado(tableros, tableroActivo, botRol, oponenteRol, configuracion);
+  }
+
+  const legalMoves = obtenerMovimientosValidosSim(tableros, tableroActivo, configuracion);
+
+  if (depth <= 0 || legalMoves.length === 0) {
+    return evaluarEstado(tableros, tableroActivo, botRol, oponenteRol, configuracion);
+  }
+
+  const currentRol = isMaximizing ? botRol : oponenteRol;
+
+  if (isMaximizing) {
+    let maxEval = -Infinity;
+    ordenarMovimientos(legalMoves, tableros, botRol, oponenteRol, configuracion);
+
+    for (const move of legalMoves) {
+      const { tableros: nextTableros, tableroActivo: nextTableroActivo, ganadorGlobal } =
+        aplicarMovimientoSimulado(tableros, tableroActivo, move.tableroId, move.celdaId, currentRol, configuracion);
+
+      if (ganadorGlobal === botRol) {
+        return 100000 + depth;
+      }
+
+      let evalScore;
+      if (ganadorGlobal === oponenteRol) {
+        evalScore = -100000 - depth;
+      } else if (ganadorGlobal === 'EMPATE') {
+        evalScore = 0;
+      } else {
+        const nextDepth = (nextTableroActivo === null || legalMoves.length > 20) ? depth - 2 : depth - 1;
+        evalScore = minimax(nextTableros, nextTableroActivo, nextDepth, false, alpha, beta, botRol, oponenteRol, configuracion, tracker);
+      }
+
+      maxEval = Math.max(maxEval, evalScore);
+      alpha = Math.max(alpha, evalScore);
+      if (beta <= alpha) break; // Corte Alfa-Beta
+    }
+    return maxEval;
+  } else {
+    let minEval = Infinity;
+    ordenarMovimientos(legalMoves, tableros, oponenteRol, botRol, configuracion);
+
+    for (const move of legalMoves) {
+      const { tableros: nextTableros, tableroActivo: nextTableroActivo, ganadorGlobal } =
+        aplicarMovimientoSimulado(tableros, tableroActivo, move.tableroId, move.celdaId, currentRol, configuracion);
+
+      if (ganadorGlobal === oponenteRol) {
+        return -100000 - depth;
+      }
+
+      let evalScore;
+      if (ganadorGlobal === botRol) {
+        evalScore = 100000 + depth;
+      } else if (ganadorGlobal === 'EMPATE') {
+        evalScore = 0;
+      } else {
+        const nextDepth = (nextTableroActivo === null || legalMoves.length > 20) ? depth - 2 : depth - 1;
+        evalScore = minimax(nextTableros, nextTableroActivo, nextDepth, true, alpha, beta, botRol, oponenteRol, configuracion, tracker);
+      }
+
+      minEval = Math.min(minEval, evalScore);
+      beta = Math.min(beta, evalScore);
+      if (beta <= alpha) break; // Corte Alfa-Beta
+    }
+    return minEval;
+  }
+};
+
+// Función principal para la Dificultad Experto
+const obtenerMejorMovimientoExperto = (juego, botRol) => {
+  const oponenteRol = botRol === 'X' ? 'O' : 'X';
+  const configuracion = juego.configuracion || {};
+  const tableros = clonarTableros(juego.tableros);
+  const tableroActivo = juego.tableroActivo;
+
+  const legalMoves = obtenerMovimientosValidosSim(tableros, tableroActivo, configuracion);
+  if (legalMoves.length === 0) return null;
+  if (legalMoves.length === 1) return legalMoves[0];
+
+  // 1. FAST CHECK: Victoria inmediata en 1 movimiento
+  for (const move of legalMoves) {
+    const res = aplicarMovimientoSimulado(tableros, tableroActivo, move.tableroId, move.celdaId, botRol, configuracion);
+    if (res.ganadorGlobal === botRol) {
+      return move;
+    }
+  }
+
+  // 2. Profundidad dinámica adaptativa según modo de juego
+  let depth = 4;
+  if (configuracion.modoSeleccion === 'Aleatorio') {
+    depth = 2; // En modo aleatorio, el siguiente tablero es probabilístico (evita explosión 80^N)
+  } else if (tableroActivo === null || legalMoves.length > 15) {
+    depth = 3; // En tiro libre, profundidad 3 es instantánea y muy precisa
+  }
+
+  ordenarMovimientos(legalMoves, tableros, botRol, oponenteRol, configuracion);
+
+  let bestMove = legalMoves[0];
+  let bestScore = -Infinity;
+  let alpha = -Infinity;
+  const beta = Infinity;
+  const tracker = { nodes: 0 };
+
+  for (const move of legalMoves) {
+    const { tableros: nextTableros, tableroActivo: nextTableroActivo, ganadorGlobal } =
+      aplicarMovimientoSimulado(tableros, tableroActivo, move.tableroId, move.celdaId, botRol, configuracion);
+
+    let score;
+    if (ganadorGlobal === botRol) {
+      score = 100000;
+    } else if (ganadorGlobal === oponenteRol) {
+      score = -100000;
+    } else if (ganadorGlobal === 'EMPATE') {
+      score = 0;
+    } else {
+      const nextDepth = (nextTableroActivo === null || legalMoves.length > 20) ? depth - 2 : depth - 1;
+      score = minimax(nextTableros, nextTableroActivo, nextDepth, false, alpha, beta, botRol, oponenteRol, configuracion, tracker);
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+    alpha = Math.max(alpha, bestScore);
+  }
+
+  return bestMove;
+};
+
+// =========================================================================
+// === ALGORITMO MONTE CARLO TREE SEARCH (MCTS) PARA DIFICULTAD DIFÍCIL ===
+// =========================================================================
 
 class MCTSNode {
   constructor(juego, parent = null, lastMove = null) {
-    this.juego = juego; // Clon del estado del juego
+    this.juego = juego;
     this.parent = parent;
-    this.lastMove = lastMove; // { tableroId, celdaId }
+    this.lastMove = lastMove;
     this.children = [];
     this.visits = 0;
     this.wins = 0;
@@ -55,11 +438,7 @@ const obtenerMovimientosLegales = (juego) => {
   let tableroId = juego.tableroActivo !== null ? juego.tableros[juego.tableroActivo].id : null;
   
   if (tableroId === null) {
-    const tablerosDisponibles = juego.tableros.filter(t => {
-      const estaLleno = t.celdas.every(c => c.valor !== null);
-      const tieneGanador = t.ganador !== null;
-      return !estaLleno && (juego.configuracion?.robarTableros || !tieneGanador);
-    });
+    const tablerosDisponibles = juego.tableros.filter(t => !t.celdas.every(c => c.valor !== null));
     
     const movimientos = [];
     for (const t of tablerosDisponibles) {
@@ -93,8 +472,7 @@ const backpropagate = (node, result) => {
   }
 };
 
-// Ejecuta la búsqueda MCTS durante un tiempo determinado (500ms para evitar sobrecargar)
-const runMCTS = (juegoOriginal, timeLimitMs = 1000) => {
+const runMCTS = (juegoOriginal, timeLimitMs = 500) => {
   const rootJuego = JSON.parse(JSON.stringify(juegoOriginal));
   rootJuego.isSimulation = true;
   const root = new MCTSNode(rootJuego);
@@ -180,6 +558,10 @@ const runMCTS = (juegoOriginal, timeLimitMs = 1000) => {
   return bestMoveNode ? bestMoveNode.lastMove : null;
 };
 
+// =========================================================================
+// === CONTROLADOR DE TURNO DEL BOT (FÁCIL, INTERMEDIO, DIFÍCIL, EXPERTO) ===
+// =========================================================================
+
 export const jugarTurnoBot = async (roomId, io) => {
   let dificultad = 'facil';
   try {
@@ -192,10 +574,12 @@ export const jugarTurnoBot = async (roomId, io) => {
     console.error('[Error Bot] Al obtener configuración inicial:', err);
   }
 
-  // Si es difícil, usamos menos delay inicial porque MCTS toma 1000ms en calcular
-  const tiempoPensamiento = dificultad === 'dificil'
-    ? Math.floor(Math.random() * 1000) + 1000  // 1000ms - 2000ms
-    : Math.floor(Math.random() * 1500) + 1000; // 1000ms - 2500ms
+  // Tiempo de pensamiento dinámico y natural
+  const tiempoPensamiento = (dificultad === 'experto')
+    ? Math.floor(Math.random() * 400) + 400  // 400ms - 800ms
+    : (dificultad === 'dificil')
+    ? Math.floor(Math.random() * 600) + 600  // 600ms - 1200ms
+    : Math.floor(Math.random() * 1200) + 800; // 800ms - 2000ms
   
   setTimeout(async () => {
     try {
@@ -213,24 +597,28 @@ export const jugarTurnoBot = async (roomId, io) => {
       let tableroId = juego.tableroActivo !== null ? juego.tableros[juego.tableroActivo].id : null;
       let celdaId = null;
 
-      // Si es difícil, ejecutamos MCTS (Monte Carlo Tree Search)
-      if (juego.configuracion?.dificultadBot === 'dificil') {
-        const mctsMove = runMCTS(juego, 500); // Pensamiento MCTS de 500ms
+      // 1. Dificultad EXPERTO: Minimax con Poda Alfa-Beta y Heurística Multi-Modo
+      if (juego.configuracion?.dificultadBot === 'experto') {
+        const expertoMove = obtenerMejorMovimientoExperto(juego, botRol);
+        if (expertoMove) {
+          tableroId = expertoMove.tableroId;
+          celdaId = expertoMove.celdaId;
+        }
+      }
+
+      // 2. Dificultad DIFÍCIL: Monte Carlo Tree Search (MCTS)
+      if (celdaId === null && juego.configuracion?.dificultadBot === 'dificil') {
+        const mctsMove = runMCTS(juego, 500);
         if (mctsMove) {
           tableroId = mctsMove.tableroId;
           celdaId = mctsMove.celdaId;
         }
       }
 
-      // Si no es difícil, o si el MCTS falló como fallback
+      // 3. Dificultad INTERMEDIO / FÁCIL / Fallback
       if (celdaId === null) {
         if (tableroId === null) {
-          const tablerosDisponibles = juego.tableros.filter(t => {
-            const estaLleno = t.celdas.every(c => c.valor !== null);
-            const tieneGanador = t.ganador !== null;
-            return !estaLleno && (juego.configuracion?.robarTableros || !tieneGanador);
-          });
-          
+          const tablerosDisponibles = juego.tableros.filter(t => !t.celdas.every(c => c.valor !== null));
           if (tablerosDisponibles.length === 0) return;
           
           const randomIndex = Math.floor(Math.random() * tablerosDisponibles.length);
@@ -261,9 +649,7 @@ export const jugarTurnoBot = async (roomId, io) => {
             const esTableroSeguro = (indice) => {
               const t = juego.tableros[indice];
               if (!t) return false;
-              const estaLleno = t.celdas.every(c => c.valor !== null);
-              const tieneGanador = t.ganador !== null;
-              return !estaLleno && (!tieneGanador || juego.configuracion?.robarTableros);
+              return !t.celdas.every(c => c.valor !== null);
             };
 
             const celdasSeguras = celdasVacias.filter(c => esTableroSeguro(c.id));
