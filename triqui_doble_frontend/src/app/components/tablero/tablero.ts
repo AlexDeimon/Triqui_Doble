@@ -21,6 +21,12 @@ import confetti from 'canvas-confetti';
 
 export class TableroComponent implements OnInit, OnDestroy {
   public GameRole = GameRole;
+  // public coloresDisponibles: string[] = ['#e94560', '#4597e9', '#ffb52a', '#28a745', '#9b59b6', '#00f2fe'];
+  // public emojisDisponibles: string[] = ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '♥️', '♦️', '♣️', '♠️'];
+
+  public coloresDisponibles: string[] = ['#ff7518', '#8b00ff', '#39ff14', '#b30000', '#00e5ff', '#e6e6fa'];
+  public emojisDisponibles: string[] = ['🎃','👻','💀','🧛','🧙','🧟','🕷️','🦇','🍬','🕯️','🕸️','⚰️'];
+
   animarPatron = signal<boolean>(false);
   gameState = signal<estadoJuego | null>(null);
   myRole = this.websocketService.myRole;
@@ -151,7 +157,10 @@ export class TableroComponent implements OnInit, OnDestroy {
             icon: isTie ? 'info' : 'success',
             background: '#16213e',
             color: '#fff',
-            confirmButtonColor: '#e94560',
+            confirmButtonColor: '#ff7518',
+            customClass: {
+              popup: 'halloween-victory-popup'
+            },
             didClose: () => unregisterSwal()
           });
           this.cd.detectChanges();
@@ -496,10 +505,10 @@ export class TableroComponent implements OnInit, OnDestroy {
       html: htmlContent,
       background: '#16213e',
       color: '#fff',
-      confirmButtonColor: '#e94560',
+      confirmButtonColor: '#ff7518',
       confirmButtonText: 'Entendido',
       customClass: {
-        popup: 'glass-modal'
+        popup: 'halloween-victory-popup'
       },
       didClose: () => unregisterSwal()
     });
@@ -515,11 +524,14 @@ export class TableroComponent implements OnInit, OnDestroy {
       icon: 'warning',
       background: '#16213e',
       color: '#fff',
-      confirmButtonColor: '#e94560',
+      confirmButtonColor: '#ff7518',
       showCancelButton: true,
-      cancelButtonColor: '#6c757d',
+      cancelButtonColor: '#4a154b',
       confirmButtonText: 'Sí, rendirme',
       cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'halloween-victory-popup'
+      },
       didClose: () => unregisterSwal()
     }).then((result) => {
       if (result.isConfirmed) {
@@ -719,6 +731,7 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   lanzarConfeti() {
     try {
+      /*
       confetti({
         particleCount: 100,
         spread: 70,
@@ -741,6 +754,52 @@ export class TableroComponent implements OnInit, OnDestroy {
           zIndex: 99999
         });
       }, 250);
+      */
+      const halloweenColors = ['#ff7518', '#8b00ff', '#39ff14', '#ffffff', '#ff0055'];
+
+      confetti({
+        particleCount: 90,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: halloweenColors,
+        zIndex: 99999
+      });
+
+      setTimeout(() => {
+        const pumpkinShape = confetti.shapeFromText({ text: '🎃', scalar: 2 });
+        const ghostShape = confetti.shapeFromText({ text: '👻', scalar: 2 });
+        const candyShape = confetti.shapeFromText({ text: '🍬', scalar: 2 });
+        const skullShape = confetti.shapeFromText({ text: '💀', scalar: 2 });
+
+        confetti({
+          particleCount: 25,
+          angle: 60,
+          spread: 60,
+          origin: { x: 0 },
+          shapes: [pumpkinShape, ghostShape, candyShape, skullShape],
+          scalar: 2,
+          zIndex: 99999
+        });
+
+        confetti({
+          particleCount: 25,
+          angle: 120,
+          spread: 60,
+          origin: { x: 1 },
+          shapes: [pumpkinShape, ghostShape, candyShape, skullShape],
+          scalar: 2,
+          zIndex: 99999
+        });
+
+        confetti({
+          particleCount: 50,
+          spread: 100,
+          origin: { y: 0.5 },
+          colors: halloweenColors,
+          zIndex: 99999
+        });
+      }, 260);
+
     } catch (e) {
       console.error('Error lanzando confeti:', e);
     }

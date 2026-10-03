@@ -1,0 +1,319 @@
+/* TEMPORADA HALLOWEEN: ESTILOS Y AMBIENTACIÓN */
+
+body {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(139, 0, 255, 0.22) 0%, transparent 60%),
+    radial-gradient(circle at 10% 90%, rgba(255, 117, 24, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(57, 255, 20, 0.08) 0%, transparent 40%),
+    linear-gradient(135deg, #0f0a1c 0%, #171026 45%, #0a1128 100%) !important;
+  background-attachment: fixed !important;
+}
+
+.halloween-spooky-glow {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(139, 0, 255, 0.22) 0%, transparent 60%),
+    radial-gradient(circle at 10% 90%, rgba(255, 117, 24, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(57, 255, 20, 0.08) 0%, transparent 40%),
+    linear-gradient(135deg, #0f0a1c 0%, #171026 45%, #0a1128 100%);
+  background-attachment: fixed;
+}
+
+.halloween-decorations {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.halloween-web {
+  position: absolute;
+  top: 0;
+  width: 140px;
+  height: 140px;
+  opacity: 0.42;
+  filter: drop-shadow(0 0 8px rgba(255, 117, 24, 0.25));
+  transition: opacity 0.3s ease;
+}
+
+.halloween-web-left {
+  left: 0;
+}
+
+.halloween-web-right {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.halloween-bat {
+  position: absolute;
+  user-select: none;
+  filter: drop-shadow(0 0 10px rgba(139, 0, 255, 0.6));
+  will-change: transform, opacity;
+}
+
+.halloween-bat-1 {
+  top: 18%;
+  left: -60px;
+  font-size: 2.8rem;
+  animation: flyBatOne 18s ease-in-out infinite;
+}
+
+.halloween-bat-2 {
+  top: 42%;
+  right: -60px;
+  font-size: 2.3rem;
+  animation: flyBatTwo 24s ease-in-out infinite 6s;
+}
+
+.halloween-bat-3 {
+  top: 10%;
+  right: -60px;
+  font-size: 2.5rem;
+  animation: flyBatThree 21s ease-in-out infinite 12s;
+}
+
+@keyframes flyBatOne {
+  0% {
+    transform: translate(0, 0) scale(0.7) rotate(15deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.85;
+  }
+  48% {
+    transform: translate(55vw, 15vh) scale(1.1) rotate(-10deg);
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(110vw, -10vh) scale(0.6) rotate(20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flyBatTwo {
+  0% {
+    transform: translate(0, 0) scaleX(-1) scale(0.6) rotate(-15deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate(-55vw, -12vh) scaleX(-1) scale(1) rotate(12deg);
+    opacity: 0.85;
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-110vw, 8vh) scaleX(-1) scale(0.5) rotate(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flyBatThree {
+  0% {
+    transform: translate(0, 0) scaleX(-1) scale(0.5) rotate(-20deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  45% {
+    transform: translate(-50vw, 22vh) scaleX(-1) scale(0.9) rotate(8deg);
+    opacity: 0.85;
+  }
+  88% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-110vw, 5vh) scaleX(-1) scale(0.5) rotate(-15deg);
+    opacity: 0;
+  }
+}
+
+.halloween-title {
+  font-family: 'Creepster', cursive, sans-serif !important;
+  letter-spacing: 2px !important;
+  color: #ff7518 !important;
+  text-shadow:
+    0 0 10px rgba(255, 117, 24, 0.7),
+    0 0 35px rgba(255, 117, 24, 0.4) !important;
+}
+
+.halloween-spooky-text,
+ h4 {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif !important;
+  letter-spacing: 1.2px !important;
+  font-size: 1.15em !important;
+}
+
+.ranking-content,
+.replay-modal,
+.skin-overlay,
+.swal2-popup {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(139, 0, 255, 0.3) 0%, transparent 60%),
+    radial-gradient(circle at 10% 90%, rgba(255, 117, 24, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(57, 255, 20, 0.1) 0%, transparent 40%),
+    linear-gradient(135deg, #110822 0%, #1a102f 45%, #0e1530 100%) !important;
+  border: 1px solid rgba(255, 117, 24, 0.35) !important;
+  box-shadow: 0 0 30px rgba(139, 0, 255, 0.4), 0 0 15px rgba(255, 117, 24, 0.25) !important;
+}
+
+.ranking-content *:not(h1):not(h2):not(h3):not(.halloween-title):not(.skin-btn):not(.feature-btn):not(.btn-close):not(.preview-mini-cell):not(.preview-macro-cell),
+.replay-modal *:not(h1):not(h2):not(h3):not(.halloween-title):not(.btn-close-replay):not(.player-emoji):not(.celda-simulada):not(.tablero-pequeno-simulado),
+.skin-overlay *:not(h1):not(h2):not(h3):not(.halloween-title):not(.skin-btn) {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif;
+  letter-spacing: 1px;
+}
+
+.ranking-content table,
+.ranking-content label,
+.ranking-content select,
+.ranking-content input,
+.ranking-content button,
+.ranking-content p,
+.ranking-content span,
+.replay-modal p,
+.replay-modal span,
+.replay-modal button,
+.skin-overlay button,
+.skin-overlay small {
+  font-size: 1.15rem;
+}
+
+.btn-primary,
+button.btn-primary {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif !important;
+  font-size: 1.4rem !important;
+  letter-spacing: 1.5px !important;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+}
+
+h1, h2, h3 {
+  font-family: 'Creepster', cursive, sans-serif !important;
+  letter-spacing: 2px;
+  color: var(--primary, #ff7518);
+  text-shadow:
+    0 0 10px rgba(255, 117, 24, 0.6),
+    0 0 20px rgba(139, 0, 255, 0.4);
+}
+
+.celda:hover:not(:has(span)) {
+  background-color: rgba(255, 117, 24, 0.15) !important;
+  box-shadow: inset 0 0 12px rgba(255, 117, 24, 0.4);
+}
+
+.player-details {
+  border-color: rgba(255, 117, 24, 0.3) !important;
+  box-shadow: 0 4px 15px rgba(139, 0, 255, 0.25) !important;
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif;
+  letter-spacing: 1px;
+}
+
+.player-names span {
+  font-size: 1.25rem;
+}
+
+.player-score {
+  font-size: 1.3rem !important;
+}
+
+.chat-panel {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(139, 0, 255, 0.25) 0%, transparent 70%),
+    linear-gradient(135deg, #110822 0%, #16213e 100%) !important;
+  border: 1px solid rgba(255, 117, 24, 0.4) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 117, 24, 0.2) !important;
+}
+
+.chat-panel h4 {
+  margin: 0;
+  font-size: 1.3rem !important;
+}
+
+.chat-messages .message {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.8px;
+}
+
+.login-container p {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+}
+
+.ranking-table th {
+  font-family: 'Creepster', cursive, sans-serif !important;
+  font-size: 1.2rem !important;
+  letter-spacing: 1.5px !important;
+  color: var(--primary, #ff7518) !important;
+}
+
+.ranking-table td {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif !important;
+  font-size: 1.3rem !important;
+  letter-spacing: 1px !important;
+}
+
+.timer-circle {
+  border-color: var(--primary, #ff7518) !important;
+  box-shadow: 0 0 20px rgba(255, 117, 24, 0.7), 0 0 40px rgba(139, 0, 255, 0.4) !important;
+}
+
+.timer-circle.danger {
+  border-color: #b30000 !important;
+  box-shadow: 0 0 25px #b30000 !important;
+}
+
+.timer-circle .timer-text {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif !important;
+  color: #ff6d00 !important;
+  font-size: 3rem !important;
+  letter-spacing: 1px !important;
+}
+
+.timer-circle.danger .timer-text {
+  color: #b30000 !important;
+}
+
+.swal2-actions button,
+.swal2-confirm,
+.swal2-cancel {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif !important;
+  font-size: 1.4rem !important;
+  letter-spacing: 1.5px !important;
+  border-radius: 20px !important;
+  padding: 8px 24px !important;
+  transition: all 0.2s ease !important;
+}
+
+.swal2-confirm {
+  background: linear-gradient(135deg, #ff7518 0%, #d85000 100%) !important;
+  box-shadow: 0 0 15px rgba(255, 117, 24, 0.6) !important;
+  border: none !important;
+}
+
+.swal2-cancel {
+  background: linear-gradient(135deg, #5b1062 0%, #300835 100%) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 117, 24, 0.4) !important;
+  box-shadow: 0 0 10px rgba(139, 0, 255, 0.4) !important;
+}
+
+.swal2-confirm:hover,
+.swal2-cancel:hover {
+  transform: scale(1.05) !important;
+}
+
+.swal2-html-container {
+  font-family: 'Jolly Lodger', 'Creepster', cursive, sans-serif !important;
+  font-size: 1.3rem !important;
+  letter-spacing: 1px !important;
+}

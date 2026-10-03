@@ -41,18 +41,18 @@
       <button (click)="abrirInvitacionAmigos()" class="btn-primary">Invitar Amigos</button>
     </div>
     <div class="skin-overlay" *ngIf="gameState()?.estado === 'seleccionando_skin' && myRole() !== GameRole.Espectador">
-      <h3>Elige tu Estilo</h3>
+      <h3 class="halloween-title">🎃 Elige tu Estilo 🎃</h3>
       <div class="skin-sections">
         <div class="skin-section">
           <h4>Colores</h4>
           <div class="skin-options">
-            <button *ngFor="let color of ['#e94560', '#4597e9', '#ffb52a', '#28a745', '#9b59b6', '#00f2fe']" class="skin-btn" [style.background]="color" (click)="seleccionarSkin('color', color)" [class.disabled]="isSkinOptionDisabled('color', color)" [class.selected]="getSkinColor(myRole()) === color"></button>
+            <button *ngFor="let color of coloresDisponibles" class="skin-btn" [style.background]="color" (click)="seleccionarSkin('color', color)" [class.disabled]="isSkinOptionDisabled('color', color)" [class.selected]="getSkinColor(myRole()) === color"></button>
           </div>
         </div>
         <div class="skin-section">
           <h4>Íconos</h4>
           <div class="skin-options">
-            <button *ngFor="let emoji of ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '♥️', '♦️', '♣️', '♠️']" class="skin-btn" (click)="seleccionarSkin('emoji', emoji)" [class.disabled]="isSkinOptionDisabled('emoji', emoji)" [class.selected]="getSkinIcon(myRole()) === emoji">{{ emoji }}</button>
+            <button *ngFor="let emoji of emojisDisponibles" class="skin-btn" (click)="seleccionarSkin('emoji', emoji)" [class.disabled]="isSkinOptionDisabled('emoji', emoji)" [class.selected]="getSkinIcon(myRole()) === emoji">{{ emoji }}</button>
           </div>
         </div>
       </div>

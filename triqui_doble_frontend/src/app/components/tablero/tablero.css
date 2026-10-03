@@ -640,3 +640,25 @@ h2 {
     width: calc(100vw - 40px);
   }
 }
+
+/* MODAL DE VICTORIA HALLOWEEN */
+
+:host ::ng-deep .swal2-popup.halloween-victory-popup {
+  border: 2px solid #ff7518;
+  box-shadow: 0 0 25px rgba(255, 117, 24, 0.5), 0 0 50px rgba(139, 0, 255, 0.3);
+  background: radial-gradient(circle at 50% 20%, #2a1240 0%, #16213e 85%);
+}
+
+:host ::ng-deep .swal2-popup.halloween-victory-popup .swal2-title {
+  font-family: 'Creepster', cursive, sans-serif;
+  font-size: 2rem;
+  letter-spacing: 2px;
+  color: #ff7518;
+  text-shadow: 0 0 10px rgba(255, 117, 24, 0.8), 0 0 20px rgba(139, 0, 255, 0.7);
+}
+
+:host ::ng-deep .swal2-popup.halloween-victory-popup .swal2-confirm {
+  box-shadow: 0 0 15px rgba(255, 117, 24, 0.5);
+  border-radius: 20px;
+  font-weight: bold;
+}

@@ -24,7 +24,8 @@ export class ProfileModalComponent implements OnChanges {
   queryBusqueda: string = '';
   resultadosBusqueda: any[] = [];
   perfilTabActive: number = 0;
-  iconosPerfil: string[] = ['🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '🥷', '♥️', '♦️', '♣️', '♠️'];
+  // iconosPerfil: string[] = ['🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '🥷', '♥️', '♦️', '♣️', '♠️'];
+  iconosPerfil: string[] = ['🎃', '👻', '💀', '🧛', '🧙', '🧟', '🕷️', '🦇', '🍬', '🕯️', '🕸️', '⚰️'];
   showReplay: boolean = false;
   replayPartidaId: string = '';
   private closeReplayHandler: (() => void) | null = null;
