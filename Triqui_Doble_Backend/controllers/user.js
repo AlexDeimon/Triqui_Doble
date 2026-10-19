@@ -40,7 +40,7 @@ export const registrar = async (req, res) => {
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
-  const user = await Usuario.findOne({ username });
+  const user = await Usuario.findOne({ username }).select('+password');
   if (!user) return res.status(400).json({ msg: 'Usuario no encontrado' });
 
   const isMatch = await bcrypt.compare(password, user.password);
@@ -76,9 +76,10 @@ export const actualizarEstadisticas = async (username, resultado, puntaje) => {
 };
 
 export const ranking = async (req, res) => {
-  let users = await Usuario.find().sort({ 'estadisticas.puntaje': -1 });
-  users = users.filter(user => user.estadisticas.puntaje !== 0);
-  res.json(users);
+  const top = await Usuario.find({ 'estadisticas.puntaje': { $gt: 0 } })
+  .sort({ 'estadisticas.puntaje': -1 }).limit(50)
+  .select('username profileImage estadisticas').lean();
+  res.json(top);
 };
 
 export const historialJugador = async (req, res) => {

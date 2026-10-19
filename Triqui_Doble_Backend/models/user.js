@@ -2,7 +2,7 @@ import mongoose, { Schema, model } from 'mongoose';
 
 const userSchema = new Schema({
     username: {type: String, required: true, unique: true, trim: true},
-    password: {type: String, required: true},
+    password: {type: String, required: true, select: false},
     estadisticas: {
         partidasGanadas: {type: Number, default: 0},
         partidasPerdidas: {type: Number, default: 0},
