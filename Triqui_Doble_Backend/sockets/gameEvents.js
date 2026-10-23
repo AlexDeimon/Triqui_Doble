@@ -107,6 +107,13 @@ export const handleGameEvents = (io, socket) => {
     const juego = JSON.parse(juegoJson);
 
     const juegoActualizado = gameController.rendirse(juego, socket.id);
+    if (!juegoActualizado) return;
+
+    if (turnTimeouts.has(roomId)) {
+      clearTimeout(turnTimeouts.get(roomId));
+      turnTimeouts.delete(roomId);
+    }
+
     await redisClient.set(`juego:${roomId}`, JSON.stringify(juegoActualizado));
 
     if (juegoActualizado.ganador) {

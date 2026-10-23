@@ -212,8 +212,10 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
 }
 
 export const rendirse = (juego, socketId) => {
+  if (juego.ganador || juego.estado !== 'jugando') return null;
+  
   const miRolLargo = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socketId);
-  if (!miRolLargo) return juego;
+  if (!miRolLargo) return null;
 
   const rolJugador = miRolLargo.charAt(0);
   juego.ganador = rolJugador === GameRole.X ? GameRole.O : GameRole.X;
@@ -226,6 +228,8 @@ export const rendirse = (juego, socketId) => {
 export const guardarPartida = async (roomId, juego, puntajeX, puntajeO) => {
   if (juego.isSimulation) return;
   if (juego.configuracion?.solitario) return;
+  if (juego.guardada) return;
+  juego.guardada = true;
 
   try {
     const is2v2 = juego.ordenTurnos && juego.ordenTurnos.length === 4;
