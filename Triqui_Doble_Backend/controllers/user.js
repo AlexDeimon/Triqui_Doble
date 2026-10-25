@@ -4,26 +4,16 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 const registroSchema = z.object({
-  username: z.string({
-    required_error: "El nombre de usuario es requerido",
-    invalid_type_error: "El nombre de usuario no es valido"
-  })
-    .min(3, "El usuario debe tener al menos 3 caracteres")
-    .max(10, "El usuario no debe superar los 10 caracteres")
-    .regex(/^[a-zA-Z0-9_]+$/, "El usuario solo puede contener letras, números y guion bajo")
-    .trim(),
-  password: z.string({
-    required_error: "La contraseña es requerida",
-    invalid_type_error: "La contraseña no es valida"
-  })
-    .min(6, "La contraseña debe tener al menos 6 caracteres")
-    .max(30, "La contraseña no debe superar los 30 caracteres")
+  username: z.string({ error: 'El nombre de usuario es requerido' }).trim()
+    .min(3, 'El nombre de usuario debe tener al menos 3 caracteres').max(10, 'El nombre de usuario no debe superar los 10 caracteres')
+    .regex(/^[a-zA-Z0-9_]+$/, 'El nombre de usuario solo puede contener letras, números y guion bajo'),
+  password: z.string({ error: 'La contraseña es requerida' }).min(6, 'La contraseña debe tener al menos 6 caracteres').max(30, 'La contraseña no debe superar los 30 caracteres')
 });
 
 export const registrar = async (req, res) => {
   const parseResult = registroSchema.safeParse(req.body);
   if (!parseResult.success) {
-    return res.status(400).json({ msg: parseResult.error.errors[0].message });
+    return res.status(400).json({ msg: parseResult.error.issues[0].message });
   }
 
   const { username, password } = parseResult.data;
