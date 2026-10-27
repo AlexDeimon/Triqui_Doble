@@ -1,7 +1,5 @@
-import mongoose, { connect } from 'mongoose';
+import { connect } from 'mongoose';
 import { createClient } from 'redis';
-
-mongoose.set('sanitizeFilter', true);
 
 export const connectDB = async () => {
     try {
