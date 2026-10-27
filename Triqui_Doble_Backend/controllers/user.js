@@ -1,13 +1,23 @@
+import mongoose from 'mongoose';
 import { Usuario } from '../models/user.js';
 import { Partidas } from '../models/game.js';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+
+const escapeRegExp = (str = '') => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const usernameSchema = z.string().trim().min(3).max(10).regex(/^[a-zA-Z0-9_]+$/);
 
 const registroSchema = z.object({
   username: z.string({ error: 'El nombre de usuario es requerido' }).trim()
     .min(3, 'El nombre de usuario debe tener al menos 3 caracteres').max(10, 'El nombre de usuario no debe superar los 10 caracteres')
     .regex(/^[a-zA-Z0-9_]+$/, 'El nombre de usuario solo puede contener letras, números y guion bajo'),
   password: z.string({ error: 'La contraseña es requerida' }).min(6, 'La contraseña debe tener al menos 6 caracteres').max(30, 'La contraseña no debe superar los 30 caracteres')
+});
+
+const loginSchema = z.object({
+  username: z.string({ error: 'El nombre de usuario es requerido' }).trim(),
+  password: z.string({ error: 'La contraseña es requerida' })
 });
 
 export const registrar = async (req, res) => {
@@ -29,7 +39,12 @@ export const registrar = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { username, password } = req.body;
+  const parseResult = loginSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ msg: parseResult.error.issues[0].message });
+  }
+
+  const { username, password } = parseResult.data;
   const user = await Usuario.findOne({ username }).select('+password');
   if (!user) return res.status(400).json({ msg: 'Usuario no encontrado' });
 
@@ -73,8 +88,11 @@ export const ranking = async (req, res) => {
 };
 
 export const historialJugador = async (req, res) => {
-  const { username } = req.params;
-  const regex = new RegExp(`(^|,)${username}(,|$)`);
+  const parsed = usernameSchema.safeParse(req.params.username);
+  if (!parsed.success) return res.status(400).json({ msg: 'Usuario inválido' });
+  const username = parsed.data;
+
+  const regex = new RegExp(`(^|,)${escapeRegExp(username)}(,|$)`);
   const historial = await Partidas.find({
     $or: [{ jugadorX: regex }, { jugadorO: regex }]
   }).sort({ fecha: -1 });
@@ -83,12 +101,16 @@ export const historialJugador = async (req, res) => {
 
 export const buscarUsuarios = async (req, res) => {
   const { query, requester } = req.params;
+  if (typeof query !== 'string' || typeof requester !== 'string' || query.length > 20) {
+    return res.status(400).json({ msg: 'Parámetros inválidos' });
+  }
+
   const user = await Usuario.findOne({ username: requester });
   const amigosUsernames = user ? user.amigos.map(a => a.username) : [];
 
   const users = await Usuario.find({ 
     $and: [
-      { username: { $regex: query, $options: 'i' } },
+      { username: { $regex: escapeRegExp(query), $options: 'i' } },
       { username: { $nin: [requester, ...amigosUsernames] } }
     ]
   }).limit(10).select('username');
@@ -96,13 +118,16 @@ export const buscarUsuarios = async (req, res) => {
 };
 
 export const enviarSolicitudAmistad = async (req, res) => {
-  const { usernameOrigen, usernameDestino } = req.body;
+  const parsed = z.object({ usernameOrigen: usernameSchema, usernameDestino: usernameSchema }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ msg: 'Datos inválidos' });
+  const { usernameOrigen, usernameDestino } = parsed.data;
+
   if (usernameOrigen === usernameDestino) return res.status(400).json({ msg: 'No puedes agregarte a ti mismo' });
 
   const origen = await Usuario.findOne({ username: usernameOrigen });
   const destino = await Usuario.findOne({ username: usernameDestino });
 
-  if (!destino) return res.status(404).json({ msg: 'Usuario no encontrado' });
+  if (!origen || !destino) return res.status(404).json({ msg: 'Usuario no encontrado' });
 
   const yaSolicitado = origen.amigos.find(a => a.username === usernameDestino);
   if (yaSolicitado) return res.status(400).json({ msg: 'Ya hay una relación pendiente o existente' });
@@ -117,10 +142,13 @@ export const enviarSolicitudAmistad = async (req, res) => {
 };
 
 export const aceptarSolicitudAmistad = async (req, res) => {
-  const { usernameAcepta, usernameAmigo } = req.body;
+  const parsed = z.object({ usernameAcepta: usernameSchema, usernameAmigo: usernameSchema }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ msg: 'Datos inválidos' });
+  const { usernameAcepta, usernameAmigo } = parsed.data;
 
   const acepta = await Usuario.findOne({ username: usernameAcepta });
   const amigo = await Usuario.findOne({ username: usernameAmigo });
+  if (!acepta || !amigo) return res.status(404).json({ msg: 'Usuario no encontrado' });
 
   const relAcepta = acepta.amigos.find(a => a.username === usernameAmigo);
   const relAmigo = amigo.amigos.find(a => a.username === usernameAcepta);
@@ -135,7 +163,9 @@ export const aceptarSolicitudAmistad = async (req, res) => {
 };
 
 export const rechazarSolicitudAmistad = async (req, res) => {
-  const { usernameRechaza, usernameAmigo } = req.body;
+  const parsed = z.object({ usernameRechaza: usernameSchema, usernameAmigo: usernameSchema }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ msg: 'Datos inválidos' });
+  const { usernameRechaza, usernameAmigo } = parsed.data;
   
   await Usuario.updateOne({ username: usernameRechaza }, { $pull: { amigos: { username: usernameAmigo } } });
   await Usuario.updateOne({ username: usernameAmigo }, { $pull: { amigos: { username: usernameRechaza } } });
@@ -144,7 +174,9 @@ export const rechazarSolicitudAmistad = async (req, res) => {
 };
 
 export const eliminarAmigo = async (req, res) => {
-  const { usernameSolicita, usernameAmigo } = req.body;
+  const parsed = z.object({ usernameSolicita: usernameSchema, usernameAmigo: usernameSchema }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ msg: 'Datos inválidos' });
+  const { usernameSolicita, usernameAmigo } = parsed.data;
   
   await Usuario.updateOne({ username: usernameSolicita }, { $pull: { amigos: { username: usernameAmigo } } });
   await Usuario.updateOne({ username: usernameAmigo }, { $pull: { amigos: { username: usernameSolicita } } });
@@ -153,14 +185,20 @@ export const eliminarAmigo = async (req, res) => {
 };
 
 export const obtenerAmigos = async (req, res) => {
-  const { username } = req.params;
+  const parsed = usernameSchema.safeParse(req.params.username);
+  if (!parsed.success) return res.status(400).json({ msg: 'Usuario inválido' });
+  const username = parsed.data;
+
   const user = await Usuario.findOne({ username });
   if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
   res.json(user.amigos || []);
 };
 
 export const obtenerPerfil = async (req, res) => {
-  const { username } = req.params;
+  const parsed = usernameSchema.safeParse(req.params.username);
+  if (!parsed.success) return res.status(400).json({ msg: 'Usuario inválido' });
+  const username = parsed.data;
+
   const user = await Usuario.findOne({ username });
   if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
 
@@ -170,7 +208,7 @@ export const obtenerPerfil = async (req, res) => {
   if (allUsers.findIndex(u => u.username === username) != -1)
     rank = allUsers.findIndex(u => u.username === username) + 1;
 
-  const regex = new RegExp(`(^|,)${username}(,|$)`);
+  const regex = new RegExp(`(^|,)${escapeRegExp(username)}(,|$)`);
   const historial = await Partidas.find({
     $or: [{ jugadorX: regex }, { jugadorO: regex }]
   });
@@ -178,7 +216,7 @@ export const obtenerPerfil = async (req, res) => {
   const opponents = {};
   historial.forEach(p => {
     let opponent;
-    if (p.jugadorX.includes(username)) {
+    if (p.jugadorX.split(',').includes(username)) {
       opponent = p.jugadorO;
     } else {
       opponent = p.jugadorX;
@@ -226,13 +264,22 @@ export const obtenerPerfil = async (req, res) => {
 };
 
 export const actualizarPerfil = async (req, res) => {
-  const { username, profileImage } = req.body;
+  const parsed = z.object({
+    username: usernameSchema,
+    profileImage: z.string().trim().min(1).max(10)
+  }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ msg: 'Datos inválidos' });
+  const { username, profileImage } = parsed.data;
+
   await Usuario.findOneAndUpdate({ username }, { profileImage });
   res.json({ msg: 'Perfil actualizado' });
 };
 
 export const obtenerReplay = async (req, res) => {
   const { partidaId } = req.params;
+  if (!mongoose.isValidObjectId(partidaId)) {
+    return res.status(400).json({ msg: 'ID de partida inválido' });
+  }
   const partida = await Partidas.findById(partidaId);
   if (!partida) return res.status(404).json({ msg: 'Partida no encontrada' });
   if (!partida.movimientos || partida.movimientos.length === 0) {
