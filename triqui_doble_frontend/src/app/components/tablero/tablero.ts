@@ -21,11 +21,11 @@ import confetti from 'canvas-confetti';
 
 export class TableroComponent implements OnInit, OnDestroy {
   public GameRole = GameRole;
-  // public coloresDisponibles: string[] = ['#e94560', '#4597e9', '#ffb52a', '#28a745', '#9b59b6', '#00f2fe'];
-  // public emojisDisponibles: string[] = ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '♥️', '♦️', '♣️', '♠️'];
+  public coloresDisponibles: string[] = ['#e94560', '#4597e9', '#ffb52a', '#28a745', '#9b59b6', '#00f2fe'];
+  public emojisDisponibles: string[] = ['X', 'O', '🛡️', '⚔️', '💀', '👽', '🚀', '⭐', '♥️', '♦️', '♣️', '♠️'];
 
-  public coloresDisponibles: string[] = ['#ff7518', '#8b00ff', '#39ff14', '#b30000', '#00e5ff', '#e6e6fa'];
-  public emojisDisponibles: string[] = ['🎃','👻','💀','🧛','🧙','🧟','🕷️','🦇','🍬','🕯️','🕸️','⚰️'];
+  // public coloresDisponibles: string[] = ['#ff7518', '#8b00ff', '#39ff14', '#b30000', '#00e5ff', '#e6e6fa'];
+  // public emojisDisponibles: string[] = ['🎃','👻','💀','🧛','🧙','🧟','🕷️','🦇','🍬','🕯️','🕸️','⚰️'];
 
   animarPatron = signal<boolean>(false);
   gameState = signal<estadoJuego | null>(null);
@@ -157,10 +157,7 @@ export class TableroComponent implements OnInit, OnDestroy {
             icon: isTie ? 'info' : 'success',
             background: '#16213e',
             color: '#fff',
-            confirmButtonColor: '#ff7518',
-            customClass: {
-              popup: 'halloween-victory-popup'
-            },
+            confirmButtonColor: '#e94560',
             didClose: () => unregisterSwal()
           });
           this.cd.detectChanges();
@@ -505,10 +502,10 @@ export class TableroComponent implements OnInit, OnDestroy {
       html: htmlContent,
       background: '#16213e',
       color: '#fff',
-      confirmButtonColor: '#ff7518',
+      confirmButtonColor: '#e94560',
       confirmButtonText: 'Entendido',
       customClass: {
-        popup: 'halloween-victory-popup'
+        popup: 'glass-modal'
       },
       didClose: () => unregisterSwal()
     });
@@ -524,14 +521,11 @@ export class TableroComponent implements OnInit, OnDestroy {
       icon: 'warning',
       background: '#16213e',
       color: '#fff',
-      confirmButtonColor: '#ff7518',
+      confirmButtonColor: '#e94560',
       showCancelButton: true,
-      cancelButtonColor: '#4a154b',
+      cancelButtonColor: '#6c757d',
       confirmButtonText: 'Sí, rendirme',
       cancelButtonText: 'Cancelar',
-      customClass: {
-        popup: 'halloween-victory-popup'
-      },
       didClose: () => unregisterSwal()
     }).then((result) => {
       if (result.isConfirmed) {
@@ -731,7 +725,6 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   lanzarConfeti() {
     try {
-      /*
       confetti({
         particleCount: 100,
         spread: 70,
@@ -754,7 +747,7 @@ export class TableroComponent implements OnInit, OnDestroy {
           zIndex: 99999
         });
       }, 250);
-      */
+      /*
       const halloweenColors = ['#ff7518', '#8b00ff', '#39ff14', '#ffffff', '#ff0055'];
 
       confetti({
@@ -799,7 +792,7 @@ export class TableroComponent implements OnInit, OnDestroy {
           zIndex: 99999
         });
       }, 260);
-
+*/
     } catch (e) {
       console.error('Error lanzando confeti:', e);
     }
