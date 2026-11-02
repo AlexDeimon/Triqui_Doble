@@ -46,11 +46,14 @@ export const login = async (req, res) => {
 
   const { username, password } = parseResult.data;
   const user = await Usuario.findOne({ username }).select('+password');
-  if (!user) return res.status(400).json({ msg: 'Usuario no encontrado' });
+  if (!user) {
+    await bcrypt.compare(password, '');
+    return res.status(400).json({ msg: 'Credenciales inválidas' });
+  }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return res.status(400).json({ msg: 'Contraseña incorrecta' });
+    return res.status(400).json({ msg: 'Credenciales inválidas' });
   }
 
   res.json({ msg: 'Login exitoso', username: user.username });
