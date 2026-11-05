@@ -3,16 +3,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { AppComponent } from './app/app.component';
 import { provideRouter, withHashLocation } from '@angular/router';
 import { routes } from './app/app.routes';
-import { importProvidersFrom } from '@angular/core';
-import { ngxLoadingAnimationTypes, NgxLoadingModule } from 'ngx-loading';
 
 bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(routes, withHashLocation()),
-    provideHttpClient(),
-    importProvidersFrom(NgxLoadingModule.forRoot({
-      animationType: ngxLoadingAnimationTypes.circleSwish,
-      primaryColour: '#e94560',
-    }))
+    provideHttpClient()
   ]
 }).catch(err => console.error(err));
