@@ -65,7 +65,7 @@ export const iniciarEstadoJuego = (roomId, is2v2) => {
   };
 };
 
-export const movimiento = (juego, socketId, tableroId, celdaId) => {
+export const movimiento = (juego, socketId, tableroId, celdaId, rng = Math.random) => {
   if (juego.estado && juego.estado !== 'jugando') return null;
 
   const miRolLargo = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socketId);
@@ -160,7 +160,7 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
     for (let attempt = 0; attempt < 50; attempt++) {
       const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       for (let i = indices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(rng() * (i + 1));
         [indices[i], indices[j]] = [indices[j], indices[i]];
       }
 
@@ -180,7 +180,7 @@ export const movimiento = (juego, socketId, tableroId, celdaId) => {
   if (juego.configuracion && juego.configuracion.modoSeleccion === 'Aleatorio') {
     const tablerosDisponibles = juego.tableros.filter(t => !t.celdas.every(c => c.valor !== null));
     if (tablerosDisponibles.length > 0) {
-      const randomIndex = Math.floor(Math.random() * tablerosDisponibles.length);
+      const randomIndex = Math.floor(rng() * tablerosDisponibles.length);
       const selectedBoard = tablerosDisponibles[randomIndex];
       juego.tableroActivo = juego.tableros.indexOf(selectedBoard);
     } else {
