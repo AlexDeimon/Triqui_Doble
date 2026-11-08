@@ -1,5 +1,6 @@
 import { redisClient } from '../config/db.js';
 import * as gameController from '../controllers/game.js';
+import { GameRole } from '../utils/constants.js';
 import { turnTimeouts, resetearTimeoutInactividad, iniciarTimeoutTurno, emitirSalasDisponibles } from './roomService.js';
 
 const PESOS_TABLEROS = [3, 2, 3, 2, 4, 2, 3, 2, 3]; // Centro (4) vale 4, Esquinas valen 3, Bordes valen 2
@@ -47,7 +48,7 @@ const aplicarMovimientoSimulado = (tableros, tableroActivo, tableroId, celdaId, 
       if (marcoLinea && nuevoGanador !== rol) {
         nuevoGanador = rol;
       } else if (!nuevoGanador && nuevasCeldas.every(c => c.valor !== null)) {
-        nuevoGanador = 'EMPATE';
+        nuevoGanador = GameRole.EMPATE;
       }
     }
 
@@ -68,13 +69,13 @@ const aplicarMovimientoSimulado = (tableros, tableroActivo, tableroId, celdaId, 
     else if (nuevosTableros.every(t => t.ganador !== null)) {
       if (victX > victO) ganadorGlobal = 'X';
       else if (victO > victX) ganadorGlobal = 'O';
-      else ganadorGlobal = 'EMPATE';
+      else ganadorGlobal = GameRole.EMPATE;
     }
   } else {
     const patron = configuracion?.patronGanador || 'Cualquiera';
     ganadorGlobal = gameController.verificarGanador(nuevosTableros, 'ganador', patron);
     if (!ganadorGlobal && nuevosTableros.every(t => t.ganador !== null)) {
-      ganadorGlobal = 'EMPATE';
+      ganadorGlobal = GameRole.EMPATE;
     }
   }
 
@@ -294,7 +295,7 @@ const minimax = (tableros, tableroActivo, depth, isMaximizing, alpha, beta, botR
       let evalScore;
       if (ganadorGlobal === oponenteRol) {
         evalScore = -100000 - depth;
-      } else if (ganadorGlobal === 'EMPATE') {
+      } else if (ganadorGlobal === GameRole.EMPATE) {
         evalScore = 0;
       } else {
         const nextDepth = (nextTableroActivo === null || legalMoves.length > 20) ? depth - 2 : depth - 1;
@@ -321,7 +322,7 @@ const minimax = (tableros, tableroActivo, depth, isMaximizing, alpha, beta, botR
       let evalScore;
       if (ganadorGlobal === botRol) {
         evalScore = 100000 + depth;
-      } else if (ganadorGlobal === 'EMPATE') {
+      } else if (ganadorGlobal === GameRole.EMPATE) {
         evalScore = 0;
       } else {
         const nextDepth = (nextTableroActivo === null || legalMoves.length > 20) ? depth - 2 : depth - 1;
@@ -380,7 +381,7 @@ const obtenerMejorMovimientoExperto = (juego, botRol) => {
       score = 100000;
     } else if (ganadorGlobal === oponenteRol) {
       score = -100000;
-    } else if (ganadorGlobal === 'EMPATE') {
+    } else if (ganadorGlobal === GameRole.EMPATE) {
       score = 0;
     } else {
       const nextDepth = (nextTableroActivo === null || legalMoves.length > 20) ? depth - 2 : depth - 1;
@@ -462,7 +463,7 @@ const backpropagate = (node, result) => {
   while (tempNode !== null) {
     tempNode.visits++;
     if (tempNode.parent) {
-      if (result === 'empate') {
+      if (result === GameRole.EMPATE) {
         tempNode.wins += 0.5;
       } else if (result === tempNode.playerWhoMoved) {
         tempNode.wins += 1;
@@ -534,7 +535,7 @@ const runMCTS = (juegoOriginal, timeLimitMs = 500) => {
       limit++;
     }
 
-    const result = simulationState.ganador || 'empate';
+    const result = simulationState.ganador || GameRole.EMPATE;
 
     // 4. Retropropagación: Envía el resultado al árbol
     backpropagate(node, result);

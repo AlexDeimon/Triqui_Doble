@@ -17,10 +17,13 @@ export const mapeoPatrones = {
 export const verificarGanador = (elementos, propiedad, patronEspecifico = 'Cualquiera') => {
   if (patronEspecifico === 'Cualquiera' || !mapeoPatrones.hasOwnProperty(patronEspecifico)) {
     for (const [a, b, c] of patronesGanadores) {
-      if (elementos[a][propiedad] &&
-        elementos[a][propiedad] === elementos[b][propiedad] &&
-        elementos[a][propiedad] === elementos[c][propiedad]) {
-        return elementos[a][propiedad];
+      const val = elementos[a][propiedad];
+      if (
+        (val === GameRole.X || val === GameRole.O) &&
+        val === elementos[b][propiedad] &&
+        val === elementos[c][propiedad]
+      ) {
+        return val;
       }
     }
   } else {
@@ -144,7 +147,9 @@ export const movimiento = (juego, socketId, tableroId, celdaId, rng = Math.rando
 
   if (ganadorGeneral) {
     juego.ganador = ganadorGeneral;
-    juego.puntajes[ganadorGeneral] += 50;
+    if (juego.puntajes[ganadorGeneral] !== undefined) {
+      juego.puntajes[ganadorGeneral] += 50;
+    }
     if (!juego.isSimulation) console.log(`Juego ganado por ${ganadorGeneral}`);
     guardarPartida(juego.sala, juego, juego.puntajes.X, juego.puntajes.O);
   } else {

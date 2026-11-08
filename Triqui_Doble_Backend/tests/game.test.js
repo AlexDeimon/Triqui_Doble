@@ -2,6 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { patronesGanadores, mapeoPatrones, verificarGanador, iniciarEstadoJuego, movimiento, rendirse } from '../controllers/game.js';
 import { GameRole } from '../utils/constants.js';
 
+if (typeof Map.groupBy !== 'function') {
+  Map.groupBy = (items, callback) => {
+    const map = new Map();
+    let i = 0;
+    for (const item of items) {
+      const key = callback(item, i++);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(item);
+    }
+    return map;
+  };
+}
+
 const { savePartidaMock, actualizarEstadisticasMock } = vi.hoisted(() => ({
   savePartidaMock: vi.fn().mockResolvedValue(undefined),
   actualizarEstadisticasMock: vi.fn().mockResolvedValue(undefined)
@@ -123,6 +136,17 @@ describe('Tests de caracterización del motor de juego', () => {
         expect(verificarGanador(tableros, 'ganador', nombrePatron)).toBe(GameRole.O);
       }
     );
+
+    it('ignora líneas de 3 tableros empatados "E" (GameRole.EMPATE) y devuelve null (B-01)', () => {
+      patronesGanadores.forEach(([a, b, c]) => {
+        const tableros = Array.from({ length: 9 }, () => ({ ganador: null }));
+        tableros[a].ganador = GameRole.EMPATE;
+        tableros[b].ganador = GameRole.EMPATE;
+        tableros[c].ganador = GameRole.EMPATE;
+
+        expect(verificarGanador(tableros, 'ganador', 'Cualquiera')).toBeNull();
+      });
+    });
   });
 
   describe('movimiento · Validaciones básicas y Regla de Oro', () => {
@@ -276,6 +300,24 @@ describe('Tests de caracterización del motor de juego', () => {
       movimiento(juego, 'sock-x', 8, 2);
 
       expect(juego.ganador).toBe('X');
+    });
+
+    it('NO termina la partida ni corrompe puntajes con NaN cuando 3 subtableros empatados "E" quedan alineados (B-01)', () => {
+      const juego = crearPartidaLista();
+      juego.tableros[0].ganador = GameRole.EMPATE;
+      juego.tableros[1].ganador = GameRole.EMPATE;
+
+      const patronCasiLleno = ['X', 'O', 'X', 'X', 'O', 'O', 'O', 'X', null];
+      patronCasiLleno.forEach((v, i) => { juego.tableros[2].celdas[i].valor = v; });
+
+      juego.turnoActual = 'O';
+      juego.indiceTurnoActual = 1;
+      movimiento(juego, 'sock-o', 2, 8);
+
+      expect(juego.tableros[2].ganador).toBe(GameRole.EMPATE);
+      expect(juego.ganador).toBeNull();
+      expect(juego.puntajes).toEqual({ X: 0, O: 0 });
+      expect(juego.puntajes['E']).toBeUndefined();
     });
   });
 
