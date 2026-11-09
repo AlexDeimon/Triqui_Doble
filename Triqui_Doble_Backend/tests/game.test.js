@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { patronesGanadores, mapeoPatrones, verificarGanador, iniciarEstadoJuego, movimiento, rendirse } from '../controllers/game.js';
+import { leaveGameRooms } from '../sockets/roomEvents.js';
 import { GameRole } from '../utils/constants.js';
 
 if (typeof Map.groupBy !== 'function') {
@@ -15,9 +16,20 @@ if (typeof Map.groupBy !== 'function') {
   };
 }
 
-const { savePartidaMock, actualizarEstadisticasMock } = vi.hoisted(() => ({
+const { savePartidaMock, actualizarEstadisticasMock, redisMock } = vi.hoisted(() => ({
   savePartidaMock: vi.fn().mockResolvedValue(undefined),
-  actualizarEstadisticasMock: vi.fn().mockResolvedValue(undefined)
+  actualizarEstadisticasMock: vi.fn().mockResolvedValue(undefined),
+  redisMock: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue('OK'),
+    del: vi.fn().mockResolvedValue(1),
+    keys: vi.fn().mockResolvedValue([])
+  }
+}));
+
+vi.mock('../config/db.js', () => ({
+  redisClient: redisMock,
+  connectDB: vi.fn()
 }));
 
 vi.mock('../models/game.js', () => ({
@@ -405,6 +417,58 @@ describe('Tests de caracterización del motor de juego', () => {
       expect(rendirse(juego, 'sock-o')).toBeNull();
       expect(juego.puntajes.O).toBe(50);
       expect(savePartidaMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('leaveGameRooms · Preservación de sala personal user:<username> y limpieza de sala previa (B-02)', () => {
+    it('abandona salas de juego anteriores pero conserva socket.id, user:<username> y la sala destino', async () => {
+      const rooms = new Set(['sock-1', 'user:Diego', 'SALA_VIEJA', 'SALA_NUEVA']);
+      const mockSocket = {
+        id: 'sock-1',
+        rooms,
+        leave: vi.fn((r) => rooms.delete(r))
+      };
+
+      await leaveGameRooms(mockSocket, 'SALA_NUEVA');
+
+      expect(mockSocket.leave).toHaveBeenCalledTimes(1);
+      expect(mockSocket.leave).toHaveBeenCalledWith('SALA_VIEJA');
+      expect(rooms.has('sock-1')).toBe(true);
+      expect(rooms.has('user:Diego')).toBe(true);
+      expect(rooms.has('SALA_NUEVA')).toBe(true);
+      expect(rooms.has('SALA_VIEJA')).toBe(false);
+    });
+
+    it('al cambiar de una sala activa a otra (ej. aceptando invitación), libera el asiento en Redis y notifica al oponente anterior', async () => {
+      const partidaPrevia = crearPartidaLista();
+      partidaPrevia.sala = 'SALA_1';
+      redisMock.get.mockResolvedValueOnce(JSON.stringify(partidaPrevia));
+
+      const rooms = new Set(['sock-o', 'user:prueba', 'SALA_1']);
+      const socketToEmit = vi.fn();
+      const ioToEmit = vi.fn();
+      const mockSocket = {
+        id: 'sock-o',
+        rooms,
+        leave: vi.fn((r) => rooms.delete(r)),
+        to: vi.fn(() => ({ emit: socketToEmit }))
+      };
+      const mockIo = {
+        to: vi.fn(() => ({ emit: ioToEmit })),
+        emit: vi.fn()
+      };
+
+      await leaveGameRooms(mockSocket, 'SALA_2', mockIo);
+
+      expect(rooms.has('user:prueba')).toBe(true);
+      expect(rooms.has('SALA_1')).toBe(false);
+      expect(socketToEmit).toHaveBeenCalledWith(
+        'oponenteAbandonoVoluntario',
+        expect.stringContaining('abandonó voluntariamente')
+      );
+      const savedState = JSON.parse(redisMock.set.mock.calls.at(-1)[1]);
+      expect(savedState.jugadores.O).toBeNull();
+      expect(savedState.jugadores.X).toBe('sock-x');
     });
   });
 });

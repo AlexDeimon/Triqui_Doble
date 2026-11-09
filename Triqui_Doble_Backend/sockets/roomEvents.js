@@ -4,17 +4,91 @@ import { GameRole } from '../utils/constants.js';
 import { socketWrapper } from '../utils/socketWrapper.js';
 import { turnTimeouts, resetearTimeoutInactividad, iniciarTimeoutTurno, emitirSalasDisponibles } from '../services/roomService.js';
 
+export const procesarAbandonoSala = async (io, socket, roomId) => {
+  socket.leave(roomId);
+  if (!io) return;
+
+  const juegoJson = await redisClient.get(`juego:${roomId}`);
+  if (!juegoJson) return;
+
+  const juego = JSON.parse(juegoJson);
+  const rol = juego.jugadores ? Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socket.id) : null;
+
+  if (!rol) {
+    if (juego.espectadores && juego.espectadores.some(e => e.socketId === socket.id)) {
+      juego.espectadores = juego.espectadores.filter(e => e.socketId !== socket.id);
+      await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
+      console.log(`Espectador ${socket.id} ha salido de la sala ${roomId}`);
+    }
+    return;
+  }
+
+  console.log(`Jugador ${rol} abandonó voluntariamente la sala ${roomId}`);
+
+  if (juego.ganador) {
+    await redisClient.del(`juego:${roomId}`);
+    console.log(`Sala terminada ${roomId} eliminada por abandono de un jugador.`);
+    socket.to(roomId).emit('jugadorDesconectado', 'El oponente ha abandonado la sala.');
+    await emitirSalasDisponibles(io);
+    return;
+  }
+
+  juego.jugadores[rol] = null;
+
+  const hayJugadoresConectados = Object.values(juego.jugadores).some(id => id !== null && id !== 'BOT');
+
+  if (!hayJugadoresConectados) {
+    io.to(roomId).emit('jugadorDesconectado', 'La sala se eliminó por inactividad');
+    await redisClient.del(`juego:${roomId}`);
+    console.log(`Sala ${roomId} eliminada de inmediato por abandono de ambos jugadores.`);
+    await emitirSalasDisponibles(io);
+    return;
+  }
+
+  if (juego.estado === 'esperando' || juego.estado === 'seleccionando_skin') {
+    const usr = juego.usernames[rol];
+    juego.usernames[rol] = null;
+    juego.jugadoresListos[rol] = false;
+    juego.estado = 'esperando';
+    io.to(roomId).emit('toast', `${usr} (${rol.charAt(0)}) ha abandonado la sala`);
+  } else {
+    const usr = juego.usernames[rol];
+    const compa = juego.ordenTurnos.find(r => r !== rol && r.charAt(0) === rol.charAt(0) && juego.jugadores[r]);
+    if (compa) {
+      io.to(roomId).emit('toast', `${usr} ha abandonado la sala, ${rol.charAt(0)} queda en manos de ${juego.usernames[compa]}, ¡suerte!`);
+    } else {
+      socket.to(roomId).emit('oponenteAbandonoVoluntario', 'El oponente abandonó voluntariamente la sala, ¿deseas esperar para continuar el juego?');
+      if (turnTimeouts.has(roomId)) {
+        clearTimeout(turnTimeouts.get(roomId));
+        turnTimeouts.delete(roomId);
+        juego.ultimaActualizacionTurno = null;
+      }
+    }
+  }
+
+  await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
+  io.to(roomId).emit('actualizarJuego', juego);
+  await emitirSalasDisponibles(io);
+};
+
+export const leaveGameRooms = async (socket, keepRoomId = null, io = null) => {
+  const roomsToLeave = Array.from(socket.rooms).filter(
+    room => room !== socket.id && !room.startsWith('user:') && room !== keepRoomId
+  );
+  for (const room of roomsToLeave) {
+    await procesarAbandonoSala(io, socket, room);
+  }
+};
+
 export const handleRoomEvents = (io, socket) => {
   socket.on('crearSala', socketWrapper(socket, async ({ roomId, username, configuracion }) => {
-    Array.from(socket.rooms).forEach(room => {
-      if (room !== socket.id) socket.leave(room);
-    });
-
     const juegoExistente = await redisClient.get(`juego:${roomId}`);
     if (juegoExistente) {
       socket.emit('error', 'La sala ya existe');
       return;
     }
+
+    await leaveGameRooms(socket, roomId, io);
 
     const is2v2 = configuracion?.dosVsDos || false;
     const estadojuego = gameController.iniciarEstadoJuego(roomId, is2v2);
@@ -57,16 +131,14 @@ export const handleRoomEvents = (io, socket) => {
   }));
 
   socket.on('unirseASala', socketWrapper(socket, async ({ roomId, username }) => {
-    Array.from(socket.rooms).forEach(room => {
-      if (room !== socket.id) socket.leave(room);
-    });
-
     const juegoJson = await redisClient.get(`juego:${roomId}`);
 
     if (!juegoJson) {
       socket.emit('error', 'La sala no existe');
       return;
     }
+
+    await leaveGameRooms(socket, roomId, io);
 
     const juego = JSON.parse(juegoJson);
 
@@ -180,6 +252,7 @@ export const handleRoomEvents = (io, socket) => {
       }
 
       await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
+      await leaveGameRooms(socket, roomId, io);
       socket.join(roomId);
 
       socket.emit('salaUnida', {roomId, jugador: rol}); 
@@ -207,66 +280,7 @@ export const handleRoomEvents = (io, socket) => {
   }));
 
   socket.on('abandonarSala', socketWrapper(socket, async (roomId) => {
-    const juegoJson = await redisClient.get(`juego:${roomId}`);
-    if (!juegoJson) return;
-    
-    const juego = JSON.parse(juegoJson);
-    
-    let rol = Object.keys(juego.jugadores).find(k => juego.jugadores[k] === socket.id);
-
-    socket.leave(roomId);
-    
-    if (rol) {
-      console.log(`Jugador ${rol} abandonó voluntariamente la sala ${roomId}`);
-      
-      if (juego.ganador) {
-        await redisClient.del(`juego:${roomId}`);
-        console.log(`Sala terminada ${roomId} eliminada por abandono de un jugador.`);
-        socket.to(roomId).emit('jugadorDesconectado', 'El oponente ha abandonado la sala.');
-        await emitirSalasDisponibles(io); 
-        return;
-      }
-      
-      juego.jugadores[rol] = null;
-
-      const hayJugadoresConectados = Object.values(juego.jugadores).some(id => id !== null && id !== 'BOT');
-
-      if (!hayJugadoresConectados) {
-        io.to(roomId).emit('jugadorDesconectado', 'La sala se eliminó por inactividad');
-        await redisClient.del(`juego:${roomId}`);
-        console.log(`Sala ${roomId} eliminada de inmediato por abandono de ambos jugadores.`);
-        await emitirSalasDisponibles(io);
-        return;
-      }
-
-      await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
-      
-      if (juego.estado === 'esperando' || juego.estado === 'seleccionando_skin') {
-        const usr = juego.usernames[rol];
-        juego.usernames[rol] = null;
-        juego.jugadoresListos[rol] = false;
-        juego.estado = 'esperando';
-        io.to(roomId).emit('toast', `${usr} (${rol.charAt(0)}) ha abandonado la sala`);
-      } else {
-        const usr = juego.usernames[rol];
-        const compa = juego.ordenTurnos.find(r => r !== rol && r.charAt(0) === rol.charAt(0) && juego.jugadores[r]);
-        if (compa) {
-          io.to(roomId).emit('toast', `${usr} ha abandonado la sala, ${rol.charAt(0)} queda en manos de ${juego.usernames[compa]}, ¡suerte!`);
-        } else {
-          socket.to(roomId).emit('oponenteAbandonoVoluntario', 'El oponente abandonó voluntariamente la sala, ¿deseas esperar para continuar el juego?');
-          if (turnTimeouts.has(roomId)) {
-            clearTimeout(turnTimeouts.get(roomId));
-            turnTimeouts.delete(roomId);
-            juego.ultimaActualizacionTurno = null;
-            await redisClient.set(`juego:${roomId}`, JSON.stringify(juego));
-            io.to(roomId).emit('actualizarJuego', juego);
-          }
-        }
-      }
-      
-      io.to(roomId).emit('actualizarJuego', juego);
-
-    }
+    await procesarAbandonoSala(io, socket, roomId);
   }));
 
   socket.on('enviarMensajeChat', socketWrapper(socket, async ({ roomId, username, mensaje }) => {

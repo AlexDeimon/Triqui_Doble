@@ -65,6 +65,14 @@ export class TableroComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => {
         const previousState = lastState;
 
+        if (state && previousState && state.sala !== previousState.sala) {
+          this.chatMessages = state.mensajesChat ? [...state.mensajesChat] : [];
+          this.mensajesNoLeidos = 0;
+          this.yaAnimado = false;
+          this.ultimoGanadorProcesado = null;
+          this.animacionesGanador = {};
+        }
+
         const getOccupiedCount = (s: estadoJuego | null) =>
           s ? s.tableros.reduce((acc, t) => acc + t.celdas.filter(c => c.valor !== null).length, 0) : 0;
 

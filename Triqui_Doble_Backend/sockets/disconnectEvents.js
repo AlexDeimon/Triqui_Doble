@@ -6,7 +6,7 @@ export const handleDisconnectEvents = (io, socket) => {
   socket.on('disconnecting', socketWrapper(socket, async () => {
     const rooms = socket.rooms;
     for (const roomId of rooms) {
-      if (roomId === socket.id) continue;
+      if (roomId === socket.id || roomId.startsWith('user:')) continue;
 
       const juegoJson = await redisClient.get(`juego:${roomId}`);
       if (juegoJson) {
