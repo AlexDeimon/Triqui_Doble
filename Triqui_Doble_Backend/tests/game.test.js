@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { patronesGanadores, mapeoPatrones, verificarGanador, iniciarEstadoJuego, movimiento, rendirse } from '../controllers/game.js';
-import { leaveGameRooms } from '../sockets/roomEvents.js';
+import { leaveGameRooms, procesarAbandonoSala } from '../sockets/roomEvents.js';
+import { procesarDesconexionSala } from '../sockets/disconnectEvents.js';
 import { GameRole } from '../utils/constants.js';
 
 if (typeof Map.groupBy !== 'function') {
@@ -314,7 +315,7 @@ describe('Tests de caracterización del motor de juego', () => {
       expect(juego.ganador).toBe('X');
     });
 
-    it('NO termina la partida ni corrompe puntajes con NaN cuando 3 subtableros empatados "E" quedan alineados (B-01)', () => {
+    it('NO termina la partida ni corrompe puntajes con NaN cuando 3 subtableros empatados "E" quedan alineados', () => {
       const juego = crearPartidaLista();
       juego.tableros[0].ganador = GameRole.EMPATE;
       juego.tableros[1].ganador = GameRole.EMPATE;
@@ -420,7 +421,7 @@ describe('Tests de caracterización del motor de juego', () => {
     });
   });
 
-  describe('leaveGameRooms · Preservación de sala personal user:<username> y limpieza de sala previa (B-02)', () => {
+  describe('leaveGameRooms · Preservación de sala personal user:<username> y limpieza de sala previa', () => {
     it('abandona salas de juego anteriores pero conserva socket.id, user:<username> y la sala destino', async () => {
       const rooms = new Set(['sock-1', 'user:Diego', 'SALA_VIEJA', 'SALA_NUEVA']);
       const mockSocket = {
@@ -469,6 +470,93 @@ describe('Tests de caracterización del motor de juego', () => {
       const savedState = JSON.parse(redisMock.set.mock.calls.at(-1)[1]);
       expect(savedState.jugadores.O).toBeNull();
       expect(savedState.jugadores.X).toBe('sock-x');
+    });
+  });
+
+  describe('procesarAbandonoSala y procesarDesconexionSala · Mutar antes de persistir', () => {
+    it('procesarAbandonoSala limpia username, listo y vuelve a "esperando" antes de una única escritura en Redis', async () => {
+      const partidaSkin = crearPartidaLista();
+      partidaSkin.estado = 'seleccionando_skin';
+      partidaSkin.jugadoresListos = { X: true, O: true };
+      redisMock.get.mockResolvedValueOnce(JSON.stringify(partidaSkin));
+
+      const socketToEmit = vi.fn();
+      const ioToEmit = vi.fn();
+      const mockSocket = {
+        id: 'sock-o',
+        leave: vi.fn(),
+        to: vi.fn(() => ({ emit: socketToEmit }))
+      };
+      const mockIo = {
+        to: vi.fn(() => ({ emit: ioToEmit })),
+        emit: vi.fn()
+      };
+
+      await procesarAbandonoSala(mockIo, mockSocket, 'SALA_TEST');
+
+      expect(redisMock.set).toHaveBeenCalledTimes(1);
+      const savedState = JSON.parse(redisMock.set.mock.calls[0][1]);
+      expect(savedState.jugadores.O).toBeNull();
+      expect(savedState.usernames.O).toBeNull();
+      expect(savedState.jugadoresListos.O).toBe(false);
+      expect(savedState.estado).toBe('esperando');
+      expect(ioToEmit.mock.calls.filter(([ev]) => ev === 'actualizarJuego')).toHaveLength(1);
+    });
+
+    it('procesarDesconexionSala persiste jugadores[rol] = null en 1v1 sin temporizador', async () => {
+      const partida = crearPartidaLista();
+      redisMock.get.mockResolvedValueOnce(JSON.stringify(partida));
+
+      const socketToEmit = vi.fn();
+      const ioToEmit = vi.fn();
+      const mockSocket = {
+        id: 'sock-o',
+        to: vi.fn(() => ({ emit: socketToEmit }))
+      };
+      const mockIo = {
+        to: vi.fn(() => ({ emit: ioToEmit })),
+        emit: vi.fn()
+      };
+
+      await procesarDesconexionSala(mockIo, mockSocket, 'SALA_TEST');
+
+      expect(socketToEmit).toHaveBeenCalledWith(
+        'oponenteDesconectado',
+        expect.stringContaining('Esperando reconexión')
+      );
+      expect(redisMock.set).toHaveBeenCalledTimes(1);
+      const savedState = JSON.parse(redisMock.set.mock.calls[0][1]);
+      expect(savedState.jugadores.O).toBeNull();
+      expect(savedState.usernames.O).toBe('userO');
+      expect(ioToEmit).toHaveBeenCalledWith('actualizarJuego', expect.objectContaining({ jugadores: { X: 'sock-x', O: null } }));
+    });
+
+    it('procesarDesconexionSala en seleccionando_skin no bloquea al oponente con oponenteDesconectado y vuelve a esperando', async () => {
+      const partidaSkin = crearPartidaLista();
+      partidaSkin.estado = 'seleccionando_skin';
+      partidaSkin.jugadoresListos = { X: false, O: true };
+      redisMock.get.mockResolvedValueOnce(JSON.stringify(partidaSkin));
+
+      const socketToEmit = vi.fn();
+      const ioToEmit = vi.fn();
+      const mockSocket = {
+        id: 'sock-o',
+        to: vi.fn(() => ({ emit: socketToEmit }))
+      };
+      const mockIo = {
+        to: vi.fn(() => ({ emit: ioToEmit })),
+        emit: vi.fn()
+      };
+
+      await procesarDesconexionSala(mockIo, mockSocket, 'SALA_TEST');
+
+      expect(socketToEmit).not.toHaveBeenCalledWith('oponenteDesconectado', expect.anything());
+      expect(redisMock.set).toHaveBeenCalledTimes(1);
+      const savedState = JSON.parse(redisMock.set.mock.calls[0][1]);
+      expect(savedState.jugadores.O).toBeNull();
+      expect(savedState.usernames.O).toBeNull();
+      expect(savedState.jugadoresListos.O).toBe(false);
+      expect(savedState.estado).toBe('esperando');
     });
   });
 });
