@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { patronesGanadores, mapeoPatrones, verificarGanador, iniciarEstadoJuego, movimiento, rendirse } from '../controllers/game.js';
 import { leaveGameRooms, procesarAbandonoSala } from '../sockets/roomEvents.js';
 import { procesarDesconexionSala } from '../sockets/disconnectEvents.js';
+import { procesarReiniciarJuego } from '../sockets/gameEvents.js';
+import { timeoutsInactividad } from '../services/roomService.js';
 import { GameRole } from '../utils/constants.js';
 
 if (typeof Map.groupBy !== 'function') {
@@ -24,6 +26,7 @@ const { savePartidaMock, actualizarEstadisticasMock, redisMock } = vi.hoisted(()
     get: vi.fn().mockResolvedValue(null),
     set: vi.fn().mockResolvedValue('OK'),
     del: vi.fn().mockResolvedValue(1),
+    persist: vi.fn().mockResolvedValue(1),
     keys: vi.fn().mockResolvedValue([])
   }
 }));
@@ -557,6 +560,65 @@ describe('Tests de caracterización del motor de juego', () => {
       expect(savedState.usernames.O).toBeNull();
       expect(savedState.jugadoresListos.O).toBe(false);
       expect(savedState.estado).toBe('esperando');
+    });
+  });
+
+  describe('procesarReiniciarJuego · Estado 2v2 real y conservación de skins', () => {
+    it('reinicia una partida 2v2 con llaves X1/O1/X2/O2 en jugadoresListos y conserva las skins elegidas', async () => {
+      const partida2v2 = crearPartidaLista({ is2v2: true });
+      partida2v2.ganador = 'X';
+      partida2v2.skins = {
+        X: { emoji: '🚀', color: '#ffb52a' },
+        O: { emoji: '👽', color: '#9b59b6' }
+      };
+      partida2v2.jugadoresListos = { X1: true, O1: true, X2: true, O2: true };
+      redisMock.get.mockResolvedValueOnce(JSON.stringify(partida2v2));
+
+      const ioToEmit = vi.fn();
+      const mockIo = {
+        to: vi.fn(() => ({ emit: ioToEmit })),
+        emit: vi.fn()
+      };
+
+      const nuevoJuego = await procesarReiniciarJuego(mockIo, 'SALA_TEST');
+      clearTimeout(timeoutsInactividad.get('SALA_TEST'));
+      timeoutsInactividad.delete('SALA_TEST');
+
+      expect(nuevoJuego.estado).toBe('seleccionando_skin');
+      expect(nuevoJuego.jugadoresListos).toEqual({ X1: false, O1: false, X2: false, O2: false });
+      expect(nuevoJuego.skins).toEqual({
+        X: { emoji: '🚀', color: '#ffb52a' },
+        O: { emoji: '👽', color: '#9b59b6' }
+      });
+    });
+
+    it('conserva las skins y marca bots listos incluso cuando falta un jugador (rolesLlenos === false)', async () => {
+      const partidaSolitario2v2 = crearPartidaLista({
+        is2v2: true,
+        configuracion: { solitario: true, dosVsDos: true }
+      });
+      partidaSolitario2v2.jugadores = { X1: 'sock-x1', O1: 'BOT', X2: null, O2: 'BOT' };
+      partidaSolitario2v2.skins = {
+        X: { emoji: '⚔️', color: '#28a745' },
+        O: { emoji: '🤖', color: '#8dcaf5' }
+      };
+      redisMock.get.mockResolvedValueOnce(JSON.stringify(partidaSolitario2v2));
+
+      const mockIo = {
+        to: vi.fn(() => ({ emit: vi.fn() })),
+        emit: vi.fn()
+      };
+
+      const nuevoJuego = await procesarReiniciarJuego(mockIo, 'SALA_TEST');
+      clearTimeout(timeoutsInactividad.get('SALA_TEST'));
+      timeoutsInactividad.delete('SALA_TEST');
+
+      expect(nuevoJuego.estado).toBe('esperando');
+      expect(nuevoJuego.jugadoresListos).toEqual({ X1: false, O1: true, X2: false, O2: true });
+      expect(nuevoJuego.skins).toEqual({
+        X: { emoji: '⚔️', color: '#28a745' },
+        O: { emoji: '🤖', color: '#8dcaf5' }
+      });
     });
   });
 });

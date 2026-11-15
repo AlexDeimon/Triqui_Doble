@@ -5,6 +5,66 @@ import { GameRole } from '../utils/constants.js';
 import { turnTimeouts, resetearTimeoutInactividad, iniciarTimeoutTurno, emitirSalasDisponibles } from '../services/roomService.js';
 import { jugarTurnoBot } from '../services/botService.js';
 
+export const procesarReiniciarJuego = async (io, roomId) => {
+  const juegoJson = await redisClient.get(`juego:${roomId}`);
+  if (!juegoJson) return null;
+
+  const juego = JSON.parse(juegoJson);
+  const is2v2 = Boolean(juego.configuracion?.dosVsDos);
+  const jugadoresRef = { ...juego.jugadores };
+  const usernamesRef = { ...juego.usernames };
+
+  const nuevoJuego = gameController.iniciarEstadoJuego(roomId, is2v2);
+  nuevoJuego.jugadores = jugadoresRef;
+  nuevoJuego.usernames = usernamesRef;
+  nuevoJuego.configuracion = juego.configuracion;
+  nuevoJuego.mensajesChat = juego.mensajesChat || [];
+  nuevoJuego.ultimaActualizacionTurno = null;
+  if (juego.ordenTurnos) {
+    nuevoJuego.ordenTurnos = [...juego.ordenTurnos];
+  }
+  if (juego.skins) {
+    nuevoJuego.skins = {
+      X: { ...juego.skins.X },
+      O: { ...juego.skins.O }
+    };
+  }
+
+  if (nuevoJuego.configuracion?.solitario) {
+    if (is2v2) {
+      nuevoJuego.jugadoresListos[GameRole.O1] = true;
+      nuevoJuego.jugadoresListos[GameRole.O2] = true;
+    } else {
+      nuevoJuego.jugadoresListos[GameRole.O] = true;
+    }
+  }
+
+  const rolesLlenos = nuevoJuego.ordenTurnos
+    ? nuevoJuego.ordenTurnos.every(r => nuevoJuego.jugadores[r] !== null)
+    : Object.keys(nuevoJuego.jugadores).every(r => nuevoJuego.jugadores[r] !== null);
+
+  if (rolesLlenos) {
+    nuevoJuego.estado = 'seleccionando_skin';
+  }
+
+  if (turnTimeouts.has(roomId)) {
+    clearTimeout(turnTimeouts.get(roomId));
+    turnTimeouts.delete(roomId);
+  }
+
+  await redisClient.set(`juego:${roomId}`, JSON.stringify(nuevoJuego));
+  await redisClient.persist(`juego:${roomId}`);
+  io.to(roomId).emit('actualizarJuego', nuevoJuego);
+  resetearTimeoutInactividad(roomId, io);
+  await emitirSalasDisponibles(io);
+
+  if (nuevoJuego.estado === 'jugando' && nuevoJuego.configuracion && nuevoJuego.configuracion.temporizador) {
+    iniciarTimeoutTurno(roomId, io);
+  }
+
+  return nuevoJuego;
+};
+
 export const handleGameEvents = (io, socket) => {
   socket.on('Movimiento', socketWrapper(socket, async ({ roomId, tableroId, celdaId }) => {
     const juegoJson = await redisClient.get(`juego:${roomId}`);
@@ -49,55 +109,7 @@ export const handleGameEvents = (io, socket) => {
   }));
 
   socket.on('reiniciarJuego', socketWrapper(socket, async (roomId) => {
-    const juegoJson = await redisClient.get(`juego:${roomId}`);
-    if (!juegoJson) return;
-
-    const juego = JSON.parse(juegoJson);
-    const jugadoresRef = { ...juego.jugadores };
-    const usernamesRef = { ...juego.usernames };
-
-    const nuevoJuego = gameController.iniciarEstadoJuego(roomId);
-    nuevoJuego.jugadores = jugadoresRef;
-    nuevoJuego.usernames = usernamesRef;
-    nuevoJuego.configuracion = juego.configuracion;
-    nuevoJuego.mensajesChat = juego.mensajesChat || [];
-    nuevoJuego.ultimaActualizacionTurno = null;
-    if (nuevoJuego.ordenTurnos) {
-      nuevoJuego.ordenTurnos = juego.ordenTurnos;
-    }
-
-    const rolesLlenos = juego.ordenTurnos ? juego.ordenTurnos.every(r => nuevoJuego.jugadores[r] !== null) : Object.keys(nuevoJuego.jugadores).every(r => nuevoJuego.jugadores[r] !== null);
-    if (rolesLlenos) {
-      nuevoJuego.estado = 'seleccionando_skin';
-      for (const r in nuevoJuego.jugadoresListos) {
-        nuevoJuego.jugadoresListos[r] = false;
-      }
-      nuevoJuego.skins = juego.skins || { X: { emoji: 'X', color: '#e94560' }, O: { emoji: 'O', color: '#4597e9' } };
-      
-      if (nuevoJuego.configuracion?.solitario) {
-        if (nuevoJuego.configuracion.dosVsDos) {
-          nuevoJuego.jugadoresListos[GameRole.O1] = true;
-          nuevoJuego.jugadoresListos[GameRole.O2] = true;
-        } else {
-          nuevoJuego.jugadoresListos[GameRole.O] = true;
-        }
-      }
-    }
-
-    if (turnTimeouts.has(roomId)) {
-      clearTimeout(turnTimeouts.get(roomId));
-      turnTimeouts.delete(roomId);
-    }
-
-    await redisClient.set(`juego:${roomId}`, JSON.stringify(nuevoJuego));
-    await redisClient.persist(`juego:${roomId}`);
-    io.to(roomId).emit('actualizarJuego', nuevoJuego);
-    resetearTimeoutInactividad(roomId, io);
-    await emitirSalasDisponibles(io);
-
-    if (nuevoJuego.estado === 'jugando' && nuevoJuego.configuracion && nuevoJuego.configuracion.temporizador) {
-      iniciarTimeoutTurno(roomId, io);
-    }
+    await procesarReiniciarJuego(io, roomId);
   }));
 
   socket.on('rendirse', socketWrapper(socket, async (roomId) => {
