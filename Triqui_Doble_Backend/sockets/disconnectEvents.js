@@ -76,7 +76,8 @@ export const procesarDesconexionSala = async (io, socket, roomId) => {
 
 export const handleDisconnectEvents = (io, socket) => {
   socket.on('disconnecting', socketWrapper(socket, async () => {
-    for (const roomId of socket.rooms) {
+    const salas = [...socket.rooms];
+    for (const roomId of salas) {
       if (roomId === socket.id || roomId.startsWith('user:')) continue;
       await procesarDesconexionSala(io, socket, roomId);
     }

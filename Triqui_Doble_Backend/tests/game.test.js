@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { patronesGanadores, mapeoPatrones, verificarGanador, iniciarEstadoJuego, movimiento, rendirse } from '../controllers/game.js';
 import { leaveGameRooms, procesarAbandonoSala } from '../sockets/roomEvents.js';
-import { procesarDesconexionSala } from '../sockets/disconnectEvents.js';
+import { procesarDesconexionSala, handleDisconnectEvents } from '../sockets/disconnectEvents.js';
 import { procesarReiniciarJuego } from '../sockets/gameEvents.js';
 import { timeoutsInactividad } from '../services/roomService.js';
 import { GameRole } from '../utils/constants.js';
@@ -618,6 +618,44 @@ describe('Tests de caracterización del motor de juego', () => {
       expect(nuevoJuego.skins).toEqual({
         X: { emoji: '⚔️', color: '#28a745' },
         O: { emoji: '🤖', color: '#8dcaf5' }
+      });
+    });
+  });
+
+  describe('handleDisconnectEvents · Snapshot de socket.rooms antes de los await', () => {
+    it('procesa todas las salas de juego aunque Socket.IO vacíe el Set vivo de salas en el primer await', async () => {
+      const rooms = new Set(['sock-o', 'user:prueba', 'SALA_1', 'SALA_2']);
+      const handlers = {};
+      const mockSocket = {
+        id: 'sock-o',
+        rooms,
+        on: vi.fn((evento, fn) => { handlers[evento] = fn; }),
+        to: vi.fn(() => ({ emit: vi.fn() }))
+      };
+      const mockIo = {
+        to: vi.fn(() => ({ emit: vi.fn() })),
+        emit: vi.fn()
+      };
+
+      const partida1 = crearPartidaLista();
+      partida1.sala = 'SALA_1';
+      const partida2 = crearPartidaLista();
+      partida2.sala = 'SALA_2';
+
+      redisMock.get
+        .mockImplementationOnce(async () => {
+          rooms.clear();
+          return JSON.stringify(partida1);
+        })
+        .mockResolvedValueOnce(JSON.stringify(partida2));
+
+      handleDisconnectEvents(mockIo, mockSocket);
+      await handlers['disconnecting']();
+
+      const clavesGuardadas = redisMock.set.mock.calls.map(([clave]) => clave);
+      expect(clavesGuardadas).toEqual(['juego:SALA_1', 'juego:SALA_2']);
+      redisMock.set.mock.calls.forEach(([, valor]) => {
+        expect(JSON.parse(valor).jugadores.O).toBeNull();
       });
     });
   });
