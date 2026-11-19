@@ -74,7 +74,7 @@
       </div>
     </div>
   </div>
-  <button (click)="rendirse()" class="btn-primary" *ngIf="gameState()!.tableroActivo !== null && myRole() !== GameRole.Espectador && !gameState()?.ganador">Rendirse</button>
+  <button (click)="rendirse()" class="btn-primary" *ngIf="gameState()?.estado === 'jugando' && !gameState()?.ganador && myRole() !== GameRole.Espectador">Rendirse</button>
   <button *ngIf="gameState()?.ganador" class="btn-primary" (click)="reiniciarJuego()">Jugar de nuevo</button>
   <button *ngIf="gameState()?.ganador" class="btn-primary" (click)="volverAlMenu()">Volver al menú</button>
 </div>

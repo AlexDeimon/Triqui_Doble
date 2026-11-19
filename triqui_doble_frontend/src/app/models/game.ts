@@ -9,28 +9,30 @@ export enum GameRole {
   Espectador = 'Espectador'
 }
 
-export type Jugador = GameRole.X | GameRole.O | GameRole.Empate | null;
+export type Rol = GameRole.X | GameRole.O | GameRole.X1 | GameRole.O1 | GameRole.X2 | GameRole.O2;
+export type Marca = GameRole.X | GameRole.O | GameRole.Empate | null;
+
+export type Jugador = Marca;
 
 export interface celda {
   id: number;
-  valor: Jugador;
+  valor: Marca;
 }
 
 export interface tableroPequeño {
   id: number;
   celdas: celda[];
-  ganador: Jugador;
-  habilitado: boolean;
+  ganador: Marca;
 }
 
 export interface estadoJuego {
   sala: string;
   tableros: tableroPequeño[];
-  turnoActual: Jugador;
+  turnoActual: GameRole.X | GameRole.O;
   tableroActivo: number | null;
-  ganador: Jugador;
-  jugadores: { [key: string]: string | null };
-  usernames: { [key: string]: string | null };
+  ganador: Marca;
+  jugadores: Partial<Record<Rol, string | null>> & { [key: string]: string | null };
+  usernames: Partial<Record<Rol, string | null>> & { [key: string]: string | null };
   estado?: string;
   ordenTurnos?: string[];
   indiceTurnoActual?: number;

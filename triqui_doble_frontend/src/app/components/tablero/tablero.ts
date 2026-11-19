@@ -385,7 +385,7 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   getNombreTurno(): string {
     const state = this.gameState();
-    if (!state || !state.turnoActual || state.turnoActual === GameRole.Empate || state.estado === 'esperando') return '';
+    if (!state || !state.turnoActual || state.estado === 'esperando') return '';
     const rolActual = state.ordenTurnos ? state.ordenTurnos[state.indiceTurnoActual!] : state.turnoActual;
     let username = state.usernames[rolActual as string];
 
